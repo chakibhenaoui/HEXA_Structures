@@ -1,0 +1,53 @@
+\chapter{Faire évoluer cette documentation}
+
+\section{Principe}
+
+Cette documentation est conçue pour évoluer par petits ajouts. Il vaut mieux
+compléter régulièrement un chapitre existant que réécrire tout le manuel à
+chaque nouvelle version.
+
+\section{Ajouter une capture}
+
+Placer l'image dans \fichier{docs/latex/figures/}, puis l'insérer avec :
+
+\begin{verbatim}
+\begin{figure}[H]
+  \centering
+  \includegraphics[width=0.9\textwidth]{figures/nom_capture.png}
+  \caption{Description de la capture}
+\end{figure}
+\end{verbatim}
+
+\section{Ajouter un chapitre}
+
+\begin{enumerate}
+  \item Créer un fichier dans \fichier{chapters/}.
+  \item Ajouter une ligne \commande{\textbackslash input\{chapters/nom\}} dans
+  \fichier{main.tex}.
+  \item Compiler le document.
+\end{enumerate}
+
+\section{Marquer les parties à compléter}
+
+Utiliser la commande :
+
+\begin{verbatim}
+\todoDoc{Décrire ici ce qu'il faudra ajouter plus tard.}
+\end{verbatim}
+
+\section{Compiler}
+
+Depuis le dossier \fichier{docs/latex} :
+
+\begin{verbatim}
+latexmk -pdf main.tex
+\end{verbatim}
+
+Si \commande{latexmk} n'est pas disponible :
+
+\begin{verbatim}
+pdflatex main.tex
+bibtex main
+pdflatex main.tex
+pdflatex main.tex
+\end{verbatim}

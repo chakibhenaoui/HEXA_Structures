@@ -1,0 +1,76 @@
+\chapter{Introduction}
+
+\section{Objet du logiciel}
+
+\logiciel{} est un logiciel desktop de modélisation et d'analyse de structures.
+Il vise à offrir un environnement simple pour créer un modèle structurel,
+définir les matériaux, sections, appuis, charges et combinaisons, puis lancer
+une analyse et consulter les résultats.
+
+Le logiciel est développé autour d'une interface graphique PySide6, d'une vue
+3D interactive PyVista et d'un noyau multi-solveur. PyNite est le moteur de
+calcul par défaut. OpenSeesPy reste disponible comme moteur avancé optionnel
+lorsqu'il est installé sur la machine.
+
+\section{Public visé}
+
+Cette documentation s'adresse principalement :
+
+\begin{itemize}
+  \item aux ingénieurs structure qui souhaitent utiliser le logiciel ;
+  \item aux développeurs qui veulent comprendre le fonctionnement général ;
+  \item aux contributeurs qui enrichissent progressivement les fonctionnalités ;
+  \item aux utilisateurs qui souhaitent produire une note de calcul ou un dossier
+  de vérification à partir des résultats.
+\end{itemize}
+
+\section{Philosophie générale}
+
+Le logiciel suit une logique métier classique :
+
+\begin{enumerate}
+  \item créer ou ouvrir un projet ;
+  \item modéliser la géométrie : nœuds, barres, surfaces ;
+  \item affecter matériaux, sections et conditions aux limites ;
+  \item définir les cas de charge et les combinaisons ;
+  \item lancer l'analyse ;
+  \item lire les résultats sous forme de tableaux, diagrammes et vues graphiques.
+\end{enumerate}
+
+\begin{infobox}
+Cette documentation est volontairement évolutive. Les sections marquées
+\todoDoc{à compléter} servent de repères pour enrichir le manuel à mesure que le
+logiciel avance.
+\end{infobox}
+
+\section{Unités internes}
+
+Le système interne utilise principalement :
+
+\begin{table}[H]
+  \centering
+  \begin{tabular}{lll}
+    \toprule
+    Grandeur & Unité interne & Exemple \\
+    \midrule
+    Longueur & \unite{m} & coordonnées des nœuds \\
+    Force & \unite{kN} & charges ponctuelles \\
+    Contrainte & \unite{kPa} & modules et résistances internes \\
+    Moment & \unite{kN.m} & moments fléchissants \\
+    \bottomrule
+  \end{tabular}
+  \caption{Unités internes principales}
+\end{table}
+
+\section{Statut du logiciel}
+
+\logiciel{} est en développement actif. Les fonctionnalités de modélisation,
+de calcul statique linéaire, de gestion des charges et de lecture des résultats
+sont déjà présentes, mais le logiciel doit continuer à être validé sur des cas
+de référence.
+
+\begin{warningbox}
+Les résultats produits par le logiciel ne constituent pas, à eux seuls, une note
+de calcul certifiée. Toute utilisation professionnelle doit être vérifiée,
+validée et signée par un ingénieur structure qualifié.
+\end{warningbox}

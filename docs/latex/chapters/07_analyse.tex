@@ -1,0 +1,55 @@
+\chapter{Analyse}
+
+\section{Moteurs disponibles}
+
+\logiciel{} peut s'appuyer sur plusieurs moteurs de calcul :
+
+\begin{table}[H]
+  \centering
+  \begin{tabular}{lll}
+    \toprule
+    Moteur & Statut & Usage principal \\
+    \midrule
+    PyNite & Par défaut & Calcul statique linéaire courant \\
+    OpenSeesPy & Optionnel & Calcul avancé et fonctionnalités spécifiques \\
+    \bottomrule
+  \end{tabular}
+  \caption{Moteurs de calcul}
+\end{table}
+
+\section{Analyse statique linéaire}
+
+L'analyse statique linéaire calcule les déplacements, réactions et efforts
+internes pour les cas de charge et combinaisons disponibles.
+
+Avant de lancer l'analyse, vérifier :
+
+\begin{itemize}
+  \item que le modèle contient au moins des nœuds et des éléments ;
+  \item qu'au moins un appui est défini ;
+  \item qu'il existe des charges ou des combinaisons ;
+  \item que les matériaux et sections sont affectés correctement ;
+  \item que le moteur choisi supporte les objets du modèle.
+\end{itemize}
+
+\section{Poids propre}
+
+Le cas \fichier{Poids propre} est géré automatiquement. Il est calculé à partir
+des sections, matériaux et densités disponibles.
+
+\section{Messages de calcul}
+
+La console inférieure affiche les informations importantes :
+
+\begin{itemize}
+  \item moteur utilisé ;
+  \item cas calculés ;
+  \item succès ou échec ;
+  \item messages d'erreur éventuels.
+\end{itemize}
+
+\begin{warningbox}
+Un calcul qui converge n'est pas automatiquement un calcul valide. Il faut
+toujours vérifier la géométrie, les appuis, les charges, les unités et les
+conventions de signe.
+\end{warningbox}

@@ -1,0 +1,68 @@
+\babel@toc {french}{}\relax 
+\contentsline {chapter}{\numberline {1}Introduction}{1}{chapter.1}%
+\contentsline {section}{\numberline {1.1}Objet du logiciel}{1}{section.1.1}%
+\contentsline {section}{\numberline {1.2}Public visé}{1}{section.1.2}%
+\contentsline {section}{\numberline {1.3}Philosophie générale}{1}{section.1.3}%
+\contentsline {section}{\numberline {1.4}Unités internes}{2}{section.1.4}%
+\contentsline {section}{\numberline {1.5}Statut du logiciel}{2}{section.1.5}%
+\contentsline {chapter}{\numberline {2}Installation et lancement}{3}{chapter.2}%
+\contentsline {section}{\numberline {2.1}Prérequis}{3}{section.2.1}%
+\contentsline {section}{\numberline {2.2}Installation depuis les sources}{3}{section.2.2}%
+\contentsline {section}{\numberline {2.3}OpenSeesPy optionnel}{3}{section.2.3}%
+\contentsline {section}{\numberline {2.4}Construction de l'exécutable Windows}{4}{section.2.4}%
+\contentsline {section}{\numberline {2.5}Vérification rapide}{4}{section.2.5}%
+\contentsline {chapter}{\numberline {3}Interface utilisateur}{5}{chapter.3}%
+\contentsline {section}{\numberline {3.1}Vue d'ensemble}{5}{section.3.1}%
+\contentsline {section}{\numberline {3.2}Arbre du modèle}{5}{section.3.2}%
+\contentsline {section}{\numberline {3.3}Vue graphique}{6}{section.3.3}%
+\contentsline {section}{\numberline {3.4}Panneau de propriétés}{6}{section.3.4}%
+\contentsline {section}{\numberline {3.5}Onglets inférieurs}{6}{section.3.5}%
+\contentsline {section}{\numberline {3.6}Menus principaux}{6}{section.3.6}%
+\contentsline {chapter}{\numberline {4}Modélisation}{8}{chapter.4}%
+\contentsline {section}{\numberline {4.1}Projet}{8}{section.4.1}%
+\contentsline {section}{\numberline {4.2}Nœuds}{8}{section.4.2}%
+\contentsline {section}{\numberline {4.3}Barres}{9}{section.4.3}%
+\contentsline {section}{\numberline {4.4}Surfaces}{9}{section.4.4}%
+\contentsline {section}{\numberline {4.5}Grille}{9}{section.4.5}%
+\contentsline {chapter}{\numberline {5}Matériaux et sections}{10}{chapter.5}%
+\contentsline {section}{\numberline {5.1}Matériaux}{10}{section.5.1}%
+\contentsline {section}{\numberline {5.2}Sections de barre}{10}{section.5.2}%
+\contentsline {section}{\numberline {5.3}Sections plaque}{10}{section.5.3}%
+\contentsline {section}{\numberline {5.4}Bonnes pratiques}{11}{section.5.4}%
+\contentsline {chapter}{\numberline {6}Appuis, charges et combinaisons}{12}{chapter.6}%
+\contentsline {section}{\numberline {6.1}Conditions aux limites}{12}{section.6.1}%
+\contentsline {section}{\numberline {6.2}Cas de charge}{12}{section.6.2}%
+\contentsline {section}{\numberline {6.3}Charges nodales}{12}{section.6.3}%
+\contentsline {section}{\numberline {6.4}Charges réparties sur barres}{13}{section.6.4}%
+\contentsline {section}{\numberline {6.5}Charges surfaciques}{13}{section.6.5}%
+\contentsline {section}{\numberline {6.6}Combinaisons}{13}{section.6.6}%
+\contentsline {chapter}{\numberline {7}Analyse}{14}{chapter.7}%
+\contentsline {section}{\numberline {7.1}Moteurs disponibles}{14}{section.7.1}%
+\contentsline {section}{\numberline {7.2}Analyse statique linéaire}{14}{section.7.2}%
+\contentsline {section}{\numberline {7.3}Poids propre}{14}{section.7.3}%
+\contentsline {section}{\numberline {7.4}Messages de calcul}{14}{section.7.4}%
+\contentsline {chapter}{\numberline {8}Résultats}{16}{chapter.8}%
+\contentsline {section}{\numberline {8.1}Types de résultats}{16}{section.8.1}%
+\contentsline {section}{\numberline {8.2}Tableaux}{16}{section.8.2}%
+\contentsline {section}{\numberline {8.3}Diagrammes de barres}{16}{section.8.3}%
+\contentsline {section}{\numberline {8.4}Déformée}{17}{section.8.4}%
+\contentsline {section}{\numberline {8.5}Résultats plaques}{17}{section.8.5}%
+\contentsline {section}{\numberline {8.6}Conventions de signe}{17}{section.8.6}%
+\contentsline {chapter}{\numberline {9}Exemples guidés}{18}{chapter.9}%
+\contentsline {section}{\numberline {9.1}Exemple 1 : poutre simplement appuyée}{18}{section.9.1}%
+\contentsline {section}{\numberline {9.2}Exemple 2 : portique plan}{18}{section.9.2}%
+\contentsline {section}{\numberline {9.3}Exemple 3 : dalle simple}{18}{section.9.3}%
+\contentsline {chapter}{\numberline {10}Limites, validation et responsabilité}{19}{chapter.10}%
+\contentsline {section}{\numberline {10.1}Limites actuelles}{19}{section.10.1}%
+\contentsline {section}{\numberline {10.2}Validation recommandée}{19}{section.10.2}%
+\contentsline {section}{\numberline {10.3}Avertissement}{19}{section.10.3}%
+\contentsline {section}{\numberline {10.4}Traçabilité}{20}{section.10.4}%
+\contentsline {chapter}{\numberline {11}Faire évoluer cette documentation}{21}{chapter.11}%
+\contentsline {section}{\numberline {11.1}Principe}{21}{section.11.1}%
+\contentsline {section}{\numberline {11.2}Ajouter une capture}{21}{section.11.2}%
+\contentsline {section}{\numberline {11.3}Ajouter un chapitre}{21}{section.11.3}%
+\contentsline {section}{\numberline {11.4}Marquer les parties à compléter}{21}{section.11.4}%
+\contentsline {section}{\numberline {11.5}Compiler}{21}{section.11.5}%
+\contentsline {chapter}{\numberline {A}Raccourcis et fichiers utiles}{23}{appendix.A}%
+\contentsline {section}{\numberline {A.1}Raccourcis}{23}{section.A.1}%
+\contentsline {section}{\numberline {A.2}Fichiers du projet}{23}{section.A.2}%

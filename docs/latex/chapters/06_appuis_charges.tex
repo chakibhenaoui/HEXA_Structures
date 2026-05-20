@@ -1,0 +1,52 @@
+\chapter{Appuis, charges et combinaisons}
+
+\section{Conditions aux limites}
+
+Les appuis sont définis par les blocages des six degrés de liberté d'un nœud :
+
+\begin{itemize}
+  \item translations : UX, UY, UZ ;
+  \item rotations : RX, RY, RZ.
+\end{itemize}
+
+Le logiciel propose des types d'appuis prédéfinis, mais il est aussi possible
+de personnaliser les blocages.
+
+\section{Cas de charge}
+
+Un cas de charge regroupe des actions appliquées au modèle. Les types usuels
+sont :
+
+\begin{itemize}
+  \item charges permanentes ;
+  \item charges d'exploitation ;
+  \item vent ;
+  \item neige ;
+  \item séisme ;
+  \item poids propre automatique.
+\end{itemize}
+
+\section{Charges nodales}
+
+Une charge nodale s'applique directement sur un nœud. Elle peut contenir des
+forces et des moments selon les six degrés de liberté.
+
+\section{Charges réparties sur barres}
+
+Une charge répartie s'applique sur une barre. Elle peut être saisie dans le
+repère local ou global selon le cas. Les conventions de signe doivent être
+vérifiées attentivement.
+
+\section{Charges surfaciques}
+
+Les charges surfaciques s'appliquent aux plaques et dalles. Elles sont ensuite
+converties en efforts équivalents pour le solveur lorsque la formulation le
+permet.
+
+\section{Combinaisons}
+
+Les combinaisons regroupent plusieurs cas de charge avec des coefficients. Le
+logiciel peut générer certaines combinaisons selon EC0, ou permettre une saisie
+manuelle.
+
+\todoDoc{Ajouter un tableau d'exemple pour une combinaison G + Q + S.}

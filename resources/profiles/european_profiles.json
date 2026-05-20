@@ -1,0 +1,14 @@
+{
+  "_description": "Catalogue des profilés européens (IPE, HEA, HEB, HEM, UPN)",
+  "_source": "Normes EN 10365 / ArcelorMittal",
+  "_units": {
+    "h": "mm", "b": "mm", "tw": "mm", "tf": "mm",
+    "A": "cm2", "Iy": "cm4", "Iz": "cm4",
+    "Wply": "cm3", "Wplz": "cm3", "mass": "kg/m"
+  },
+  "IPE": {},
+  "HEA": {},
+  "HEB": {},
+  "HEM": {},
+  "UPN": {}
+}

@@ -1,0 +1,54 @@
+\documentclass[11pt,a4paper]{report}
+
+\input{preamble}
+
+\title{\textbf{Documentation utilisateur}\\\logiciel}
+\author{Chakib Henaoui}
+\date{\today}
+
+\begin{document}
+
+\pagenumbering{gobble}
+\maketitle
+\clearpage
+
+\pagenumbering{roman}
+\setcounter{page}{1}
+
+\begin{abstract}
+\logiciel{} est une application desktop de modélisation et d'aide au calcul
+de structures. Cette documentation est volontairement modulaire : elle sert de
+base vivante et peut être enrichie progressivement avec des captures d'écran,
+des exemples de modèles, des notes de validation et des précisions métier.
+\end{abstract}
+
+\clearpage
+\tableofcontents
+\clearpage
+\listoffigures
+\clearpage
+\listoftables
+
+\clearpage
+\pagenumbering{arabic}
+
+\input{chapters/01_introduction}
+\input{chapters/02_installation}
+\input{chapters/03_interface}
+\input{chapters/04_modelisation}
+\input{chapters/05_materiaux_sections}
+\input{chapters/06_appuis_charges}
+\input{chapters/07_analyse}
+\input{chapters/08_resultats}
+\input{chapters/09_exemples}
+\input{chapters/10_limites_validation}
+\input{chapters/11_maintenance_documentation}
+
+\appendix
+\input{chapters/A_raccourcis_et_fichiers}
+
+\nocite{pynite,openseespy}
+\bibliographystyle{plain}
+\bibliography{references}
+
+\end{document}

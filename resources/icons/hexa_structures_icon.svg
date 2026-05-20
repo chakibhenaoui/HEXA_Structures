@@ -1,0 +1,16 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" role="img" aria-label="HEXA Structures">
+  <rect x="38" y="38" width="436" height="436" rx="72" fill="#f7f9fb" stroke="#d7dde5" stroke-width="4"/>
+  <g fill="none" stroke-linecap="round" stroke-linejoin="round">
+    <path d="M256 106 L374 174 L374 310 L256 378 L138 310 L138 174 Z" stroke="#1e3a8a" stroke-width="15"/>
+    <path d="M256 106 L256 242 M374 174 L256 242 M256 378 L256 242 M138 310 L256 242 M138 174 L374 310 M374 174 L138 310" stroke="#64748b" stroke-width="8"/>
+  </g>
+  <g fill="#2563eb">
+    <circle cx="256" cy="106" r="17"/>
+    <circle cx="374" cy="174" r="17"/>
+    <circle cx="374" cy="310" r="17"/>
+    <circle cx="256" cy="378" r="17"/>
+    <circle cx="138" cy="310" r="17"/>
+    <circle cx="138" cy="174" r="17"/>
+    <circle cx="256" cy="242" r="15"/>
+  </g>
+</svg>

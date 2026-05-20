@@ -1,0 +1,46 @@
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+*.egg-info/
+dist/
+build/
+*.egg
+
+# Environnement virtuel
+.venv/
+venv/
+env/
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Outils assistants / caches locaux
+.claude/
+
+# Projet
+*.db
+!resources/**
+.pytest_cache/
+.pytest_tmp/
+pytest_tmp/
+pytest-cache-files-*/
+.tmp/
+release_package_*/
+release_staging/
+debug_*.png
+test_mz_2d.png
+pip_err.txt
+pip_log.txt
+sig.txt
+htmlcov/
+.coverage

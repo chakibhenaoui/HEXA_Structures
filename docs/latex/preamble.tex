@@ -1,0 +1,81 @@
+\usepackage[french]{babel}
+\usepackage[T1]{fontenc}
+\usepackage[utf8]{inputenc}
+\usepackage{lmodern}
+\usepackage{geometry}
+\usepackage{graphicx}
+\usepackage{float}
+\usepackage{booktabs}
+\usepackage{longtable}
+\usepackage{array}
+\usepackage{xcolor}
+\usepackage{hyperref}
+\usepackage{enumitem}
+\usepackage{fancyhdr}
+\usepackage{titlesec}
+\usepackage{tcolorbox}
+
+\geometry{margin=2.5cm}
+\setlength{\parskip}{0.55em}
+\setlength{\parindent}{0pt}
+\setlength{\headheight}{14.5pt}
+\setlist[itemize]{topsep=0.25em,itemsep=0.15em}
+\setlist[enumerate]{topsep=0.25em,itemsep=0.15em}
+
+\definecolor{hexaBlue}{HTML}{1F5F8B}
+\definecolor{hexaGrey}{HTML}{F4F6F8}
+\definecolor{hexaWarn}{HTML}{FFF3CD}
+\definecolor{hexaInfo}{HTML}{EAF4FF}
+
+\hypersetup{
+  colorlinks=true,
+  hypertexnames=false,
+  linkcolor=hexaBlue,
+  urlcolor=hexaBlue,
+  citecolor=hexaBlue,
+  pdftitle={Documentation utilisateur HEXA Structures},
+  pdfauthor={Chakib Henaoui}
+}
+
+\pagestyle{fancy}
+\fancyhf{}
+\lhead{\logiciel}
+\rhead{\leftmark}
+\cfoot{\thepage}
+
+\newcommand{\logiciel}{HEXA Structures}
+\newcommand{\menu}[1]{\textbf{#1}}
+\newcommand{\bouton}[1]{\textbf{#1}}
+\newcommand{\fichier}[1]{\texttt{#1}}
+\newcommand{\commande}[1]{\texttt{#1}}
+\newcommand{\unite}[1]{\ensuremath{\mathrm{#1}}}
+\newcommand{\todoDoc}[1]{\textcolor{hexaBlue}{\textbf{À compléter :} #1}}
+
+\newtcolorbox{infobox}{
+  colback=hexaInfo,
+  colframe=hexaBlue,
+  title=Note,
+  arc=1mm,
+  boxrule=0.6pt
+}
+
+\newtcolorbox{warningbox}{
+  colback=hexaWarn,
+  colframe=orange,
+  title=Attention,
+  arc=1mm,
+  boxrule=0.6pt
+}
+
+\newcommand{\captureplaceholder}[2]{
+  \begin{figure}[H]
+    \centering
+    \fbox{
+      \begin{minipage}[c][5cm][c]{0.85\textwidth}
+        \centering
+        \textit{Capture à ajouter : #1}
+      \end{minipage}
+    }
+    \caption{#2}
+  \end{figure}
+}

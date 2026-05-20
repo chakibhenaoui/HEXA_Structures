@@ -1,0 +1,385 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<ui version="4.0">
+ <class>LoadEditorForm</class>
+ <widget class="QWidget" name="LoadEditorForm">
+  <property name="geometry">
+   <rect>
+    <x>0</x>
+    <y>0</y>
+    <width>800</width>
+    <height>600</height>
+   </rect>
+  </property>
+  <layout class="QHBoxLayout" name="horizontalLayout" stretch="1,2">
+   <!-- Left panel: load case list -->
+   <item>
+    <layout class="QVBoxLayout" name="leftLayout">
+     <item>
+      <widget class="QLabel" name="lbl_loads">
+       <property name="text">
+        <string>Cas de charges :</string>
+       </property>
+      </widget>
+     </item>
+     <item>
+      <widget class="QListWidget" name="lst_loads"/>
+     </item>
+     <item>
+      <layout class="QHBoxLayout" name="btnLayout">
+       <item>
+        <widget class="QPushButton" name="btn_add_load">
+         <property name="text">
+          <string>+ Cas</string>
+         </property>
+        </widget>
+       </item>
+       <item>
+        <widget class="QPushButton" name="btn_del_load">
+         <property name="text">
+          <string>- Cas</string>
+         </property>
+        </widget>
+       </item>
+      </layout>
+     </item>
+    </layout>
+   </item>
+   <!-- Right panel: detail -->
+   <item>
+    <layout class="QVBoxLayout" name="rightLayout">
+     <!-- Group: load case info -->
+     <item>
+      <widget class="QGroupBox" name="grp_info">
+       <property name="title">
+        <string>Cas de charge</string>
+       </property>
+       <layout class="QFormLayout" name="infoFormLayout">
+        <item row="0" column="0">
+         <widget class="QLabel" name="lbl_name">
+          <property name="text">
+           <string>Nom :</string>
+          </property>
+         </widget>
+        </item>
+        <item row="0" column="1">
+         <widget class="QLineEdit" name="edt_name"/>
+        </item>
+        <item row="1" column="0">
+         <widget class="QLabel" name="lbl_type">
+          <property name="text">
+           <string>Type :</string>
+          </property>
+         </widget>
+        </item>
+        <item row="1" column="1">
+         <widget class="QComboBox" name="cmb_type"/>
+        </item>
+        <item row="2" column="0">
+         <widget class="QLabel" name="lbl_category">
+          <property name="text">
+           <string>Catégorie EC1 :</string>
+          </property>
+         </widget>
+        </item>
+        <item row="2" column="1">
+         <widget class="QComboBox" name="cmb_category"/>
+        </item>
+       </layout>
+      </widget>
+     </item>
+     <!-- Group: nodal load -->
+     <item>
+      <widget class="QGroupBox" name="grp_nodal">
+       <property name="title">
+        <string>Charge nodale</string>
+       </property>
+       <layout class="QFormLayout" name="nodalFormLayout">
+        <item row="0" column="0">
+         <widget class="QLabel" name="lbl_node_tag">
+          <property name="text">
+           <string>Nœud :</string>
+          </property>
+         </widget>
+        </item>
+        <item row="0" column="1">
+         <widget class="QSpinBox" name="spn_node_tag">
+          <property name="minimum">
+           <number>1</number>
+          </property>
+          <property name="maximum">
+           <number>99999</number>
+          </property>
+         </widget>
+        </item>
+        <item row="1" column="0">
+         <widget class="QLabel" name="lbl_fx">
+          <property name="text">
+           <string>Fx :</string>
+          </property>
+         </widget>
+        </item>
+        <item row="1" column="1">
+         <widget class="QDoubleSpinBox" name="spn_fx">
+          <property name="minimum">
+           <double>-1000000000.000000000000000</double>
+          </property>
+          <property name="maximum">
+           <double>1000000000.000000000000000</double>
+          </property>
+          <property name="decimals">
+           <number>2</number>
+          </property>
+          <property name="suffix">
+           <string> kN</string>
+          </property>
+         </widget>
+        </item>
+        <item row="2" column="0">
+         <widget class="QLabel" name="lbl_fy">
+          <property name="text">
+           <string>Fy :</string>
+          </property>
+         </widget>
+        </item>
+        <item row="2" column="1">
+         <widget class="QDoubleSpinBox" name="spn_fy">
+          <property name="minimum">
+           <double>-1000000000.000000000000000</double>
+          </property>
+          <property name="maximum">
+           <double>1000000000.000000000000000</double>
+          </property>
+          <property name="decimals">
+           <number>2</number>
+          </property>
+          <property name="suffix">
+           <string> kN</string>
+          </property>
+         </widget>
+        </item>
+        <item row="3" column="0">
+         <widget class="QLabel" name="lbl_fz">
+          <property name="text">
+           <string>Fz :</string>
+          </property>
+         </widget>
+        </item>
+        <item row="3" column="1">
+         <widget class="QDoubleSpinBox" name="spn_fz">
+          <property name="minimum">
+           <double>-1000000000.000000000000000</double>
+          </property>
+          <property name="maximum">
+           <double>1000000000.000000000000000</double>
+          </property>
+          <property name="decimals">
+           <number>2</number>
+          </property>
+          <property name="suffix">
+           <string> kN</string>
+          </property>
+         </widget>
+        </item>
+        <item row="4" column="0">
+         <widget class="QLabel" name="lbl_mx">
+          <property name="text">
+           <string>Mx :</string>
+          </property>
+         </widget>
+        </item>
+        <item row="4" column="1">
+         <widget class="QDoubleSpinBox" name="spn_mx">
+          <property name="minimum">
+           <double>-1000000000.000000000000000</double>
+          </property>
+          <property name="maximum">
+           <double>1000000000.000000000000000</double>
+          </property>
+          <property name="decimals">
+           <number>2</number>
+          </property>
+          <property name="suffix">
+           <string> kN·m</string>
+          </property>
+         </widget>
+        </item>
+        <item row="5" column="0">
+         <widget class="QLabel" name="lbl_my">
+          <property name="text">
+           <string>My :</string>
+          </property>
+         </widget>
+        </item>
+        <item row="5" column="1">
+         <widget class="QDoubleSpinBox" name="spn_my">
+          <property name="minimum">
+           <double>-1000000000.000000000000000</double>
+          </property>
+          <property name="maximum">
+           <double>1000000000.000000000000000</double>
+          </property>
+          <property name="decimals">
+           <number>2</number>
+          </property>
+          <property name="suffix">
+           <string> kN·m</string>
+          </property>
+         </widget>
+        </item>
+        <item row="6" column="0">
+         <widget class="QLabel" name="lbl_mz">
+          <property name="text">
+           <string>Mz :</string>
+          </property>
+         </widget>
+        </item>
+        <item row="6" column="1">
+         <widget class="QDoubleSpinBox" name="spn_mz">
+          <property name="minimum">
+           <double>-1000000000.000000000000000</double>
+          </property>
+          <property name="maximum">
+           <double>1000000000.000000000000000</double>
+          </property>
+          <property name="decimals">
+           <number>2</number>
+          </property>
+          <property name="suffix">
+           <string> kN·m</string>
+          </property>
+         </widget>
+        </item>
+        <item row="7" column="0" colspan="2">
+         <widget class="QPushButton" name="btn_add_nodal">
+          <property name="text">
+           <string>Ajouter charge nodale</string>
+          </property>
+         </widget>
+        </item>
+       </layout>
+      </widget>
+     </item>
+     <!-- Group: element load -->
+     <item>
+      <widget class="QGroupBox" name="grp_elem">
+       <property name="title">
+        <string>Charge répartie sur élément</string>
+       </property>
+       <layout class="QFormLayout" name="elemFormLayout">
+        <item row="0" column="0">
+         <widget class="QLabel" name="lbl_elem_tag">
+          <property name="text">
+           <string>Élément :</string>
+          </property>
+         </widget>
+        </item>
+        <item row="0" column="1">
+         <widget class="QSpinBox" name="spn_elem_tag">
+          <property name="minimum">
+           <number>1</number>
+          </property>
+          <property name="maximum">
+           <number>99999</number>
+          </property>
+         </widget>
+        </item>
+        <item row="1" column="0">
+         <widget class="QLabel" name="lbl_wx">
+          <property name="text">
+           <string>wx :</string>
+          </property>
+         </widget>
+        </item>
+        <item row="1" column="1">
+         <widget class="QDoubleSpinBox" name="spn_wx">
+          <property name="minimum">
+           <double>-1000000000.000000000000000</double>
+          </property>
+          <property name="maximum">
+           <double>1000000000.000000000000000</double>
+          </property>
+          <property name="decimals">
+           <number>2</number>
+          </property>
+          <property name="suffix">
+           <string> kN/m</string>
+          </property>
+         </widget>
+        </item>
+        <item row="2" column="0">
+         <widget class="QLabel" name="lbl_wy">
+          <property name="text">
+           <string>wy :</string>
+          </property>
+         </widget>
+        </item>
+        <item row="2" column="1">
+         <widget class="QDoubleSpinBox" name="spn_wy">
+          <property name="minimum">
+           <double>-1000000000.000000000000000</double>
+          </property>
+          <property name="maximum">
+           <double>1000000000.000000000000000</double>
+          </property>
+          <property name="decimals">
+           <number>2</number>
+          </property>
+          <property name="suffix">
+           <string> kN/m</string>
+          </property>
+         </widget>
+        </item>
+        <item row="3" column="0">
+         <widget class="QLabel" name="lbl_wz">
+          <property name="text">
+           <string>wz :</string>
+          </property>
+         </widget>
+        </item>
+        <item row="3" column="1">
+         <widget class="QDoubleSpinBox" name="spn_wz">
+          <property name="minimum">
+           <double>-1000000000.000000000000000</double>
+          </property>
+          <property name="maximum">
+           <double>1000000000.000000000000000</double>
+          </property>
+          <property name="decimals">
+           <number>2</number>
+          </property>
+          <property name="suffix">
+           <string> kN/m</string>
+          </property>
+         </widget>
+        </item>
+        <item row="4" column="0" colspan="2">
+         <widget class="QPushButton" name="btn_add_elem">
+          <property name="text">
+           <string>Ajouter charge répartie</string>
+          </property>
+         </widget>
+        </item>
+       </layout>
+      </widget>
+     </item>
+     <!-- Vertical spacer -->
+     <item>
+      <spacer name="verticalSpacer">
+       <property name="orientation">
+        <enum>Qt::Vertical</enum>
+       </property>
+       <property name="sizeHint" stdset="0">
+        <size>
+         <width>20</width>
+         <height>40</height>
+        </size>
+       </property>
+      </spacer>
+     </item>
+    </layout>
+   </item>
+  </layout>
+ </widget>
+ <resources/>
+ <connections/>
+</ui>

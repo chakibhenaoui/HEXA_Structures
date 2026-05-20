@@ -1,0 +1,192 @@
+"""
+Test de vérification des signes des efforts internes.
+
+Compare les sorties d'OpenSeesPy (eleForce, eleResponse localForce)
+avec les solutions analytiques pour une console et un portique simple.
+"""
+import pytest
+
+ops = pytest.importorskip("openseespy.opensees")
+
+
+def test_cantilever():
+    """Console encastrée en I, charge ponctuelle P en J (vers le bas).
+
+    Portée L=3m, P=10 kN vers le bas (-Z global).
+
+    Solution analytique :
+        N = 0 partout
+        Vz = +10 kN (constant, positif = vers le haut)
+        My(0) = -30 kN·m (encastrement, hogging)
+        My(L) = 0 kN·m (extrémité libre)
+
+    Convention attendue pour le diagramme :
+        N négatif = compression, positif = traction
+        My positif = sagging, négatif = hogging
+    """
+    print("=" * 60)
+    print("TEST 1 : Console encastrée, charge ponctuelle P = 10 kN ↓")
+    print("=" * 60)
+
+    ops.wipe()
+    ops.model('basic', '-ndm', 3, '-ndf', 6)
+
+    # Nœuds : console horizontale le long de X, Z = vertical
+    ops.node(1, 0.0, 0.0, 0.0)  # encastrement
+    ops.node(2, 3.0, 0.0, 0.0)  # extrémité libre
+
+    ops.fix(1, 1, 1, 1, 1, 1, 1)
+
+    # Matériau et section
+    E = 210e6  # kN/m²
+    A = 0.01   # m²
+    Iz = 1e-4  # m⁴
+    Iy = 1e-4
+    G = 80e6
+    J = 2e-4
+
+    ops.geomTransf('Linear', 1, 0.0, 0.0, 1.0)  # vecxz = Z
+    ops.element('elasticBeamColumn', 1, 1, 2, A, E, G, J, Iy, Iz, 1)
+
+    # Charge : P = 10 kN vers le bas au nœud 2
+    ops.timeSeries('Linear', 1)
+    ops.pattern('Plain', 1, 1)
+    ops.load(2, 0.0, 0.0, -10.0, 0.0, 0.0, 0.0)
+
+    ops.system('BandGeneral')
+    ops.numberer('RCM')
+    ops.constraints('Plain')
+    ops.integrator('LoadControl', 1.0)
+    ops.algorithm('Linear')
+    ops.analysis('Static')
+    ops.analyze(1)
+
+    # --- Résultats ---
+    print("\n--- eleForce (GLOBAL) ---")
+    ef = ops.eleForce(1)
+    print(f"  Node I (6 val) : {[f'{v:+.4f}' for v in ef[:6]]}")
+    print(f"  Node J (6 val) : {[f'{v:+.4f}' for v in ef[6:]]}")
+
+    print("\n--- eleResponse localForce (LOCAL) ---")
+    lf = ops.eleResponse(1, 'localForce')
+    print(f"  Node I (6 val) : {[f'{v:+.4f}' for v in lf[:6]]}")
+    print(f"  Node J (6 val) : {[f'{v:+.4f}' for v in lf[6:]]}")
+
+    print("\n--- eleResponse basicForce (BASIC, 6 val) ---")
+    bf = ops.eleResponse(1, 'basicForce')
+    print(f"  basicForce : {[f'{v:+.4f}' for v in bf]}")
+
+    print("\n--- Réactions ---")
+    ops.reactions()
+    r1 = ops.nodeReaction(1)
+    print(f"  Réaction nœud 1 : {[f'{v:+.4f}' for v in r1]}")
+
+    print("\n--- Solution analytique ---")
+    print("  Réaction: Fz=+10, My=+30 (hogging = retient la console)")
+    print("  Forces internes (convention RDM) :")
+    print("    N  = 0 partout")
+    print("    Vz = +10 kN (positif)")
+    print("    My(0) = +30 kN·m (hogging)")
+    print("    My(L) = 0")
+
+    print("\n--- Interprétation localForce ---")
+    print(f"  N_i  = lf[0] = {lf[0]:+.4f}  (attendu: ~0)")
+    print(f"  Vy_i = lf[1] = {lf[1]:+.4f}  (attendu: ~0)")
+    print(f"  Vz_i = lf[2] = {lf[2]:+.4f}  (signe: +10 ou -10 ?)")
+    print(f"  T_i  = lf[3] = {lf[3]:+.4f}  (attendu: ~0)")
+    print(f"  My_i = lf[4] = {lf[4]:+.4f}  (signe: +30 ou -30 ?)")
+    print(f"  Mz_i = lf[5] = {lf[5]:+.4f}  (attendu: ~0)")
+    print(f"  N_j  = lf[6] = {lf[6]:+.4f}")
+    print(f"  Vy_j = lf[7] = {lf[7]:+.4f}")
+    print(f"  Vz_j = lf[8] = {lf[8]:+.4f}")
+    print(f"  T_j  = lf[9] = {lf[9]:+.4f}")
+    print(f"  My_j = lf[10]= {lf[10]:+.4f}")
+    print(f"  Mz_j = lf[11]= {lf[11]:+.4f}")
+
+    ops.wipe()
+
+
+def test_portal_frame():
+    """Portique plan 3m x 3m, encastré, charge répartie 10 kN/m sur poutre.
+
+    Solution analytique (méthode des déplacements) :
+        Réactions verticales : 15 kN chacune
+        Moments d'encastrement : ~2.5 kN·m aux pieds, ~5.0 kN·m aux nœuds
+    """
+    print("\n" + "=" * 60)
+    print("TEST 2 : Portique plan 3x3m, encastré, w=10 kN/m sur poutre")
+    print("=" * 60)
+
+    ops.wipe()
+    ops.model('basic', '-ndm', 3, '-ndf', 6)
+
+    # Nœuds
+    ops.node(1, 0.0, 0.0, 0.0)  # pied gauche
+    ops.node(2, 0.0, 0.0, 3.0)  # tête gauche
+    ops.node(3, 3.0, 0.0, 3.0)  # tête droite
+    ops.node(4, 3.0, 0.0, 0.0)  # pied droit
+
+    ops.fix(1, 1, 1, 1, 1, 1, 1)
+    ops.fix(4, 1, 1, 1, 1, 1, 1)
+
+    E = 210e6
+    A = 0.01
+    Iz = 1e-4
+    Iy = 1e-4
+    G = 80e6
+    J = 2e-4
+
+    # GeomTransf : colonnes (verticales, vecxz=X), poutre (horizontale, vecxz=Z)
+    ops.geomTransf('Linear', 1, 1.0, 0.0, 0.0)  # colonnes
+    ops.geomTransf('Linear', 2, 0.0, 0.0, 1.0)  # poutre
+
+    ops.element('elasticBeamColumn', 1, 1, 2, A, E, G, J, Iy, Iz, 1)  # col gauche
+    ops.element('elasticBeamColumn', 2, 2, 3, A, E, G, J, Iy, Iz, 2)  # poutre
+    ops.element('elasticBeamColumn', 3, 4, 3, A, E, G, J, Iy, Iz, 1)  # col droite
+
+    # Charge répartie 10 kN/m vers le bas sur poutre E2
+    ops.timeSeries('Linear', 1)
+    ops.pattern('Plain', 1, 1)
+    ops.eleLoad('-ele', 2, '-type', '-beamUniform', 0.0, -10.0)
+    # beamUniform: wy, wz en coordonnées locales
+    # Pour poutre horizontale : local z ~ global Z, wz = -10 = vers le bas
+
+    ops.system('BandGeneral')
+    ops.numberer('RCM')
+    ops.constraints('Plain')
+    ops.integrator('LoadControl', 1.0)
+    ops.algorithm('Linear')
+    ops.analysis('Static')
+    ops.analyze(1)
+
+    # --- Résultats ---
+    print("\n--- Réactions ---")
+    ops.reactions()
+    r1 = ops.nodeReaction(1)
+    r4 = ops.nodeReaction(4)
+    print(f"  Nœud 1 : {[f'{v:+.4f}' for v in r1]}")
+    print(f"  Nœud 4 : {[f'{v:+.4f}' for v in r4]}")
+
+    for etag, name in [(1, "Colonne gauche E1 (1→2)"),
+                        (2, "Poutre E2 (2→3)"),
+                        (3, "Colonne droite E3 (4→3)")]:
+        print(f"\n--- {name} ---")
+
+        ef = ops.eleForce(etag)
+        print(f"  eleForce (global) I: {[f'{v:+.3f}' for v in ef[:6]]}")
+        print(f"  eleForce (global) J: {[f'{v:+.3f}' for v in ef[6:]]}")
+
+        lf = ops.eleResponse(etag, 'localForce')
+        print(f"  localForce       I: {[f'{v:+.3f}' for v in lf[:6]]}")
+        print(f"  localForce       J: {[f'{v:+.3f}' for v in lf[6:]]}")
+
+        print("  Interprétation localForce I:")
+        print(f"    N_i={lf[0]:+.3f}  Vy_i={lf[1]:+.3f}  Vz_i={lf[2]:+.3f}")
+        print(f"    T_i={lf[3]:+.3f}  My_i={lf[4]:+.3f}  Mz_i={lf[5]:+.3f}")
+
+    ops.wipe()
+
+
+if __name__ == "__main__":
+    test_cantilever()
+    test_portal_frame()

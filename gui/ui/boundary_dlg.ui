@@ -1,0 +1,274 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<ui version="4.0">
+ <class>BoundaryDialog</class>
+ <widget class="QDialog" name="BoundaryDialog">
+  <property name="windowTitle">
+   <string>Conditions aux limites</string>
+  </property>
+  <property name="minimumSize">
+   <size>
+    <width>450</width>
+    <height>550</height>
+   </size>
+  </property>
+  <layout class="QVBoxLayout" name="mainLayout">
+   <!-- Type d'appui -->
+   <item>
+    <layout class="QFormLayout" name="formType">
+     <item row="0" column="0">
+      <widget class="QLabel" name="labelType">
+       <property name="text">
+        <string>Type d'appui :</string>
+       </property>
+      </widget>
+     </item>
+     <item row="0" column="1">
+      <widget class="QComboBox" name="comboType"/>
+     </item>
+    </layout>
+   </item>
+   <!-- DDL group -->
+   <item>
+    <widget class="QGroupBox" name="groupDOF">
+     <property name="title">
+      <string>Degrés de liberté bloqués</string>
+     </property>
+     <layout class="QVBoxLayout" name="dofLayout">
+      <item>
+       <widget class="QCheckBox" name="checkUx">
+        <property name="text">
+         <string>Translation X (Ux)</string>
+        </property>
+       </widget>
+      </item>
+      <item>
+       <widget class="QCheckBox" name="checkUy">
+        <property name="text">
+         <string>Translation Y (Uy)</string>
+        </property>
+       </widget>
+      </item>
+      <item>
+       <widget class="QCheckBox" name="checkUz">
+        <property name="text">
+         <string>Translation Z (Uz)</string>
+        </property>
+       </widget>
+      </item>
+      <item>
+       <widget class="QCheckBox" name="checkRx">
+        <property name="text">
+         <string>Rotation X (Rx)</string>
+        </property>
+       </widget>
+      </item>
+      <item>
+       <widget class="QCheckBox" name="checkRy">
+        <property name="text">
+         <string>Rotation Y (Ry)</string>
+        </property>
+       </widget>
+      </item>
+      <item>
+       <widget class="QCheckBox" name="checkRz">
+        <property name="text">
+         <string>Rotation Z (Rz)</string>
+        </property>
+       </widget>
+      </item>
+     </layout>
+    </widget>
+   </item>
+   <!-- Summary label -->
+   <item>
+    <widget class="QLabel" name="labelSummary">
+     <property name="text">
+      <string>Libre</string>
+     </property>
+     <property name="styleSheet">
+      <string>font-weight: bold; color: #0078d4;</string>
+     </property>
+    </widget>
+   </item>
+   <!-- Spring stiffness group -->
+   <item>
+    <widget class="QGroupBox" name="groupSpring">
+     <property name="title">
+      <string>Appuis élastiques (optionnel)</string>
+     </property>
+     <property name="checkable">
+      <bool>true</bool>
+     </property>
+     <property name="checked">
+      <bool>false</bool>
+     </property>
+     <layout class="QFormLayout" name="springForm">
+      <item row="0" column="0">
+       <widget class="QLabel" name="labelKx">
+        <property name="text">
+         <string>Raideur Kx (kN/m) :</string>
+        </property>
+       </widget>
+      </item>
+      <item row="0" column="1">
+       <widget class="QDoubleSpinBox" name="spinKx">
+        <property name="maximum">
+         <double>1000000000000.000000000000000</double>
+        </property>
+        <property name="decimals">
+         <number>1</number>
+        </property>
+        <property name="suffix">
+         <string> kN/m</string>
+        </property>
+       </widget>
+      </item>
+      <item row="1" column="0">
+       <widget class="QLabel" name="labelKy">
+        <property name="text">
+         <string>Raideur Ky (kN/m) :</string>
+        </property>
+       </widget>
+      </item>
+      <item row="1" column="1">
+       <widget class="QDoubleSpinBox" name="spinKy">
+        <property name="maximum">
+         <double>1000000000000.000000000000000</double>
+        </property>
+        <property name="decimals">
+         <number>1</number>
+        </property>
+        <property name="suffix">
+         <string> kN/m</string>
+        </property>
+       </widget>
+      </item>
+      <item row="2" column="0">
+       <widget class="QLabel" name="labelKz">
+        <property name="text">
+         <string>Raideur Kz (kN/m) :</string>
+        </property>
+       </widget>
+      </item>
+      <item row="2" column="1">
+       <widget class="QDoubleSpinBox" name="spinKz">
+        <property name="maximum">
+         <double>1000000000000.000000000000000</double>
+        </property>
+        <property name="decimals">
+         <number>1</number>
+        </property>
+        <property name="suffix">
+         <string> kN/m</string>
+        </property>
+       </widget>
+      </item>
+      <item row="3" column="0">
+       <widget class="QLabel" name="labelKrx">
+        <property name="text">
+         <string>Raideur Krx (kN·m/rad) :</string>
+        </property>
+       </widget>
+      </item>
+      <item row="3" column="1">
+       <widget class="QDoubleSpinBox" name="spinKrx">
+        <property name="maximum">
+         <double>1000000000000.000000000000000</double>
+        </property>
+        <property name="decimals">
+         <number>1</number>
+        </property>
+        <property name="suffix">
+         <string> kN·m/rad</string>
+        </property>
+       </widget>
+      </item>
+      <item row="4" column="0">
+       <widget class="QLabel" name="labelKry">
+        <property name="text">
+         <string>Raideur Kry (kN·m/rad) :</string>
+        </property>
+       </widget>
+      </item>
+      <item row="4" column="1">
+       <widget class="QDoubleSpinBox" name="spinKry">
+        <property name="maximum">
+         <double>1000000000000.000000000000000</double>
+        </property>
+        <property name="decimals">
+         <number>1</number>
+        </property>
+        <property name="suffix">
+         <string> kN·m/rad</string>
+        </property>
+       </widget>
+      </item>
+      <item row="5" column="0">
+       <widget class="QLabel" name="labelKrz">
+        <property name="text">
+         <string>Raideur Krz (kN·m/rad) :</string>
+        </property>
+       </widget>
+      </item>
+      <item row="5" column="1">
+       <widget class="QDoubleSpinBox" name="spinKrz">
+        <property name="maximum">
+         <double>1000000000000.000000000000000</double>
+        </property>
+        <property name="decimals">
+         <number>1</number>
+        </property>
+        <property name="suffix">
+         <string> kN·m/rad</string>
+        </property>
+       </widget>
+      </item>
+     </layout>
+    </widget>
+   </item>
+   <!-- Dialog buttons -->
+   <item>
+    <widget class="QDialogButtonBox" name="buttonBox">
+     <property name="standardButtons">
+      <set>QDialogButtonBox::Ok|QDialogButtonBox::Cancel</set>
+     </property>
+    </widget>
+   </item>
+  </layout>
+ </widget>
+ <resources/>
+ <connections>
+  <connection>
+   <sender>buttonBox</sender>
+   <signal>accepted()</signal>
+   <receiver>BoundaryDialog</receiver>
+   <slot>accept()</slot>
+   <hints>
+    <hint type="sourcelabel">
+     <x>225</x>
+     <y>530</y>
+    </hint>
+    <hint type="destinationlabel">
+     <x>225</x>
+     <y>275</y>
+    </hint>
+   </hints>
+  </connection>
+  <connection>
+   <sender>buttonBox</sender>
+   <signal>rejected()</signal>
+   <receiver>BoundaryDialog</receiver>
+   <slot>reject()</slot>
+   <hints>
+    <hint type="sourcelabel">
+     <x>225</x>
+     <y>530</y>
+    </hint>
+    <hint type="destinationlabel">
+     <x>225</x>
+     <y>275</y>
+    </hint>
+   </hints>
+  </connection>
+ </connections>
+</ui>

@@ -1,0 +1,15 @@
+\begin{thebibliography}{1}
+
+\bibitem{openseespy}
+OpenSeesPy Contributors.
+\newblock Openseespy.
+\newblock \url{https://openseespydoc.readthedocs.io/}.
+\newblock Interface Python du moteur OpenSees.
+
+\bibitem{pynite}
+PyNiteFEA Contributors.
+\newblock Pynitefea.
+\newblock \url{https://github.com/JWock82/Pynite}.
+\newblock Moteur de calcul par éléments finis utilisé par HEXA Structures.
+
+\end{thebibliography}

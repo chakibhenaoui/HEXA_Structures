@@ -1,0 +1,80 @@
+\chapter{Interface utilisateur}
+
+\section{Vue d'ensemble}
+
+L'interface principale est organisée autour de quatre zones :
+
+\begin{itemize}
+  \item l'arbre du modèle, à gauche ;
+  \item la vue graphique principale, au centre ;
+  \item le panneau de propriétés, à droite ;
+  \item les onglets d'informations, de console et de résultats, en bas.
+\end{itemize}
+
+\captureplaceholder{Vue générale avec arbre, vue graphique, propriétés et onglets bas}{Organisation de l'interface}
+
+\section{Arbre du modèle}
+
+L'arbre du modèle regroupe les objets du projet :
+
+\begin{itemize}
+  \item nœuds ;
+  \item éléments de barre ;
+  \item surfaces ;
+  \item matériaux ;
+  \item sections ;
+  \item cas de charge ;
+  \item combinaisons.
+\end{itemize}
+
+La sélection d'un objet dans l'arbre synchronise le panneau de propriétés et la
+vue graphique.
+
+\section{Vue graphique}
+
+La vue graphique affiche la géométrie du modèle et permet de sélectionner les
+objets. Selon les options actives, elle peut afficher :
+
+\begin{itemize}
+  \item les nœuds ;
+  \item les barres ;
+  \item les surfaces ;
+  \item les appuis ;
+  \item les numéros de nœuds ;
+  \item les noms de sections ;
+  \item les sections extrudées.
+\end{itemize}
+
+\section{Panneau de propriétés}
+
+Le panneau de propriétés affiche les informations de l'objet sélectionné. Il
+permet notamment de modifier certaines valeurs directement, par exemple les
+coordonnées d'un nœud ou la section affectée à une barre.
+
+\section{Onglets inférieurs}
+
+Les onglets inférieurs contiennent :
+
+\begin{itemize}
+  \item la console de messages ;
+  \item les résultats ;
+  \item le tableau des nœuds ;
+  \item le tableau des combinaisons.
+\end{itemize}
+
+\section{Menus principaux}
+
+\begin{longtable}{p{0.22\textwidth}p{0.68\textwidth}}
+  \toprule
+  Menu & Rôle \\
+  \midrule
+  \menu{Fichier} & Créer, ouvrir, enregistrer un projet. \\
+  \menu{Édition} & Annuler, rétablir, copier une sélection. \\
+  \menu{Modèle} & Ajouter nœuds, barres, surfaces, matériaux, sections et appuis. \\
+  \menu{Charges} & Gérer les cas de charge, charges affectées et combinaisons. \\
+  \menu{Analyse} & Choisir le moteur et lancer le calcul. \\
+  \menu{Résultats} & Afficher tableaux, diagrammes, déformée et cartes plaques. \\
+  \menu{Vue} & Configurer l'affichage et les options graphiques. \\
+  \bottomrule
+  \caption{Menus principaux}
+\end{longtable}

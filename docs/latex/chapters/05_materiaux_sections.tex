@@ -1,0 +1,54 @@
+\chapter{Matériaux et sections}
+
+\section{Matériaux}
+
+Le logiciel contient une bibliothèque de matériaux usuels :
+
+\begin{itemize}
+  \item béton selon les classes Eurocode 2 ;
+  \item acier selon les nuances Eurocode 3 ;
+  \item armatures pour les vérifications futures.
+\end{itemize}
+
+Chaque matériau possède des propriétés mécaniques telles que le module d'Young,
+le coefficient de Poisson, la masse volumique ou les résistances de calcul.
+
+\section{Sections de barre}
+
+Les sections de barre décrivent les caractéristiques géométriques des éléments
+linéaires :
+
+\begin{itemize}
+  \item aire ;
+  \item inerties ;
+  \item torsion ;
+  \item matériau associé.
+\end{itemize}
+
+Les sections disponibles incluent notamment :
+
+\begin{itemize}
+  \item sections rectangulaires ;
+  \item sections en T ;
+  \item profilés acier européens IPE, HEA et HEB.
+\end{itemize}
+
+\section{Sections plaque}
+
+Les sections plaque définissent principalement :
+
+\begin{itemize}
+  \item l'épaisseur ;
+  \item le matériau ;
+  \item la formulation de l'élément surfacique.
+\end{itemize}
+
+\section{Bonnes pratiques}
+
+\begin{itemize}
+  \item Nommer les sections clairement, par exemple \fichier{Poteau 30x30}
+  ou \fichier{Dalle 20 cm}.
+  \item Vérifier les unités avant d'ajouter une section.
+  \item Utiliser une bibliothèque de sections stable pour éviter les incohérences
+  entre plusieurs modèles.
+\end{itemize}

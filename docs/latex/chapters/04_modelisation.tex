@@ -1,0 +1,70 @@
+\chapter{Modélisation}
+
+\section{Projet}
+
+Un projet contient l'ensemble des données nécessaires à l'analyse :
+
+\begin{itemize}
+  \item géométrie ;
+  \item matériaux ;
+  \item sections ;
+  \item appuis ;
+  \item charges ;
+  \item combinaisons ;
+  \item paramètres de calcul.
+\end{itemize}
+
+Les projets sont sauvegardés dans un fichier SQLite avec l'extension
+\fichier{.db}.
+
+\section{Nœuds}
+
+Les nœuds définissent la géométrie de base du modèle. Chaque nœud possède :
+
+\begin{itemize}
+  \item un numéro unique ;
+  \item une coordonnée X ;
+  \item une coordonnée Y ;
+  \item une coordonnée Z ;
+  \item des conditions aux limites éventuelles.
+\end{itemize}
+
+Pour ajouter un nœud par coordonnées, utiliser le menu ou le bouton
+\bouton{Ajouter un nœud}. Le numéro choisi doit être unique.
+
+\begin{infobox}
+Si les coordonnées saisies correspondent déjà à un nœud existant, le logiciel
+refuse la création afin d'éviter deux nœuds superposés.
+\end{infobox}
+
+\section{Barres}
+
+Une barre relie deux nœuds. Elle nécessite au minimum :
+
+\begin{itemize}
+  \item un nœud initial ;
+  \item un nœud final ;
+  \item une section ;
+  \item un matériau associé à cette section.
+\end{itemize}
+
+Les barres sont utilisées pour modéliser poutres, poteaux et éléments linéaires.
+
+\section{Surfaces}
+
+Les surfaces permettent de modéliser des plaques ou dalles. Une surface peut
+être triangulaire ou quadrangulaire selon la formulation choisie.
+
+\begin{warningbox}
+Les surfaces sont calculées uniquement avec les fonctionnalités actuellement
+prises en charge par le moteur sélectionné. Si le moteur courant ne supporte pas
+les plaques, le logiciel désactive les actions correspondantes.
+\end{warningbox}
+
+\section{Grille}
+
+La grille facilite la saisie et le dessin en définissant des lignes selon les
+axes X, Y et Z. Elle peut être utilisée pour des modèles 3D complets ou pour des
+plans de travail 2D.
+
+\todoDoc{Ajouter une capture du dialogue de grille et un exemple de grille de portique.}

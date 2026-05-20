@@ -1,0 +1,415 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<ui version="4.0">
+ <class>MainWindow</class>
+ <widget class="QMainWindow" name="MainWindow">
+  <property name="geometry">
+   <rect>
+    <x>0</x>
+    <y>0</y>
+    <width>1400</width>
+    <height>900</height>
+   </rect>
+  </property>
+  <property name="windowTitle">
+   <string>HEXA Structures</string>
+  </property>
+  <widget class="QWidget" name="central_widget">
+   <layout class="QVBoxLayout" name="central_layout"/>
+  </widget>
+  <widget class="QMenuBar" name="menubar">
+   <property name="geometry">
+    <rect>
+     <x>0</x>
+     <y>0</y>
+     <width>1400</width>
+     <height>22</height>
+    </rect>
+   </property>
+   <widget class="QMenu" name="menu_file">
+    <property name="title">
+     <string>&amp;Fichier</string>
+    </property>
+    <addaction name="act_new"/>
+    <addaction name="act_open"/>
+    <addaction name="act_save"/>
+    <addaction name="act_save_as"/>
+    <addaction name="separator"/>
+    <addaction name="act_quit"/>
+   </widget>
+   <widget class="QMenu" name="menu_model">
+    <property name="title">
+     <string>&amp;Modèle</string>
+    </property>
+    <addaction name="act_add_node"/>
+    <addaction name="act_add_material"/>
+    <addaction name="act_add_section"/>
+    <addaction name="act_add_element"/>
+    <addaction name="separator"/>
+    <addaction name="act_boundary"/>
+    <addaction name="separator"/>
+    <addaction name="act_add_load"/>
+    <addaction name="act_define_loads"/>
+    <addaction name="act_gen_combos"/>
+   </widget>
+   <widget class="QMenu" name="menu_analysis">
+    <property name="title">
+     <string>&amp;Analyse</string>
+    </property>
+    <addaction name="act_run"/>
+    <addaction name="separator"/>
+    <addaction name="act_eurocode_settings"/>
+   </widget>
+   <widget class="QMenu" name="menu_results">
+    <property name="title">
+     <string>&amp;Résultats</string>
+    </property>
+    <addaction name="act_res_displacements"/>
+    <addaction name="act_res_reactions"/>
+    <addaction name="act_res_forces"/>
+    <addaction name="separator"/>
+    <addaction name="act_res_deformed"/>
+    <addaction name="separator"/>
+    <addaction name="act_diagram_N"/>
+    <addaction name="act_diagram_Vy"/>
+    <addaction name="act_diagram_Vz"/>
+    <addaction name="act_diagram_My"/>
+    <addaction name="act_diagram_Mz"/>
+    <addaction name="act_diagram_T"/>
+    <addaction name="separator"/>
+    <addaction name="act_hide_diagrams"/>
+    <addaction name="act_envelopes"/>
+   </widget>
+   <widget class="QMenu" name="menu_view">
+    <property name="title">
+     <string>&amp;Vue</string>
+    </property>
+    <addaction name="act_view_xy"/>
+    <addaction name="act_view_xz"/>
+    <addaction name="act_view_yz"/>
+    <addaction name="act_view_iso"/>
+    <addaction name="separator"/>
+    <addaction name="act_show_node_tags"/>
+    <addaction name="act_show_section_names"/>
+    <addaction name="separator"/>
+   </widget>
+   <widget class="QMenu" name="menu_help">
+    <property name="title">
+     <string>&amp;Aide</string>
+    </property>
+    <addaction name="act_about"/>
+   </widget>
+   <addaction name="menu_file"/>
+   <addaction name="menu_model"/>
+   <addaction name="menu_analysis"/>
+   <addaction name="menu_results"/>
+   <addaction name="menu_view"/>
+   <addaction name="menu_help"/>
+  </widget>
+  <widget class="QToolBar" name="toolbar">
+   <property name="windowTitle">
+    <string>Principal</string>
+   </property>
+   <property name="iconSize">
+    <size>
+     <width>24</width>
+     <height>24</height>
+    </size>
+   </property>
+   <property name="movable">
+    <bool>false</bool>
+   </property>
+   <attribute name="toolBarArea">
+    <enum>TopToolBarArea</enum>
+   </attribute>
+   <attribute name="toolBarBreak">
+    <bool>false</bool>
+   </attribute>
+   <addaction name="act_new"/>
+   <addaction name="act_open"/>
+   <addaction name="act_save"/>
+   <addaction name="separator"/>
+   <addaction name="act_add_node"/>
+   <addaction name="act_add_material"/>
+   <addaction name="act_add_section"/>
+   <addaction name="act_add_element"/>
+   <addaction name="separator"/>
+   <addaction name="act_boundary"/>
+   <addaction name="act_add_load"/>
+   <addaction name="act_gen_combos"/>
+   <addaction name="separator"/>
+   <addaction name="act_run"/>
+  </widget>
+  <widget class="QStatusBar" name="statusbar"/>
+  <widget class="QDockWidget" name="dock_tree">
+   <property name="windowTitle">
+    <string>Arbre du modèle</string>
+   </property>
+   <property name="allowedAreas">
+    <set>Qt::LeftDockWidgetArea|Qt::RightDockWidgetArea</set>
+   </property>
+   <attribute name="dockWidgetArea">
+    <number>1</number>
+   </attribute>
+   <widget class="QWidget" name="dock_tree_placeholder"/>
+  </widget>
+  <widget class="QDockWidget" name="dock_properties">
+   <property name="windowTitle">
+    <string>Propriétés</string>
+   </property>
+   <property name="allowedAreas">
+    <set>Qt::LeftDockWidgetArea|Qt::RightDockWidgetArea</set>
+   </property>
+   <attribute name="dockWidgetArea">
+    <number>2</number>
+   </attribute>
+   <widget class="QWidget" name="dock_properties_placeholder"/>
+  </widget>
+  <widget class="QDockWidget" name="dock_bottom">
+   <property name="windowTitle">
+    <string>Informations</string>
+   </property>
+   <property name="allowedAreas">
+    <set>Qt::BottomDockWidgetArea</set>
+   </property>
+   <attribute name="dockWidgetArea">
+    <number>8</number>
+   </attribute>
+   <widget class="QTabWidget" name="tab_bottom">
+    <property name="currentIndex">
+     <number>0</number>
+    </property>
+    <widget class="QWidget" name="tab_console">
+     <attribute name="title">
+      <string>Console</string>
+     </attribute>
+     <layout class="QVBoxLayout" name="console_layout">
+      <item>
+       <widget class="QPlainTextEdit" name="console">
+        <property name="readOnly">
+         <bool>true</bool>
+        </property>
+        <property name="maximumBlockCount">
+         <number>1000</number>
+        </property>
+       </widget>
+      </item>
+     </layout>
+    </widget>
+    <widget class="QWidget" name="results_tab_placeholder">
+     <attribute name="title">
+      <string>Résultats</string>
+     </attribute>
+    </widget>
+    <widget class="QWidget" name="nodes_tab_placeholder">
+     <attribute name="title">
+      <string>Nœuds</string>
+     </attribute>
+    </widget>
+    <widget class="QWidget" name="combos_tab_placeholder">
+     <attribute name="title">
+      <string>Combinaisons</string>
+     </attribute>
+    </widget>
+   </widget>
+  </widget>
+  <action name="act_new">
+   <property name="text">
+    <string>&amp;Nouveau projet</string>
+   </property>
+   <property name="shortcut">
+    <string>Ctrl+N</string>
+   </property>
+  </action>
+  <action name="act_open">
+   <property name="text">
+    <string>&amp;Ouvrir...</string>
+   </property>
+   <property name="shortcut">
+    <string>Ctrl+O</string>
+   </property>
+  </action>
+  <action name="act_save">
+   <property name="text">
+    <string>&amp;Enregistrer</string>
+   </property>
+   <property name="shortcut">
+    <string>Ctrl+S</string>
+   </property>
+  </action>
+  <action name="act_save_as">
+   <property name="text">
+    <string>Enregistrer &amp;sous...</string>
+   </property>
+   <property name="shortcut">
+    <string>Ctrl+Shift+S</string>
+   </property>
+  </action>
+  <action name="act_quit">
+   <property name="text">
+    <string>&amp;Quitter</string>
+   </property>
+   <property name="shortcut">
+    <string>Ctrl+Q</string>
+   </property>
+  </action>
+  <action name="act_add_node">
+   <property name="text">
+    <string>Ajouter un &amp;nœud...</string>
+   </property>
+  </action>
+  <action name="act_add_material">
+   <property name="text">
+    <string>Ajouter un &amp;matériau...</string>
+   </property>
+  </action>
+  <action name="act_add_section">
+   <property name="text">
+    <string>Ajouter une &amp;section...</string>
+   </property>
+  </action>
+  <action name="act_add_element">
+   <property name="text">
+    <string>Ajouter un é&amp;lément...</string>
+   </property>
+  </action>
+  <action name="act_boundary">
+   <property name="text">
+    <string>Conditions aux &amp;limites...</string>
+   </property>
+  </action>
+  <action name="act_add_load">
+   <property name="text">
+    <string>Ajouter un cas de c&amp;harge...</string>
+   </property>
+  </action>
+  <action name="act_define_loads">
+   <property name="text">
+    <string>Définir les c&amp;harges...</string>
+   </property>
+  </action>
+  <action name="act_gen_combos">
+   <property name="text">
+    <string>Générer les com&amp;binaisons EC0...</string>
+   </property>
+  </action>
+  <action name="act_run">
+   <property name="text">
+    <string>&amp;Lancer l'analyse</string>
+   </property>
+   <property name="shortcut">
+    <string>F5</string>
+   </property>
+   <property name="enabled">
+    <bool>false</bool>
+   </property>
+  </action>
+  <action name="act_eurocode_settings">
+   <property name="text">
+    <string>Paramètres &amp;Eurocodes...</string>
+   </property>
+  </action>
+  <action name="act_res_displacements">
+   <property name="text">
+    <string>Déplacements nodaux</string>
+   </property>
+  </action>
+  <action name="act_res_reactions">
+   <property name="text">
+    <string>Réactions d'appui</string>
+   </property>
+  </action>
+  <action name="act_res_forces">
+   <property name="text">
+    <string>Efforts internes</string>
+   </property>
+  </action>
+  <action name="act_res_deformed">
+   <property name="text">
+    <string>Déformée</string>
+   </property>
+  </action>
+  <action name="act_diagram_N">
+   <property name="text">
+    <string>Diagramme N (effort normal)</string>
+   </property>
+  </action>
+  <action name="act_diagram_Vy">
+   <property name="text">
+    <string>Diagramme Vy (tranchant horizontal)</string>
+   </property>
+  </action>
+  <action name="act_diagram_Vz">
+   <property name="text">
+    <string>Diagramme Vz (tranchant vertical/gravité)</string>
+   </property>
+  </action>
+  <action name="act_diagram_My">
+   <property name="text">
+    <string>Diagramme My (moment gravitaire)</string>
+   </property>
+  </action>
+  <action name="act_diagram_Mz">
+   <property name="text">
+    <string>Diagramme Mz (moment latéral)</string>
+   </property>
+  </action>
+  <action name="act_diagram_T">
+   <property name="text">
+    <string>Diagramme T (torsion)</string>
+   </property>
+  </action>
+  <action name="act_hide_diagrams">
+   <property name="text">
+    <string>Masquer diagrammes</string>
+   </property>
+  </action>
+  <action name="act_envelopes">
+   <property name="text">
+    <string>Enveloppes</string>
+   </property>
+  </action>
+  <action name="act_view_xy">
+   <property name="text">
+    <string>Vue XY (dessus)</string>
+   </property>
+  </action>
+  <action name="act_view_xz">
+   <property name="text">
+    <string>Vue XZ (face)</string>
+   </property>
+  </action>
+  <action name="act_view_yz">
+   <property name="text">
+    <string>Vue YZ (côté)</string>
+   </property>
+  </action>
+  <action name="act_view_iso">
+   <property name="text">
+    <string>Vue isométrique</string>
+   </property>
+  </action>
+  <action name="act_show_node_tags">
+   <property name="text">
+    <string>Numéros des nœuds</string>
+   </property>
+   <property name="checkable">
+    <bool>true</bool>
+   </property>
+  </action>
+  <action name="act_show_section_names">
+   <property name="text">
+    <string>Noms des sections</string>
+   </property>
+   <property name="checkable">
+    <bool>true</bool>
+   </property>
+  </action>
+  <action name="act_about">
+   <property name="text">
+    <string>À &amp;propos...</string>
+   </property>
+  </action>
+ </widget>
+ <resources/>
+ <connections/>
+</ui>

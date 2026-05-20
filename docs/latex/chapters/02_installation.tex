@@ -1,0 +1,71 @@
+\chapter{Installation et lancement}
+
+\section{Prérequis}
+
+Pour une installation depuis les sources, les prérequis recommandés sont :
+
+\begin{itemize}
+  \item Windows 10 ou Windows 11 ;
+  \item Python 3.12 ;
+  \item un environnement virtuel Python ;
+  \item les dépendances listées dans \fichier{requirements.txt}.
+\end{itemize}
+
+Le build Windows publié cible Windows 10/11. Les anciennes versions de Windows
+ne sont pas supportées par le couple Python 3.12 et Qt 6 utilisé par
+l'application.
+
+\section{Installation depuis les sources}
+
+\begin{verbatim}
+git clone https://github.com/chakibhenaoui/HEXA_Structures.git
+cd HEXA_Structures
+
+py -3.12 -m venv .venv
+.\.venv\Scripts\Activate.ps1
+.venv\Scripts\activate.bat
+
+pip install -r requirements.txt
+python main.py
+\end{verbatim}
+
+\section{OpenSeesPy optionnel}
+
+OpenSeesPy n'est pas nécessaire pour lancer le logiciel avec le moteur PyNite.
+Pour utiliser le backend OpenSeesPy, il doit être installé séparément :
+
+\begin{verbatim}
+pip install openseespy
+\end{verbatim}
+
+Si OpenSeesPy est installé dans un dossier spécifique, la variable
+d'environnement \path{HEXA_PYTHON_SITE_PACKAGES} peut pointer vers le dossier
+\fichier{site-packages} concerné.
+
+\section{Construction de l'exécutable Windows}
+
+\begin{verbatim}
+pip install pyinstaller
+build.bat
+\end{verbatim}
+
+Le résultat attendu est :
+
+\begin{verbatim}
+dist\HEXA Structures\HEXA Structures.exe
+\end{verbatim}
+
+\section{Vérification rapide}
+
+Après lancement, vérifier que :
+
+\begin{itemize}
+  \item la fenêtre principale s'ouvre sans erreur ;
+  \item l'arbre du modèle est visible ;
+  \item le panneau de propriétés est visible ;
+  \item la vue graphique est disponible ou affiche un message clair si la vue
+  3D ne peut pas être initialisée ;
+  \item le menu \menu{Analyse} permet de choisir le moteur de calcul.
+\end{itemize}
+
+\captureplaceholder{Fenêtre principale au premier lancement}{Écran d'accueil du logiciel}

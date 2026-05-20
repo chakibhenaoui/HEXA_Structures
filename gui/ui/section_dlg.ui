@@ -1,0 +1,379 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<ui version="4.0">
+ <class>SectionDialog</class>
+ <widget class="QDialog" name="SectionDialog">
+  <property name="windowTitle">
+   <string>Section</string>
+  </property>
+  <property name="minimumWidth">
+   <number>400</number>
+  </property>
+  <layout class="QVBoxLayout" name="mainLayout">
+   <!-- Header group -->
+   <item>
+    <widget class="QGroupBox" name="groupMain">
+     <property name="title">
+      <string>Propriétés de la section</string>
+     </property>
+     <layout class="QFormLayout" name="formMain">
+      <item row="0" column="0">
+       <widget class="QLabel" name="labelName">
+        <property name="text">
+         <string>Nom :</string>
+        </property>
+       </widget>
+      </item>
+      <item row="0" column="1">
+       <widget class="QLineEdit" name="editName">
+        <property name="placeholderText">
+         <string>Ex : IPE 300</string>
+        </property>
+       </widget>
+      </item>
+      <item row="1" column="0">
+       <widget class="QLabel" name="labelType">
+        <property name="text">
+         <string>Type :</string>
+        </property>
+       </widget>
+      </item>
+      <item row="1" column="1">
+       <widget class="QComboBox" name="comboType"/>
+      </item>
+      <item row="2" column="0">
+       <widget class="QLabel" name="labelMaterial">
+        <property name="text">
+         <string>Matériau :</string>
+        </property>
+       </widget>
+      </item>
+      <item row="2" column="1">
+       <widget class="QComboBox" name="comboMaterial"/>
+      </item>
+     </layout>
+    </widget>
+   </item>
+   <!-- Stacked widget for section-type-specific parameters -->
+   <item>
+    <widget class="QStackedWidget" name="stack">
+     <property name="currentIndex">
+      <number>0</number>
+     </property>
+     <!-- Page 0: Rectangular -->
+     <widget class="QWidget" name="pageRect">
+      <layout class="QFormLayout" name="formRect">
+       <item row="0" column="0">
+        <widget class="QLabel" name="labelB">
+         <property name="text">
+          <string>Largeur b :</string>
+         </property>
+        </widget>
+       </item>
+       <item row="0" column="1">
+        <widget class="QDoubleSpinBox" name="spinB">
+         <property name="minimum">
+          <double>0.010000000000000</double>
+         </property>
+         <property name="maximum">
+          <double>10.000000000000000</double>
+         </property>
+         <property name="decimals">
+          <number>3</number>
+         </property>
+         <property name="value">
+          <double>0.300000000000000</double>
+         </property>
+         <property name="suffix">
+          <string> m</string>
+         </property>
+         <property name="singleStep">
+          <double>0.010000000000000</double>
+         </property>
+         <property name="toolTip">
+          <string>Largeur</string>
+         </property>
+        </widget>
+       </item>
+       <item row="1" column="0">
+        <widget class="QLabel" name="labelH">
+         <property name="text">
+          <string>Hauteur h :</string>
+         </property>
+        </widget>
+       </item>
+       <item row="1" column="1">
+        <widget class="QDoubleSpinBox" name="spinH">
+         <property name="minimum">
+          <double>0.010000000000000</double>
+         </property>
+         <property name="maximum">
+          <double>10.000000000000000</double>
+         </property>
+         <property name="decimals">
+          <number>3</number>
+         </property>
+         <property name="value">
+          <double>0.500000000000000</double>
+         </property>
+         <property name="suffix">
+          <string> m</string>
+         </property>
+         <property name="singleStep">
+          <double>0.010000000000000</double>
+         </property>
+         <property name="toolTip">
+          <string>Hauteur</string>
+         </property>
+        </widget>
+       </item>
+      </layout>
+     </widget>
+     <!-- Page 1: T-section -->
+     <widget class="QWidget" name="pageT">
+      <layout class="QFormLayout" name="formT">
+       <item row="0" column="0">
+        <widget class="QLabel" name="labelBw">
+         <property name="text">
+          <string>Largeur âme bw :</string>
+         </property>
+        </widget>
+       </item>
+       <item row="0" column="1">
+        <widget class="QDoubleSpinBox" name="spinBw">
+         <property name="minimum">
+          <double>0.010000000000000</double>
+         </property>
+         <property name="maximum">
+          <double>10.000000000000000</double>
+         </property>
+         <property name="decimals">
+          <number>3</number>
+         </property>
+         <property name="value">
+          <double>0.250000000000000</double>
+         </property>
+         <property name="suffix">
+          <string> m</string>
+         </property>
+         <property name="singleStep">
+          <double>0.010000000000000</double>
+         </property>
+         <property name="toolTip">
+          <string>Largeur âme</string>
+         </property>
+        </widget>
+       </item>
+       <item row="1" column="0">
+        <widget class="QLabel" name="labelHw">
+         <property name="text">
+          <string>Hauteur âme hw :</string>
+         </property>
+        </widget>
+       </item>
+       <item row="1" column="1">
+        <widget class="QDoubleSpinBox" name="spinHw">
+         <property name="minimum">
+          <double>0.010000000000000</double>
+         </property>
+         <property name="maximum">
+          <double>10.000000000000000</double>
+         </property>
+         <property name="decimals">
+          <number>3</number>
+         </property>
+         <property name="value">
+          <double>0.400000000000000</double>
+         </property>
+         <property name="suffix">
+          <string> m</string>
+         </property>
+         <property name="singleStep">
+          <double>0.010000000000000</double>
+         </property>
+         <property name="toolTip">
+          <string>Hauteur âme</string>
+         </property>
+        </widget>
+       </item>
+       <item row="2" column="0">
+        <widget class="QLabel" name="labelBf">
+         <property name="text">
+          <string>Largeur table bf :</string>
+         </property>
+        </widget>
+       </item>
+       <item row="2" column="1">
+        <widget class="QDoubleSpinBox" name="spinBf">
+         <property name="minimum">
+          <double>0.010000000000000</double>
+         </property>
+         <property name="maximum">
+          <double>10.000000000000000</double>
+         </property>
+         <property name="decimals">
+          <number>3</number>
+         </property>
+         <property name="value">
+          <double>0.800000000000000</double>
+         </property>
+         <property name="suffix">
+          <string> m</string>
+         </property>
+         <property name="singleStep">
+          <double>0.010000000000000</double>
+         </property>
+         <property name="toolTip">
+          <string>Largeur table</string>
+         </property>
+        </widget>
+       </item>
+       <item row="3" column="0">
+        <widget class="QLabel" name="labelHf">
+         <property name="text">
+          <string>Épaisseur table hf :</string>
+         </property>
+        </widget>
+       </item>
+       <item row="3" column="1">
+        <widget class="QDoubleSpinBox" name="spinHf">
+         <property name="minimum">
+          <double>0.010000000000000</double>
+         </property>
+         <property name="maximum">
+          <double>5.000000000000000</double>
+         </property>
+         <property name="decimals">
+          <number>3</number>
+         </property>
+         <property name="value">
+          <double>0.150000000000000</double>
+         </property>
+         <property name="suffix">
+          <string> m</string>
+         </property>
+         <property name="singleStep">
+          <double>0.010000000000000</double>
+         </property>
+         <property name="toolTip">
+          <string>Épaisseur table</string>
+         </property>
+        </widget>
+       </item>
+      </layout>
+     </widget>
+     <!-- Page 2: I-profile (steel catalogue) -->
+     <widget class="QWidget" name="pageProfile">
+      <layout class="QFormLayout" name="formProfile">
+       <item row="0" column="0">
+        <widget class="QLabel" name="labelFamily">
+         <property name="text">
+          <string>Famille :</string>
+         </property>
+        </widget>
+       </item>
+       <item row="0" column="1">
+        <widget class="QComboBox" name="comboFamily">
+         <item>
+          <property name="text">
+           <string>IPE</string>
+          </property>
+         </item>
+         <item>
+          <property name="text">
+           <string>HEA</string>
+          </property>
+         </item>
+         <item>
+          <property name="text">
+           <string>HEB</string>
+          </property>
+         </item>
+        </widget>
+       </item>
+       <item row="1" column="0">
+        <widget class="QLabel" name="labelProfile">
+         <property name="text">
+          <string>Profilé :</string>
+         </property>
+        </widget>
+       </item>
+       <item row="1" column="1">
+        <widget class="QComboBox" name="comboProfile"/>
+       </item>
+       <item row="2" column="0" colspan="2">
+        <widget class="QLabel" name="lblProfileInfo">
+         <property name="wordWrap">
+          <bool>true</bool>
+         </property>
+         <property name="styleSheet">
+          <string notr="true">color: #888; font-size: 11px;</string>
+         </property>
+         <property name="text">
+          <string/>
+         </property>
+        </widget>
+       </item>
+      </layout>
+     </widget>
+     <widget class="QWidget" name="pageSurface">
+      <layout class="QFormLayout" name="formSurface">
+       <item row="0" column="0">
+        <widget class="QLabel" name="labelThickness">
+         <property name="text">
+          <string>Épaisseur :</string>
+         </property>
+        </widget>
+       </item>
+       <item row="0" column="1">
+        <widget class="QDoubleSpinBox" name="spinThickness">
+         <property name="minimum">
+          <double>0.010000000000000</double>
+         </property>
+         <property name="maximum">
+          <double>5.000000000000000</double>
+         </property>
+         <property name="decimals">
+          <number>3</number>
+         </property>
+         <property name="value">
+          <double>0.200000000000000</double>
+         </property>
+         <property name="suffix">
+          <string> m</string>
+         </property>
+         <property name="singleStep">
+          <double>0.010000000000000</double>
+         </property>
+         <property name="toolTip">
+          <string>Épaisseur de la dalle / voile</string>
+         </property>
+        </widget>
+       </item>
+      </layout>
+     </widget>
+    </widget>
+   </item>
+   <!-- Summary label -->
+   <item>
+    <widget class="QLabel" name="lblSummary">
+     <property name="styleSheet">
+      <string notr="true">font-weight: bold; margin: 6px;</string>
+     </property>
+     <property name="text">
+      <string/>
+     </property>
+    </widget>
+   </item>
+   <!-- Dialog buttons -->
+   <item>
+    <widget class="QDialogButtonBox" name="buttonBox">
+     <property name="standardButtons">
+      <set>QDialogButtonBox::Ok|QDialogButtonBox::Cancel</set>
+     </property>
+    </widget>
+   </item>
+  </layout>
+ </widget>
+ <resources/>
+ <connections/>
+</ui>
