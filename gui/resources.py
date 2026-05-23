@@ -1,4 +1,4 @@
-"""Helpers de resolution de ressources pour mode source et PyInstaller."""
+"""Resource resolution helpers for source and PyInstaller modes."""
 
 from __future__ import annotations
 
@@ -7,11 +7,7 @@ from pathlib import Path
 
 
 def app_resource_path(*parts: str) -> str:
-    """Retourne le chemin absolu d'une ressource embarquee.
-
-    En mode source, les ressources sont lues depuis la racine du projet.
-    En mode PyInstaller, elles sont lues depuis ``sys._MEIPASS``.
-    """
+    """Handle app resource path."""
     if getattr(sys, "frozen", False) and hasattr(sys, "_MEIPASS"):
         base_path = Path(sys._MEIPASS)
     else:

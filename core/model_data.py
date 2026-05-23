@@ -1,9 +1,4 @@
-"""
-Modèle de données interne du projet.
-
-Classes Python pures (dataclasses), indépendantes d'OpenSees.
-Supporte la sérialisation SQLite, l'annuler/refaire et les tests unitaires.
-"""
+"""Internal project data model."""
 
 from __future__ import annotations
 
@@ -28,8 +23,8 @@ SURFACE_FORMULATION_TYPES: dict[str, str] = {
 }
 
 LEGACY_SURFACE_FORMULATION_TYPES: dict[str, str] = {
-    # Tri31 reste reconnu pour diagnostiquer clairement les anciens projets,
-    # mais il n'est plus propose dans l'interface tant que le backend ne le gere pas.
+    # Tri31 remains recognized to diagnose old projects clearly,
+    # but it is no longer offered in the UI until the backend supports it.
     "Tri31": "shell",
 }
 
@@ -51,58 +46,58 @@ DEFAULT_PLATE_MESH_DIVISIONS = 8
 
 
 def normalize_surface_formulation(formulation: str | None) -> str:
-    """Normalise une formulation de plaque connue."""
+    """Normalize surface formulation."""
     value = str(formulation or "ShellMITC4").strip()
     return value if value in _KNOWN_SURFACE_FORMULATION_TYPES else "ShellMITC4"
 
 
 def surface_type_from_formulation(formulation: str | None) -> str:
-    """Retourne le type générique de surface associé à une formulation."""
+    """Handle surface type from formulation."""
     return _KNOWN_SURFACE_FORMULATION_TYPES[normalize_surface_formulation(formulation)]
 
 
 def surface_expected_node_count(formulation: str | None) -> int:
-    """Retourne le nombre de nœuds attendu pour la formulation."""
+    """Handle surface expected node count."""
     return 3 if normalize_surface_formulation(formulation) == "Tri31" else 4
 
 
 def normalize_plate_mesh_mode(mode: str | None) -> str:
-    """Normalise le mode de maillage d'une plaque utilisateur."""
+    """Normalize plate mesh mode."""
     value = str(mode or PLATE_MESH_MODE_AUTO).strip().lower()
     return value if value in PLATE_MESH_MODES else PLATE_MESH_MODE_AUTO
 
 
 # ═══════════════════════════════════════════════════════════════════════════
-#  Dataclasses du modèle
+#  Model dataclasses
 # ═══════════════════════════════════════════════════════════════════════════
 
 @dataclass
 class NodeData:
-    """Nœud du modèle structurel 3D (6 DDL)."""
+    """Data container for node."""
 
     tag: int
     x: float
     y: float
     z: float = 0.0
-    # Fixités 6 DDL : (Ux, Uy, Uz, Rx, Ry, Rz) — 1=bloqué, 0=libre
+    # 6-DOF fixities: (Ux, Uy, Uz, Rx, Ry, Rz) — 1=restrained, 0=free
     fixities: tuple[int, ...] = (0, 0, 0, 0, 0, 0)
-    # Données de condition aux limites (type, ressorts, nom)
+    # Boundary condition data (type, springs, name)
     boundary_data: dict = field(default_factory=dict)
 
     @property
     def is_fixed(self) -> bool:
-        """Vrai si au moins un degré de liberté est bloqué."""
+        """Return whether fixed."""
         return any(f == 1 for f in self.fixities)
 
     @property
     def is_support(self) -> bool:
-        """Vrai si le nœud est un appui (au moins une translation bloquée)."""
+        """Return whether support."""
         return any(f == 1 for f in self.fixities[:3])
 
 
 @dataclass
 class MaterialData:
-    """Matériau du modèle."""
+    """Data container for material."""
 
     tag: int
     name: str
@@ -113,26 +108,26 @@ class MaterialData:
 
 @dataclass
 class SectionData:
-    """Section transversale."""
+    """Data container for section."""
 
     tag: int
     name: str
     section_type: str  # "rectangular" | "T" | "I_profile"
     material_tag: int
     properties: dict = field(default_factory=dict)
-    # Propriétés géométriques calculées (m, m², m⁴)
+    # Computed geometric properties (m, m2, m4)
     area: float = 0.0
     inertia_y: float = 0.0
     inertia_z: float = 0.0
 
     @property
     def is_surface(self) -> bool:
-        """Indique si la section represente un element surfacique."""
+        """Return whether surface."""
         return self.section_type == "surface"
 
     @property
     def thickness(self) -> float:
-        """Retourne l'epaisseur associee a une section surfacique."""
+        """Handle thickness."""
         if not self.is_surface:
             return 0.0
         try:
@@ -142,7 +137,7 @@ class SectionData:
 
     @property
     def surface_formulation(self) -> str:
-        """Retourne la formulation par défaut associee a une plaque."""
+        """Handle surface formulation."""
         if not self.is_surface:
             return ""
         return normalize_surface_formulation(
@@ -152,7 +147,7 @@ class SectionData:
 
 @dataclass
 class GridAxisEntry:
-    """Repère et coordonnée d'une ligne de grille sur un axe."""
+    """Grid axis entry."""
 
     marker: str = ""
     coordinate: float = 0.0
@@ -160,7 +155,7 @@ class GridAxisEntry:
 
 @dataclass(init=False)
 class Grid3DData:
-    """Définition d'une grille 3D de modélisation."""
+    """Data container for grid3 ddata."""
 
     enabled: bool = False
     x_items: list[GridAxisEntry] = field(default_factory=list)
@@ -191,7 +186,7 @@ class Grid3DData:
 
     @classmethod
     def from_dict(cls, data: dict | None) -> Grid3DData:
-        """Construit une grille depuis un format serialise ancien ou nouveau."""
+        """Build an instance from serialized data."""
         payload = dict(data or {})
         if any(key in payload for key in ("x_items", "y_items", "z_items")):
             return cls(
@@ -301,15 +296,15 @@ class Grid3DData:
         raise ValueError(f"Axe inconnu: {axis}")
 
     def axis_entries(self, axis: str) -> list[GridAxisEntry]:
-        """Retourne les lignes de l'axe demande."""
+        """Handle axis entries."""
         return list(self._axis_items(axis))
 
     def axis_values(self, axis: str) -> list[float]:
-        """Retourne les coordonnées triees de l'axe demande."""
+        """Handle axis values."""
         return [entry.coordinate for entry in self._axis_items(axis)]
 
     def axis_step(self, axis: str) -> float:
-        """Retourne un pas representatif pour l'axe demande."""
+        """Handle axis step."""
         values = self.axis_values(axis)
         if len(values) < 2:
             return 0.0
@@ -319,14 +314,14 @@ class Grid3DData:
         )
 
     def axis_span(self, axis: str) -> float:
-        """Retourne la portee totale de l'axe demande."""
+        """Handle axis span."""
         values = self.axis_values(axis)
         if not values:
             return 0.0
         return max(values) - min(values)
 
     def to_dict(self) -> dict:
-        """Retourne le format serialisable du nouveau schema de grille."""
+        """Return a serializable dictionary."""
         return {
             "enabled": self.enabled,
             "x_items": [
@@ -388,7 +383,7 @@ class Grid3DData:
 
 @dataclass
 class ElementData:
-    """Élément poutre du modèle."""
+    """Data container for element."""
 
     tag: int
     node_i: int
@@ -401,11 +396,7 @@ class ElementData:
 
 @dataclass
 class SurfaceElementData:
-    """Élément surfacique du modèle.
-
-    `node_tags` contient 3 nœuds pour un triangle ou 4 nœuds pour un quadrilatère.
-    L'ordre devra rester cohérent pour les solveurs et le post-traitement.
-    """
+    """Data container for surface element."""
 
     tag: int
     node_tags: tuple[int, ...]
@@ -424,7 +415,7 @@ class SurfaceElementData:
 
 @dataclass
 class PlateRegionData:
-    """Plaque utilisateur macro, maillée automatiquement pour le calcul."""
+    """Data container for plate region."""
 
     tag: int
     name: str
@@ -438,17 +429,17 @@ class PlateRegionData:
 
 @dataclass
 class LoadData:
-    """Charge individuelle."""
+    """Data container for load."""
 
     tag: int
     name: str
     load_type: str      # "dead" | "live" | "snow" | "wind" | "seismic"
-    category: str = ""  # catégorie EC1 (A, B, C…)
+    category: str = ""  # EC1 category (A, B, C...)
 
 
 @dataclass
 class NodalLoad:
-    """Force/moment ponctuel sur un nœud (3D — 6 composantes)."""
+    """Nodal load."""
 
     load_tag: int
     node_tag: int
@@ -460,13 +451,13 @@ class NodalLoad:
     mz: float = 0.0    # kN·m (moment autour de Z)
 
     def as_tuple(self) -> tuple[float, ...]:
-        """Retourne les 6 composantes sous forme de tuple."""
+        """Return the values as a tuple."""
         return (self.fx, self.fy, self.fz, self.mx, self.my, self.mz)
 
 
 @dataclass
 class ElementLoad:
-    """Charge répartie sur un élément (3D)."""
+    """Element load."""
 
     load_tag: int
     element_tag: int
@@ -478,7 +469,7 @@ class ElementLoad:
 
 @dataclass
 class SurfaceLoad:
-    """Charge surfacique uniforme sur une plaque (3D)."""
+    """Surface load."""
 
     load_tag: int
     surface_tag: int
@@ -489,7 +480,7 @@ class SurfaceLoad:
 
 @dataclass
 class PlateSurfaceLoadData:
-    """Charge surfacique macro appliquee a une plaque utilisateur."""
+    """Data container for plate surface load."""
 
     load_tag: int
     plate_tag: int
@@ -500,7 +491,7 @@ class PlateSurfaceLoadData:
 
 @dataclass
 class PlateEdgeSupportData:
-    """Appui macro applique a un bord de plaque utilisateur."""
+    """Data container for plate edge support."""
 
     plate_tag: int
     edge: str  # "12" | "23" | "34" | "41"
@@ -509,7 +500,7 @@ class PlateEdgeSupportData:
 
 @dataclass
 class CombinationData:
-    """Combinaison de charges."""
+    """Data container for combination."""
 
     tag: int
     name: str
@@ -519,16 +510,12 @@ class CombinationData:
 
 
 # ═══════════════════════════════════════════════════════════════════════════
-#  Modèle de projet
+#  Project model
 # ═══════════════════════════════════════════════════════════════════════════
 
 @dataclass
 class ProjectModel:
-    """Modèle complet du projet structurel.
-
-    Contient tous les objets du modèle (nœuds, éléments, matériaux, etc.).
-    Indépendant d'OpenSees — c'est la source de vérité du projet.
-    """
+    """Project model."""
 
     name: str = "Nouveau projet"
     description: str = ""
@@ -549,38 +536,38 @@ class ProjectModel:
     plate_edge_supports: list[PlateEdgeSupportData] = field(default_factory=list)
     combinations: dict[int, CombinationData] = field(default_factory=dict)
 
-    # --- Compteurs auto-incrémentaux ---
+    # --- Auto-increment counters ---
 
     def next_node_tag(self) -> int:
-        """Retourne le prochain tag de nœud disponible."""
+        """Return the next node tag."""
         return max(self.nodes.keys(), default=0) + 1
 
     def next_element_tag(self) -> int:
-        """Retourne le prochain tag d'élément disponible."""
+        """Return the next element tag."""
         return max(self.elements.keys(), default=0) + 1
 
     def next_surface_tag(self) -> int:
-        """Retourne le prochain tag d'élément surfacique disponible."""
+        """Return the next surface tag."""
         return max(self.surface_elements.keys(), default=0) + 1
 
     def next_plate_region_tag(self) -> int:
-        """Retourne le prochain tag de plaque utilisateur disponible."""
+        """Return the next plate region tag."""
         return max(self.plate_regions.keys(), default=0) + 1
 
     def next_material_tag(self) -> int:
-        """Retourne le prochain tag de matériau disponible."""
+        """Return the next material tag."""
         return max(self.materials.keys(), default=0) + 1
 
     def next_section_tag(self) -> int:
-        """Retourne le prochain tag de section disponible."""
+        """Return the next section tag."""
         return max(self.sections.keys(), default=0) + 1
 
     def next_load_tag(self) -> int:
-        """Retourne le prochain tag de cas de charge disponible."""
+        """Return the next load tag."""
         return max(self.loads.keys(), default=0) + 1
 
     def self_weight_load_tag(self) -> int | None:
-        """Retourne le tag du cas de poids propre automatique si present."""
+        """Handle self-weight load tag."""
         for tag, load in self.loads.items():
             if load.load_type == SELF_WEIGHT_LOAD_TYPE:
                 return tag
@@ -590,7 +577,7 @@ class ProjectModel:
         return None
 
     def ensure_self_weight_load_case(self) -> LoadData:
-        """Crée le cas de charge automatique de poids propre si nécessaire."""
+        """Ensure self-weight load case."""
         existing_tag = self.self_weight_load_tag()
         if existing_tag is not None:
             return self.loads[existing_tag]
@@ -605,22 +592,13 @@ class ProjectModel:
         return load
 
     def next_combination_tag(self) -> int:
-        """Retourne le prochain tag de combinaison disponible."""
+        """Return the next combination tag."""
         return max(self.combinations.keys(), default=0) + 1
 
-    # --- Ajout d'objets ---
+    # --- Object creation ---
 
     def add_node(self, x: float, y: float, z: float = 0.0, **kwargs) -> NodeData:
-        """Crée et ajoute un nœud au modèle.
-
-        Args:
-            x: Coordonnée X (m).
-            y: Coordonnée Y (m).
-            z: Coordonnée Z (m).
-
-        Returns:
-            Le nœud créé.
-        """
+        """Add node."""
         tag = self.next_node_tag()
         node = NodeData(tag=tag, x=x, y=y, z=z, **kwargs)
         self.nodes[tag] = node
@@ -635,17 +613,7 @@ class ProjectModel:
         orientation_vector: tuple[float, float, float] | None = None,
         roll_angle_deg: float = 0.0,
     ) -> ElementData:
-        """Crée et ajoute un élément au modèle.
-
-        Args:
-            node_i: Tag du nœud de début.
-            node_j: Tag du nœud de fin.
-            section_tag: Tag de la section assignée.
-            element_type: Type d'élément.
-
-        Returns:
-            L'élément créé.
-        """
+        """Add element."""
         tag = self.next_element_tag()
         if int(node_i) not in self.nodes or int(node_j) not in self.nodes:
             raise ValueError("Element references missing node(s).")
@@ -675,7 +643,7 @@ class ProjectModel:
         surface_type: str = "shell",
         formulation: str | None = None,
     ) -> SurfaceElementData:
-        """Crée et ajoute un élément surfacique au modèle."""
+        """Add surface element."""
         normalized_node_tags = tuple(int(tag) for tag in node_tags)
         if len(normalized_node_tags) not in (3, 4):
             raise ValueError("A surface element requires 3 or 4 nodes.")
@@ -720,7 +688,7 @@ class ProjectModel:
         formulation: str | None = None,
         mesh_mode: str | None = None,
     ) -> PlateRegionData:
-        """Crée une plaque utilisateur macro à quatre noeuds."""
+        """Add plate region."""
         corners = tuple(int(tag) for tag in corner_node_tags)
         if len(corners) != 4:
             raise ValueError("A plate region requires exactly 4 corner nodes.")
@@ -770,7 +738,7 @@ class ProjectModel:
 
     def add_material(self, name: str, material_type: str,
                      grade: str, **properties) -> MaterialData:
-        """Crée et ajoute un matériau au modèle."""
+        """Add material."""
         tag = self.next_material_tag()
         isotropic_props = isotropic_material_properties(
             material_type,
@@ -792,7 +760,7 @@ class ProjectModel:
 
     def add_section(self, name: str, section_type: str,
                     material_tag: int, **kwargs) -> SectionData:
-        """Crée et ajoute une section au modèle."""
+        """Add section."""
         tag = self.next_section_tag()
         sec = SectionData(
             tag=tag, name=name, section_type=section_type,
@@ -802,13 +770,7 @@ class ProjectModel:
         return sec
 
     def seed_default_library(self) -> None:
-        """Ajoute les matériaux/sections par défaut sur un projet vide.
-
-        Le jeu par défaut contient :
-        - un béton `C30/37`
-        - un acier `S355`
-        - une section rectangulaire béton `30x30`
-        """
+        """Seed default library."""
         self.ensure_self_weight_load_case()
 
         if self.materials or self.sections:
@@ -837,7 +799,7 @@ class ProjectModel:
         )
 
     def clear(self) -> None:
-        """Réinitialise le modèle (supprime tout)."""
+        """Clear the current state."""
         self.nodes.clear()
         self.materials.clear()
         self.sections.clear()
@@ -853,13 +815,7 @@ class ProjectModel:
         self.combinations.clear()
 
     def copy_for_load_editing(self) -> ProjectModel:
-        """Retourne une copie légère pour l'édition des chargements.
-
-        Les collections structurelles sont partagees en lecture seule pour
-        éviter une copie profonde complète du projet. Les données de
-        chargement sont dupliquées afin que les dialogues puissent être
-        validés ou annulés sans modifier le modèle courant.
-        """
+        """Copy for load editing."""
         return ProjectModel(
             name=self.name,
             description=self.description,
@@ -884,7 +840,7 @@ class ProjectModel:
 
     @property
     def stats(self) -> dict[str, int]:
-        """Résumé du modèle."""
+        """Handle stats."""
         return {
             "nodes": len(self.nodes),
             "elements": len(self.elements),
@@ -898,7 +854,7 @@ class ProjectModel:
 
 
 # ═══════════════════════════════════════════════════════════════════════════
-#  Sérialisation SQLite
+#  SQLite serialization
 # ═══════════════════════════════════════════════════════════════════════════
 
 _SCHEMA_SQL = """
@@ -1020,7 +976,7 @@ CREATE TABLE IF NOT EXISTS combinations (
 
 
 def _ensure_schema_migrations(cur: sqlite3.Cursor) -> None:
-    """Ajoute les colonnes manquantes aux anciens fichiers projet."""
+    """Ensure schema migrations."""
     element_cols = {
         str(row[1])
         for row in cur.execute("PRAGMA table_info(elements)")
@@ -1062,12 +1018,7 @@ def _ensure_schema_migrations(cur: sqlite3.Cursor) -> None:
 
 
 def save_project(project: ProjectModel, path: str | Path) -> None:
-    """Sauvegarde le projet dans un fichier SQLite.
-
-    Args:
-        project: Modèle du projet à sauvegarder.
-        path: Chemin du fichier .db.
-    """
+    """Save project."""
     import json
 
     path = Path(path)
@@ -1086,7 +1037,7 @@ def save_project(project: ProjectModel, path: str | Path) -> None:
         ):
             cur.execute(f"DELETE FROM {table}")
 
-        # Métadonnées projet
+        # Project metadata
         cur.execute("INSERT INTO project VALUES (?, ?)", ("name", project.name))
         cur.execute("INSERT INTO project VALUES (?, ?)", ("description", project.description))
         cur.execute(
@@ -1094,7 +1045,7 @@ def save_project(project: ProjectModel, path: str | Path) -> None:
             ("grid", json.dumps(project.grid.to_dict())),
         )
 
-        # Nœuds
+        # Nodes
         for n in project.nodes.values():
             fix = n.fixities if len(n.fixities) == 6 else (0, 0, 0, 0, 0, 0)
             cur.execute(
@@ -1104,7 +1055,7 @@ def save_project(project: ProjectModel, path: str | Path) -> None:
                  json.dumps(n.boundary_data)),
             )
 
-        # Matériaux
+        # Materials
         for m in project.materials.values():
             cur.execute(
                 "INSERT INTO materials VALUES (?, ?, ?, ?, ?)",
@@ -1119,7 +1070,7 @@ def save_project(project: ProjectModel, path: str | Path) -> None:
                  json.dumps(s.properties), s.area, s.inertia_y, s.inertia_z),
             )
 
-        # Éléments
+        # Elements
         for e in project.elements.values():
             cur.execute(
                 "INSERT INTO elements VALUES (?, ?, ?, ?, ?, ?, ?)",
@@ -1134,7 +1085,7 @@ def save_project(project: ProjectModel, path: str | Path) -> None:
                 ),
             )
 
-        # Éléments surfaciques
+        # Surface elements
         for surface in project.surface_elements.values():
             cur.execute(
                 "INSERT INTO surface_elements VALUES (?, ?, ?, ?, ?)",
@@ -1162,14 +1113,14 @@ def save_project(project: ProjectModel, path: str | Path) -> None:
                 ),
             )
 
-        # Cas de charges
+        # Load cases
         for lc in project.loads.values():
             cur.execute(
                 "INSERT INTO loads VALUES (?, ?, ?, ?)",
                 (lc.tag, lc.name, lc.load_type, lc.category),
             )
 
-        # Charges nodales
+        # Nodal loads
         for nl in project.nodal_loads:
             cur.execute(
                 "INSERT INTO nodal_loads (load_tag, node_tag, fx, fy, fz, mx, my, mz) "
@@ -1178,7 +1129,7 @@ def save_project(project: ProjectModel, path: str | Path) -> None:
                  nl.mx, nl.my, nl.mz),
             )
 
-        # Charges réparties
+        # Distributed loads
         for el in project.element_loads:
             cur.execute(
                 "INSERT INTO element_loads "
@@ -1234,14 +1185,7 @@ def save_project(project: ProjectModel, path: str | Path) -> None:
 
 
 def load_project(path: str | Path) -> ProjectModel:
-    """Charge un projet depuis un fichier SQLite.
-
-    Args:
-        path: Chemin du fichier .db.
-
-    Returns:
-        Instance ProjectModel chargée.
-    """
+    """Load project."""
     import json
 
     path = Path(path)
@@ -1254,7 +1198,7 @@ def load_project(path: str | Path) -> ProjectModel:
 
         project = ProjectModel(file_path=str(path))
 
-        # Métadonnées
+        # Metadata
         for row in cur.execute("SELECT key, value FROM project"):
             if row["key"] == "name":
                 project.name = row["value"]
@@ -1263,7 +1207,7 @@ def load_project(path: str | Path) -> ProjectModel:
             elif row["key"] == "grid":
                 project.grid = Grid3DData.from_dict(json.loads(row["value"]))
 
-        # Nœuds
+        # Nodes
         for row in cur.execute("SELECT * FROM nodes"):
             fixities = (
                 row["fix_ux"], row["fix_uy"], row["fix_uz"],
@@ -1276,7 +1220,7 @@ def load_project(path: str | Path) -> ProjectModel:
                 boundary_data=json.loads(bd_raw),
             )
 
-        # Matériaux
+        # Materials
         for row in cur.execute("SELECT * FROM materials"):
             project.materials[row["tag"]] = MaterialData(
                 tag=row["tag"], name=row["name"],
@@ -1295,7 +1239,7 @@ def load_project(path: str | Path) -> ProjectModel:
                 inertia_z=row["inertia_z"],
             )
 
-        # Éléments
+        # Elements
         for row in cur.execute("SELECT * FROM elements"):
             raw_orientation = (
                 row["orientation_vector"] if "orientation_vector" in row.keys() else None
@@ -1316,7 +1260,7 @@ def load_project(path: str | Path) -> ProjectModel:
                 ),
             )
 
-        # Éléments surfaciques
+        # Surface elements
         for row in cur.execute("SELECT * FROM surface_elements"):
             project.surface_elements[row["tag"]] = SurfaceElementData(
                 tag=row["tag"],
@@ -1351,14 +1295,14 @@ def load_project(path: str | Path) -> ProjectModel:
                 formulation=effective_formulation,
             )
 
-        # Cas de charges
+        # Load cases
         for row in cur.execute("SELECT * FROM loads"):
             project.loads[row["tag"]] = LoadData(
                 tag=row["tag"], name=row["name"],
                 load_type=row["load_type"], category=row["category"],
             )
 
-        # Charges nodales
+        # Nodal loads
         for row in cur.execute("SELECT * FROM nodal_loads"):
             project.nodal_loads.append(NodalLoad(
                 load_tag=row["load_tag"], node_tag=row["node_tag"],
@@ -1369,7 +1313,7 @@ def load_project(path: str | Path) -> ProjectModel:
                 mz=row["mz"],
             ))
 
-        # Charges réparties
+        # Distributed loads
         for row in cur.execute("SELECT * FROM element_loads"):
             project.element_loads.append(ElementLoad(
                 load_tag=row["load_tag"], element_tag=row["element_tag"],
@@ -1407,7 +1351,7 @@ def load_project(path: str | Path) -> ProjectModel:
         # Combinaisons
         for row in cur.execute("SELECT * FROM combinations"):
             factors = json.loads(row["factors"])
-            # Convertir les clés string → int
+            # Convert string keys -> int
             factors = {int(k): v for k, v in factors.items()}
             project.combinations[row["tag"]] = CombinationData(
                 tag=row["tag"], name=row["name"],

@@ -1,20 +1,4 @@
-"""Reference OpenSeesPy model for the 10 m x 5 m two-panel slab portal.
-
-This script intentionally bypasses HEXA data classes and builders. It creates
-the same small benchmark directly with OpenSeesPy so SAP/Robot/HEXA outputs can
-be compared against the OpenSees source model.
-
-Geometry:
-- 6 concrete columns, 0.30 m x 0.30 m, height 3.00 m
-- 2 adjacent slab panels, each 5.00 m x 5.00 m, thickness 0.20 m
-- shared shell mesh nodes along the common edge x = 5 m
-- default mesh: 8 x 8 shell elements per panel
-
-Units:
-- kN, m
-- E in kN/m2
-- moments in kN.m/m
-"""
+"""OpenSees reference model for a 5x5 portal frame."""
 
 from __future__ import annotations
 

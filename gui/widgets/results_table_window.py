@@ -11,7 +11,7 @@ from gui.widgets.results_panel import ResultsPanel
 
 
 class ResultsTableWindow(QMainWindow):
-    """Modèless window used to browse results tables comfortably."""
+    """Results table window."""
 
     def __init__(self, parent=None) -> None:
         super().__init__(parent, Qt.Window)
@@ -37,4 +37,3 @@ class ResultsTableWindow(QMainWindow):
 
     def show_result_type(self, result_type: str) -> None:
         self.panel.show_result_type(result_type)
-

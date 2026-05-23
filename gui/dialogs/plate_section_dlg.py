@@ -1,4 +1,4 @@
-"""Dialogue dédié aux sections plaque."""
+"""Plate section dialog."""
 
 from __future__ import annotations
 
@@ -43,7 +43,7 @@ _FORMULATION_ROWS: list[tuple[str, str]] = [
 
 
 class PlateSectionDialog(QDialog):
-    """Création / édition d'une section plaque."""
+    """Plate section dialog."""
 
     def __init__(
         self,

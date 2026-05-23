@@ -1,4 +1,4 @@
-"""Tests de cohérence d'orientation du rendu 2D des diagrammes."""
+"""Helpers for test diagram renderer orientation."""
 
 from __future__ import annotations
 

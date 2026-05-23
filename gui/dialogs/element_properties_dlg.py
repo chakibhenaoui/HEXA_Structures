@@ -1,4 +1,4 @@
-"""Fenêtre détaillée des propriétés d'une barre."""
+"""Member property dialog."""
 
 from __future__ import annotations
 
@@ -24,7 +24,7 @@ from core.model_data import ProjectModel
 
 
 def _fmt(value, precision: int = 6) -> str:
-    """Formate une valeur technique sans bruit inutile."""
+    """Handle fmt."""
     if value is None:
         return "-"
     if isinstance(value, bool):
@@ -41,7 +41,7 @@ def _fmt(value, precision: int = 6) -> str:
 
 
 def _object_items(obj) -> list[tuple[str, object]]:
-    """Retourne les champs lisibles d'un objet dataclass ou dictionnaire."""
+    """Handle object items."""
     if obj is None:
         return []
     if isinstance(obj, dict):
@@ -52,7 +52,7 @@ def _object_items(obj) -> list[tuple[str, object]]:
 
 
 class ElementPropertiesDialog(QDialog):
-    """Propriétés mono-barre pour édition détaillée."""
+    """Element properties dialog."""
 
     def __init__(
         self,

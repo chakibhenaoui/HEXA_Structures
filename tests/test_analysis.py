@@ -1,4 +1,4 @@
-"""Tests unitaires pour les analyses OpenSees (poutre console, portique, 3D)."""
+"""Helpers for test analysis."""
 import importlib.util
 
 import pytest
@@ -16,31 +16,27 @@ pytestmark = pytest.mark.skipif(
 
 
 def _make_cantilever() -> ProjectModel:
-    """Crée un modèle de poutre console pour les tests (3D).
-
-    Poutre encastrée de 5 m avec une charge ponctuelle de -10 kN à l'extrémité.
-    Section : IPE 300 en acier S355.
-    """
+    """Create cantilever."""
     p = ProjectModel(name="Console test")
 
-    # Nœuds (fixités 6 DDL)
+    # Nodes (6-DOF fixities)
     p.add_node(0, 0, 0, fixities=(1, 1, 1, 1, 1, 1))  # encastrement
-    p.add_node(5, 0, 0)  # extrémité libre
+    p.add_node(5, 0, 0)  # free end
 
-    # Matériau
+    # Material
     p.add_material("Acier S355", "steel", "S355")
 
-    # Section IPE 300
+    # IPE 300 section
     p.add_section(
         "IPE 300", "I_profile", material_tag=1,
         area=53.8e-4,         # 53.8 cm² → m²
         inertia_y=8360e-8,    # 8360 cm⁴ → m⁴
     )
 
-    # Élément
+    # Element
     p.add_element(1, 2, section_tag=1)
 
-    # Cas de charge
+    # Load case
     p.loads[1] = LoadData(tag=1, name="Charge ponctuelle", load_type="dead")
     p.nodal_loads.append(NodalLoad(load_tag=1, node_tag=2, fy=-10.0))
 
@@ -48,7 +44,7 @@ def _make_cantilever() -> ProjectModel:
 
 
 def _make_shell_patch() -> ProjectModel:
-    """Crée une petite dalle 2x2 maillée en 4 ShellMITC4."""
+    """Create shell patch."""
     p = ProjectModel(name="Dalle shell test")
 
     node_tag = 1
@@ -82,7 +78,7 @@ def _make_shell_patch() -> ProjectModel:
 
 class TestStaticAnalysis:
     def test_cantilever_convergence(self):
-        """L'analyse statique d'une console doit converger."""
+        """Test cantilever convergence."""
         p = _make_cantilever()
         runner = AnalysisRunner(p)
         success, results = runner.run_static(load_tag=1)
@@ -90,44 +86,44 @@ class TestStaticAnalysis:
         assert "displacements" in results
 
     def test_cantilever_displacement(self):
-        """Vérifie la flèche d'une console : δ = PL³/(3EI)."""
+        """Test cantilever displacement."""
         p = _make_cantilever()
         runner = AnalysisRunner(p)
         success, results = runner.run_static(load_tag=1)
         assert success
 
-        # Flèche théorique
+        # Theoretical deflection
         P = 10.0      # kN
         L = 5.0        # m
         E = 210_000_000  # kPa
         inertia = 8360e-8     # m⁴
         delta_th = P * L**3 / (3 * E * inertia)
 
-        # Flèche OpenSees (nœud 2, uy)
+        # OpenSees deflection (node 2, uy)
         disp = results["displacements"]
         uy = abs(disp[2].uy)
 
-        # Tolérance de 1%
+        # 1% tolerance
         assert abs(uy - delta_th) / delta_th < 0.01
 
     def test_cantilever_reactions(self):
-        """Les réactions d'appui doivent équilibrer la charge."""
+        """Test cantilever reactions."""
         p = _make_cantilever()
         runner = AnalysisRunner(p)
         success, results = runner.run_static(load_tag=1)
         assert success
 
         reactions = results["reactions"]
-        # Réaction verticale = +10 kN (opposée à la charge)
+        # Vertical reaction = +10 kN (opposite to the load)
         fy = reactions[1].fy_reaction
         assert abs(fy - 10.0) < 0.01
 
-        # Moment de réaction = P × L = 10 × 5 = 50 kN·m
+        # Reaction moment = P * L = 10 * 5 = 50 kN*m
         mz = reactions[1].mz_reaction
         assert abs(abs(mz) - 50.0) < 0.1
 
     def test_cantilever_element_forces(self):
-        """Vérifie les efforts internes de la console."""
+        """Test cantilever element forces."""
         p = _make_cantilever()
         runner = AnalysisRunner(p)
         success, results = runner.run_static(load_tag=1)
@@ -135,18 +131,18 @@ class TestStaticAnalysis:
 
         forces = results["element_forces"]
         elem = forces[1]
-        # Effort tranchant = P = 10 kN (via propriété v_i compat)
+        # Shear force = P = 10 kN (through v_i compatibility property)
         assert abs(abs(elem.v_i) - 10.0) < 0.1
 
     def test_no_load_fails(self):
-        """Sans cas de charge spécifié, l'analyse échoue."""
+        """Test no load fails."""
         p = _make_cantilever()
         runner = AnalysisRunner(p)
         success, results = runner.run_static()
         assert success is False
 
     def test_shell_patch_convergence_and_reaction_balance(self):
-        """Une petite dalle ShellMITC4 doit converger et équilibrer la charge nodale."""
+        """Test shell patch convergence and reaction balance."""
         p = _make_shell_patch()
         runner = AnalysisRunner(p, engine="opensees")
         success, results = runner.run_static(load_tag=1)
@@ -159,7 +155,7 @@ class TestStaticAnalysis:
         assert abs(total_fz - 10.0) < 0.05
 
     def test_shell_patch_uniform_surface_load_reaction_balance(self):
-        """Une charge surfacique uniforme doit être équilibrée par les réactions."""
+        """Test shell patch uniform surface load reaction balance."""
         p = _make_shell_patch()
         runner = AnalysisRunner(p, engine="opensees")
         success, results = runner.run_static(load_tag=2)
@@ -172,7 +168,7 @@ class TestStaticAnalysis:
         assert abs(total_fz - 20.0) < 0.05
 
     def test_shell_patch_surface_results_are_extracted(self):
-        """Le solveur OpenSees doit retourner des résultats plaques exploitables."""
+        """Test shell patch surface results are extracted."""
         p = _make_shell_patch()
         runner = AnalysisRunner(p, engine="opensees")
         success, results = runner.run_static(load_tag=2)
@@ -201,16 +197,12 @@ class TestStaticAnalysis:
 
 
 def _make_simple_beam() -> ProjectModel:
-    """Poutre sur deux appuis, 6 m (3D).
-
-    En 3D, une poutre dans le plan XY nécessite des blocages
-    hors plan (Uz, Rx, Ry) pour éviter les singularités.
-    """
+    """Create simple beam."""
     p = ProjectModel(name="Poutre simple")
 
     # Rotule 3D + blocages hors plan
     p.add_node(0, 0, 0, fixities=(1, 1, 1, 1, 1, 0))  # tout sauf Rz
-    p.add_node(6, 0, 0, fixities=(0, 1, 1, 1, 1, 0))   # libre en X et Rz
+    p.add_node(6, 0, 0, fixities=(0, 1, 1, 1, 1, 0))   # free in X and Rz
 
     p.add_material("Acier S355", "steel", "S355")
     p.add_section(
@@ -224,7 +216,7 @@ def _make_simple_beam() -> ProjectModel:
 
 class TestSimpleBeam:
     def test_simple_beam_symmetry(self):
-        """Poutre symétrique : les réactions doivent être égales."""
+        """Test simple beam symmetry."""
         p = _make_simple_beam()
 
         p.loads[1] = LoadData(tag=1, name="PP", load_type="dead")
@@ -243,27 +235,27 @@ class TestSimpleBeam:
 
 class TestModalAnalysis:
     def test_modal_cantilever(self):
-        """L'analyse modale d'une console doit retourner des fréquences."""
+        """Test modal cantilever."""
         import openseespy.opensees as ops
 
-        # Construire manuellement un modèle modal avec masses
+        # Manually build a modal model with masses
         ops.wipe()
         ops.model("basic", "-ndm", 2, "-ndf", 3)
 
-        # 4 nœuds : encastré + 3 libres
+        # 4 nodes: fixed + 3 free
         ops.node(1, 0, 0)
         ops.node(2, 2, 0)
         ops.node(3, 4, 0)
         ops.node(4, 6, 0)
         ops.fix(1, 1, 1, 1)
 
-        # Masses aux nœuds libres
+        # Masses at free nodes
         mass = 1.0  # tonne
         ops.mass(2, mass, mass, 0.0)
         ops.mass(3, mass, mass, 0.0)
         ops.mass(4, mass, mass, 0.0)
 
-        # Éléments
+        # Elements
         ops.geomTransf("Linear", 1)
         E = 210_000_000  # kPa
         A = 53.8e-4

@@ -1,10 +1,4 @@
-"""
-Définition des sections structurelles.
-
-Sections rectangulaires béton armé, en T, profilés acier européens.
-Calcul des propriétés géométriques (A, Iy, Iz, Wel, Wpl).
-Toutes les dimensions en mètres, surfaces en m², inerties en m⁴.
-"""
+"""Structural section definitions and geometric properties."""
 
 from __future__ import annotations
 
@@ -14,39 +8,34 @@ from utils.units import CM2_TO_M2, CM4_TO_M4, MM_TO_M
 
 
 # ═══════════════════════════════════════════════════════════════════════════
-#  Section rectangulaire
+#  Rectangular section
 # ═══════════════════════════════════════════════════════════════════════════
 
 @dataclass
 class RectangularSection:
-    """Section rectangulaire pleine (béton armé).
-
-    Args:
-        b: Largeur (m).
-        h: Hauteur (m).
-    """
+    """Rectangular section."""
 
     b: float
     h: float
 
     @property
     def area(self) -> float:
-        """Aire de la section (m²)."""
+        """Return the section area."""
         return self.b * self.h
 
     @property
     def inertia_y(self) -> float:
-        """Moment d'inertie autour de l'axe fort Y (m⁴)."""
+        """Return the second moment of area about the local Y axis."""
         return self.b * self.h**3 / 12
 
     @property
     def inertia_z(self) -> float:
-        """Moment d'inertie autour de l'axe faible Z (m⁴)."""
+        """Return the second moment of area about the local Z axis."""
         return self.h * self.b**3 / 12
 
     @property
     def wel_y(self) -> float:
-        """Module élastique de flexion axe Y (m³)."""
+        """Return the elastic section modulus about the local Y axis."""
         return self.b * self.h**2 / 6
 
     @property
@@ -56,24 +45,17 @@ class RectangularSection:
 
 
 # ═══════════════════════════════════════════════════════════════════════════
-#  Section en T
+#  T-section
 # ═══════════════════════════════════════════════════════════════════════════
 
 @dataclass
 class TSection:
-    """Section en T (poutre de plancher béton armé).
+    """Tsection."""
 
-    Args:
-        bw: Largeur de l'âme (m).
-        hw: Hauteur de l'âme (m).
-        bf: Largeur de la table (m).
-        hf: Épaisseur de la table (m).
-    """
-
-    bw: float  # largeur âme
-    hw: float  # hauteur âme (sous la table)
+    bw: float  # web width
+    hw: float  # web height (below flange)
     bf: float  # largeur table
-    hf: float  # épaisseur table
+    hf: float  # flange thickness
 
     @property
     def h(self) -> float:
@@ -82,12 +64,12 @@ class TSection:
 
     @property
     def area(self) -> float:
-        """Aire de la section (m²)."""
+        """Return the section area."""
         return self.bw * self.hw + self.bf * self.hf
 
     @property
     def centroid_y(self) -> float:
-        """Position du centre de gravité depuis la base (m)."""
+        """Handle centroid y."""
         a_web = self.bw * self.hw
         a_flange = self.bf * self.hf
         y_web = self.hw / 2
@@ -96,10 +78,10 @@ class TSection:
 
     @property
     def inertia_y(self) -> float:
-        """Moment d'inertie autour de l'axe Y passant par le CDG (m⁴)."""
+        """Return the second moment of area about the local Y axis."""
         yg = self.centroid_y
 
-        # Âme
+        # Web
         iy_web = self.bw * self.hw**3 / 12
         d_web = yg - self.hw / 2
         iy_web += self.bw * self.hw * d_web**2
@@ -113,38 +95,35 @@ class TSection:
 
 
 # ═══════════════════════════════════════════════════════════════════════════
-#  Profilé acier européen
+#  European steel profile
 # ═══════════════════════════════════════════════════════════════════════════
 
 @dataclass(frozen=True)
 class SteelProfile:
-    """Profilé acier européen (IPE, HEA, HEB, HEM, UPN…).
-
-    Toutes les dimensions en unités internes (m, m², m⁴).
-    """
+    """Steel profile."""
 
     name: str
     family: str       # "IPE", "HEA", "HEB", "HEM", "UPN"
     h: float          # hauteur totale (m)
     b: float          # largeur semelle (m)
-    tw: float         # épaisseur âme (m)
-    tf: float         # épaisseur semelle (m)
+    tw: float         # web thickness (m)
+    tf: float         # flange thickness (m)
     area: float       # aire (m²)
-    inertia_y: float  # moment d'inertie axe fort (m⁴)
-    inertia_z: float  # moment d'inertie axe faible (m⁴)
-    wel_y: float      # module élastique axe fort (m³)
-    wpl_y: float      # module plastique axe fort (m³)
-    mass: float       # masse linéique (kg/m)
+    inertia_y: float  # second moment of area about the major axis (m4)
+    inertia_z: float  # second moment of area about the minor axis (m4)
+    wel_y: float      # elastic modulus about the major axis (m3)
+    wpl_y: float      # plastic modulus about the major axis (m3)
+    mass: float       # linear mass (kg/m)
 
 
 # ═══════════════════════════════════════════════════════════════════════════
-#  Catalogue de profilés embarqué
+#  Bundled profile catalog
 # ═══════════════════════════════════════════════════════════════════════════
 
-# Profilés IPE courants — valeurs issues des tables ArcelorMittal
-# Dimensions en mm, surfaces en cm², inerties en cm⁴, modules en cm³, masse en kg/m
+# Common IPE profiles — values from ArcelorMittal tables
+# Dimensions in mm, areas in cm2, second moments in cm4, moduli in cm3, mass in kg/m
 _IPE_RAW: list[tuple] = [
-    # (nom, h, b, tw, tf, A, Iy, Iz, Wel_y, Wpl_y, masse)
+    # (name, h, b, tw, tf, A, Iy, Iz, Wel_y, Wpl_y, mass)
     ("IPE 100", 100, 55, 4.1, 5.7, 10.3, 171, 15.9, 34.2, 39.4, 8.1),
     ("IPE 120", 120, 64, 4.4, 6.3, 13.2, 318, 27.7, 53.0, 60.7, 10.4),
     ("IPE 140", 140, 73, 4.7, 6.9, 16.4, 541, 44.9, 77.3, 88.3, 12.9),
@@ -202,7 +181,7 @@ _HEB_RAW: list[tuple] = [
 
 
 def _convert_raw(raw: list[tuple], family: str) -> list[SteelProfile]:
-    """Convertit les données brutes (mm, cm², cm⁴) en unités internes."""
+    """Convert raw."""
     profiles = []
     for row in raw:
         name, h, b, tw, tf, a, iy, iz, wel, wpl, mass = row
@@ -228,7 +207,7 @@ IPE_PROFILES: list[SteelProfile] = _convert_raw(_IPE_RAW, "IPE")
 HEA_PROFILES: list[SteelProfile] = _convert_raw(_HEA_RAW, "HEA")
 HEB_PROFILES: list[SteelProfile] = _convert_raw(_HEB_RAW, "HEB")
 
-# Index par nom pour recherche rapide
+# Index by name for fast lookup
 PROFILE_CATALOG: dict[str, SteelProfile] = {}
 for _profiles in (IPE_PROFILES, HEA_PROFILES, HEB_PROFILES):
     for _p in _profiles:
@@ -236,29 +215,12 @@ for _profiles in (IPE_PROFILES, HEA_PROFILES, HEB_PROFILES):
 
 
 def get_profile(name: str) -> SteelProfile:
-    """Recherche un profilé par son nom.
-
-    Args:
-        name: Nom du profilé (ex. "IPE 300", "HEB 200").
-
-    Returns:
-        Le profilé correspondant.
-
-    Raises:
-        KeyError: Si le profilé n'est pas trouvé.
-    """
+    """Return profile."""
     return PROFILE_CATALOG[name]
 
 
 def list_profiles(family: str | None = None) -> list[str]:
-    """Liste les noms de profilés disponibles.
-
-    Args:
-        family: Filtrer par famille ("IPE", "HEA", "HEB"). None = tous.
-
-    Returns:
-        Liste de noms de profilés.
-    """
+    """List profiles."""
     if family is None:
         return list(PROFILE_CATALOG.keys())
     return [p.name for p in PROFILE_CATALOG.values() if p.family == family]

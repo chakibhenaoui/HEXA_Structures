@@ -1,9 +1,4 @@
-"""
-Conditions aux limites pour les nœuds structurels.
-
-Modèle nativement 3D : 6 DDL par nœud (Ux, Uy, Uz, Rx, Ry, Rz).
-Appuis prédéfinis + mode personnalisé + appuis élastiques (ressorts).
-"""
+"""Boundary condition models for structural nodes."""
 
 from __future__ import annotations
 
@@ -12,16 +7,16 @@ from enum import Enum
 
 
 class DOF(Enum):
-    """Degrés de liberté d'un nœud 3D."""
-    UX = 0   # Translation selon X
-    UY = 1   # Translation selon Y
-    UZ = 2   # Translation selon Z
-    RX = 3   # Rotation autour de X
-    RY = 4   # Rotation autour de Y
-    RZ = 5   # Rotation autour de Z
+    """DOF."""
+    UX = 0   # Translation along X
+    UY = 1   # Translation along Y
+    UZ = 2   # Translation along Z
+    RX = 3   # Rotation autour X
+    RY = 4   # Rotation autour Y
+    RZ = 5   # Rotation around Z
 
 
-# Noms français pour l'affichage GUI
+# French names for GUI display
 DOF_LABELS: dict[DOF, str] = {
     DOF.UX: "Translation X (Ux)",
     DOF.UY: "Translation Y (Uy)",
@@ -31,7 +26,7 @@ DOF_LABELS: dict[DOF, str] = {
     DOF.RZ: "Rotation Z (Rz)",
 }
 
-# Noms courts pour la barre de statut / tableaux
+# Short names for the status bar / tables
 DOF_SHORT: dict[DOF, str] = {
     DOF.UX: "Ux", DOF.UY: "Uy", DOF.UZ: "Uz",
     DOF.RX: "Rx", DOF.RY: "Ry", DOF.RZ: "Rz",
@@ -39,21 +34,21 @@ DOF_SHORT: dict[DOF, str] = {
 
 
 class BoundaryType(Enum):
-    """Types d'appuis prédéfinis."""
-    FREE = "free"                     # Libre (aucun blocage)
-    ENCASTREMENT = "encastrement"     # Tout bloqué
-    ROTULE = "rotule"                 # Translations bloquées, rotations libres
-    GLISSANT_X = "glissant_x"        # Libre en X, bloqué en Y et Z
-    GLISSANT_Y = "glissant_y"        # Libre en Y, bloqué en X et Z
-    GLISSANT_Z = "glissant_z"        # Libre en Z, bloqué en X et Y
-    APPUI_VERTICAL = "appui_vertical" # Seul Uz bloqué
-    APPUI_PLAN_XY = "appui_plan_xy"  # Uz + Rx + Ry bloqués (dalle)
-    ROTULE_GLISSIERE = "rotule_glissiere"  # Guidé en X, tout bloqué sauf Ux
-    BLOCAGE_ROTATION = "blocage_rotation"  # Rotations bloquées, translations libres
-    CUSTOM = "custom"                 # Personnalisé
+    """Enumeration of boundary type."""
+    FREE = "free"                     # Free (no restraint)
+    ENCASTREMENT = "encastrement"     # Fully restrained
+    ROTULE = "rotule"                 # Translations restrained, rotations free
+    GLISSANT_X = "glissant_x"        # Free in X, restrained in Y and Z
+    GLISSANT_Y = "glissant_y"        # Free in Y, restrained in X and Z
+    GLISSANT_Z = "glissant_z"        # Free in Z, restrained in X and Y
+    APPUI_VERTICAL = "appui_vertical" # Only Uz restrained
+    APPUI_PLAN_XY = "appui_plan_xy"  # Uz + Rx + Ry restrained (slab)
+    ROTULE_GLISSIERE = "rotule_glissiere"  # Guided in X, all restrained except Ux
+    BLOCAGE_ROTATION = "blocage_rotation"  # Rotations restrained, translations free
+    CUSTOM = "custom"                 # Custom
 
 
-# Fixités prédéfinies : tuple de 6 valeurs (1=bloqué, 0=libre)
+# Predefined fixities: tuple of 6 values (1=restrained, 0=free)
 # Ordre : (Ux, Uy, Uz, Rx, Ry, Rz)
 PREDEFINED_FIXITIES: dict[BoundaryType, tuple[int, ...]] = {
     BoundaryType.FREE:              (0, 0, 0, 0, 0, 0),
@@ -66,10 +61,10 @@ PREDEFINED_FIXITIES: dict[BoundaryType, tuple[int, ...]] = {
     BoundaryType.APPUI_PLAN_XY:     (0, 0, 1, 1, 1, 0),
     BoundaryType.ROTULE_GLISSIERE:  (0, 1, 1, 1, 1, 1),
     BoundaryType.BLOCAGE_ROTATION:  (0, 0, 0, 1, 1, 1),
-    BoundaryType.CUSTOM:            (0, 0, 0, 0, 0, 0),  # défaut libre
+    BoundaryType.CUSTOM:            (0, 0, 0, 0, 0, 0),  # default is free
 }
 
-# Noms français pour l'affichage GUI
+# French names for GUI display
 BOUNDARY_LABELS: dict[BoundaryType, str] = {
     BoundaryType.FREE:              "Libre",
     BoundaryType.ENCASTREMENT:      "Encastrement",
@@ -84,7 +79,7 @@ BOUNDARY_LABELS: dict[BoundaryType, str] = {
     BoundaryType.CUSTOM:            "Personnalisé",
 }
 
-# Icônes/symboles pour la vue 3D
+# Icons/symbols for the 3D view
 BOUNDARY_SYMBOLS: dict[BoundaryType, str] = {
     BoundaryType.FREE:              "",
     BoundaryType.ENCASTREMENT:      "▬",
@@ -102,10 +97,7 @@ BOUNDARY_SYMBOLS: dict[BoundaryType, str] = {
 
 @dataclass
 class SpringStiffness:
-    """Raideurs élastiques pour appuis sur ressorts.
-
-    Unités internes : kN/m (translations), kN·m/rad (rotations).
-    """
+    """Spring stiffness."""
     kx: float = 0.0   # Raideur translation X (kN/m)
     ky: float = 0.0   # Raideur translation Y (kN/m)
     kz: float = 0.0   # Raideur translation Z (kN/m)
@@ -115,15 +107,15 @@ class SpringStiffness:
 
     @property
     def has_springs(self) -> bool:
-        """Vérifie si au moins un ressort est défini."""
+        """Return whether springs."""
         return any(k > 0.0 for k in self.as_tuple())
 
     def as_tuple(self) -> tuple[float, ...]:
-        """Retourne les 6 raideurs sous forme de tuple."""
+        """Return the values as a tuple."""
         return (self.kx, self.ky, self.kz, self.krx, self.kry, self.krz)
 
     def to_dict(self) -> dict[str, float]:
-        """Sérialisation pour SQLite/JSON."""
+        """Return a serializable dictionary."""
         return {
             "kx": self.kx, "ky": self.ky, "kz": self.kz,
             "krx": self.krx, "kry": self.kry, "krz": self.krz,
@@ -131,7 +123,7 @@ class SpringStiffness:
 
     @classmethod
     def from_dict(cls, d: dict[str, float]) -> SpringStiffness:
-        """Désérialisation depuis dict."""
+        """Build an instance from serialized data."""
         return cls(
             kx=d.get("kx", 0.0), ky=d.get("ky", 0.0), kz=d.get("kz", 0.0),
             krx=d.get("krx", 0.0), kry=d.get("kry", 0.0), krz=d.get("krz", 0.0),
@@ -140,57 +132,53 @@ class SpringStiffness:
 
 @dataclass
 class BoundaryCondition:
-    """Condition aux limites complète d'un nœud.
-
-    Combine un type prédéfini (ou personnalisé), les fixités 6 DDL,
-    et des raideurs élastiques optionnelles (ressorts).
-    """
+    """Boundary condition."""
     bc_type: BoundaryType = BoundaryType.FREE
     fixities: tuple[int, ...] = (0, 0, 0, 0, 0, 0)
     springs: SpringStiffness = field(default_factory=SpringStiffness)
-    name: str = ""  # Nom personnalisé optionnel
+    name: str = ""  # Optional custom name
 
     @property
     def is_free(self) -> bool:
-        """Le nœud est-il entièrement libre ?"""
+        """Return whether free."""
         return all(f == 0 for f in self.fixities) and not self.springs.has_springs
 
     @property
     def is_fixed(self) -> bool:
-        """Le nœud est-il entièrement bloqué (encastrement) ?"""
+        """Return whether fixed."""
         return all(f == 1 for f in self.fixities)
 
     @property
     def blocked_dofs(self) -> list[DOF]:
-        """Liste des DDL bloqués."""
+        """Handle blocked DOFs."""
         return [DOF(i) for i, f in enumerate(self.fixities) if f == 1]
 
     @property
     def free_dofs(self) -> list[DOF]:
-        """Liste des DDL libres."""
+        """Handle free DOFs."""
         return [DOF(i) for i, f in enumerate(self.fixities) if f == 0]
 
     @property
     def label(self) -> str:
-        """Label pour l'affichage (nom personnalisé ou type prédéfini)."""
+        """Return the display label."""
         if self.name:
             return self.name
         return BOUNDARY_LABELS.get(self.bc_type, "Inconnu")
 
     @property
     def symbol(self) -> str:
-        """Symbole pour la vue 3D."""
+        """Return the display symbol."""
         return BOUNDARY_SYMBOLS.get(self.bc_type, "")
 
     def summary(self) -> str:
-        """Résumé textuel des DDL bloqués."""
+        """Return a short textual summary."""
         blocked = [DOF_SHORT[d] for d in self.blocked_dofs]
         if not blocked:
             return "Libre"
         return "Bloqué : " + ", ".join(blocked)
 
     def to_dict(self) -> dict:
-        """Sérialisation pour SQLite/JSON."""
+        """Return a serializable dictionary."""
         d = {
             "bc_type": self.bc_type.value,
             "fixities": list(self.fixities),
@@ -202,7 +190,7 @@ class BoundaryCondition:
 
     @classmethod
     def from_dict(cls, d: dict) -> BoundaryCondition:
-        """Désérialisation depuis dict."""
+        """Build an instance from serialized data."""
         springs = SpringStiffness()
         if "springs" in d:
             springs = SpringStiffness.from_dict(d["springs"])
@@ -218,17 +206,7 @@ def create_boundary(bc_type: BoundaryType,
                      name: str = "",
                      custom_fixities: tuple[int, ...] | None = None,
                      springs: SpringStiffness | None = None) -> BoundaryCondition:
-    """Crée une condition aux limites.
-
-    Args:
-        bc_type: Type d'appui prédéfini ou CUSTOM.
-        name: Nom personnalisé optionnel.
-        custom_fixities: Fixités pour le mode CUSTOM (6 valeurs 0/1).
-        springs: Raideurs élastiques optionnelles.
-
-    Returns:
-        BoundaryCondition configurée.
-    """
+    """Create boundary."""
     if bc_type == BoundaryType.CUSTOM and custom_fixities is not None:
         fixities = tuple(custom_fixities[:6])
     else:
@@ -243,11 +221,7 @@ def create_boundary(bc_type: BoundaryType,
 
 
 def detect_boundary_type(fixities: tuple[int, ...]) -> BoundaryType:
-    """Détecte le type d'appui à partir des fixités.
-
-    Cherche une correspondance dans les types prédéfinis.
-    Retourne CUSTOM si aucune correspondance.
-    """
+    """Detect boundary type."""
     fix = tuple(fixities[:6])
     for bc_type, predefined in PREDEFINED_FIXITIES.items():
         if bc_type == BoundaryType.CUSTOM:

@@ -1,12 +1,4 @@
-"""Tests analytiques des diagrammes M/V/N et de l'interpolation.
-
-Compare les résultats de l'interpolation avec les solutions analytiques
-exactes de la RDM pour différents cas de charge classiques.
-
-Convention Z vertical, gravite = -Z.
-vecxz = (0,0,1) → local_y = Y, local_z = Z.
-My = moment gravitaire (plan XZ), Vz = tranchant vertical.
-"""
+"""Helpers for test diagrams."""
 
 import math
 
@@ -38,7 +30,7 @@ from gui.widgets.diagram_renderer import (
 # ═══════════════════════════════════════════════════════════════════════════
 
 def assert_close(actual, expected, tol=0.01, msg=""):
-    """Vérifie que actual ≈ expected (tolérance relative ou absolue)."""
+    """Handle assert close."""
     if abs(expected) > 1e-6:
         err = abs(actual - expected) / abs(expected)
         assert err < tol, f"{msg}: {actual:.6f} ≠ {expected:.6f} (err={err:.2%})"
@@ -56,53 +48,48 @@ def test_format_diagram_value_masks_numerical_noise() -> None:
 
 
 # ═══════════════════════════════════════════════════════════════════════════
-#  Cas 1 : Poutre console — charge ponctuelle (convention ingénieur)
+#  Case 1: cantilever beam — point load (engineering convention)
 #
-#  Poutre encastrée à gauche (x=0), charge P vers le bas à x=L.
-#  On utilise la convention « positive = vers le haut » pour Vz,
-#  et la convention OpenSees pour les signes des efforts internes.
+#  Beam fixed on the left (x=0), downward load P at x=L.
+#  Use the "positive = upward" convention for Vz,
+#  and the OpenSees convention for internal force signs.
 #
 #    Z ↑
-#      |███  ──────────────● → X      P = 10 kN vers le bas
+#      |███  --------------● -> X      P = 10 kN downward
 #      |encastrement       ↓P
 #
-#  Solutions analytiques (convention positive Vz vers le haut) :
-#    Vz(x) = -P = -10  (constant, pointe vers le bas)
-#    My(x) = -P*(L-x)  (négatif = sagging/tension en bas dans conv. OpenSees)
+#  Analytical solutions (positive Vz upward convention):
+#    Vz(x) = -P = -10  (constant, points downward)
+#    My(x) = -P*(L-x)  (negative = sagging/bottom tension in OpenSees convention)
 #
-#  Mais OpenSees eleForce retourne les forces NODALES de l'élément,
-#  pas les efforts internes directement. Voici la correspondance :
+#  But OpenSees eleForce returns the element NODAL forces,
+#  not the internal forces directly. Here is the correspondence:
 #
-#  Nœud i (encastré) :
-#    forces[2] = Vz_nodal_i = -(réaction Fz) = -(+P) = -P = -10
+#  Node i (fixed):
+#    forces[2] = Vz_nodal_i = -(reaction Fz) = -(+P) = -P = -10
 #    → vz_i = forces[2] = -10
-#    forces[4] = My_nodal_i = -(réaction My)
+#    forces[4] = My_nodal_i = -(reaction My)
 #    → my_i = forces[4]
 #
-#  Nœud j (libre) :
+#  Node j (free):
 #    → vz_j = -forces[8]  (inversion signe convention RDM)
 #    → my_j = -forces[10]
 # ═══════════════════════════════════════════════════════════════════════════
 
 
 class TestCantileverPointLoad:
-    """Console L=5m, charge P=10kN vers le bas (en -Z) à l'extrémité libre."""
+    """Tests for cantilever point load."""
 
-    P = 10.0   # kN (magnitude, vers le bas)
+    P = 10.0   # kN (magnitude, downward)
     L = 5.0    # m
 
     def _make_result_engineering(self):
-        """Crée un ElementResult en convention ingénieur positive.
-
-        Convention ingénieur classique (française) :
-            Vz positif = vers le haut
-            My positif = sagging (traction en bas)
-        """
-        # Tranchant constant = -P (vers le bas)
+        """Create result engineering."""
+        # Constant shear = -P (downward)
         vz_i = -self.P  # = -10
         vz_j = -self.P  # = -10
 
-        # Moment : My(0) = -P*L = -50 (hogging à l'encastrement)
+        # Moment: My(0) = -P*L = -50 (hogging at the fixed end)
         #          My(L) = 0
         my_i = -self.P * self.L  # = -50
         my_j = 0.0
@@ -114,7 +101,7 @@ class TestCantileverPointLoad:
         )
 
     def test_shear_constant(self):
-        """Le tranchant Vz est constant (pas de charge répartie)."""
+        """Test shear constant."""
         r = self._make_result_engineering()
         result = interpolate_internal_forces(r, self.L, wz=0.0, n_points=21)
 
@@ -122,7 +109,7 @@ class TestCantileverPointLoad:
             assert_close(vz, -self.P, msg=f"Vz[{k}]")
 
     def test_moment_linear(self):
-        """My est linéaire : My(x) = -P*(L-x)."""
+        """Test moment linear."""
         r = self._make_result_engineering()
         result = interpolate_internal_forces(r, self.L, wz=0.0, n_points=21)
 
@@ -143,7 +130,7 @@ class TestCantileverPointLoad:
         assert_close(result["My"][-1], 0.0, tol=0.001, msg="My(L)")
 
     def test_no_lateral_effects(self):
-        """Vy et Mz doivent être nuls (charge dans le plan XZ)."""
+        """Test no lateral effects."""
         r = self._make_result_engineering()
         result = interpolate_internal_forces(r, self.L, n_points=11)
 
@@ -154,39 +141,34 @@ class TestCantileverPointLoad:
 
 
 # ═══════════════════════════════════════════════════════════════════════════
-#  Cas 2 : Poutre simplement appuyée — charge répartie uniforme
+#  Case 2: simply supported beam — uniform distributed load
 #
 #    Z ↑
-#      △━━━━━━━━━━━━━━━━━━△ → X     w = 10 kN/m vers le bas
+#      △------------------△ -> X     w = 10 kN/m downward
 #      ↓↓↓↓↓↓↓↓↓↓↓↓↓↓↓↓↓↓
 #      x=0               x=L=6m
 #
-#  Réactions : R = wL/2 = 30 kN (vers le haut)
+#  Reactions: R = wL/2 = 30 kN (upward)
 #
-#  Convention ingénieur (positive vers le haut / sagging) :
+#  Engineering convention (positive upward / sagging):
 #    Vz(x) = wL/2 - w*x = 30 - 10x
 #    My(x) = wLx/2 - wx²/2 = 30x - 5x²
-#    My_max = wL²/8 = 45 kN·m à x=L/2
+#    My_max = wL^2/8 = 45 kN*m at x=L/2
 #
-#  Pour que la formule Vz(x) = Vz_i - wz*x fonctionne :
-#    Vz_i = +30, wz = +10  (wz positif = vers le bas dans la formule)
+#  For the Vz(x) = Vz_i - wz*x formula to work:
+#    Vz_i = +30, wz = +10  (positive wz = downward in the formula)
 # ═══════════════════════════════════════════════════════════════════════════
 
 
 class TestSimplySupportedUniformLoad:
-    """Poutre SS L=6m, charge uniforme w=10 kN/m vers le bas."""
+    """Tests for simply supported uniform load."""
 
-    w = 10.0   # kN/m (magnitude, vers le bas)
+    w = 10.0   # kN/m (magnitude, downward)
     L = 6.0    # m
 
     def _make_result(self, wz_sign=+1.0):
-        """Crée l'ElementResult.
-
-        Args:
-            wz_sign: +1 pour convention ingénieur (wz>0 = vers le bas),
-                     -1 pour convention OpenSees (wz<0 = vers le bas).
-        """
-        # Convention ingénieur : Vz_i = +wL/2, My_i = 0
+        """Create result."""
+        # Engineering convention: Vz_i = +wL/2, My_i = 0
         vz_i = wz_sign * self.w * self.L / 2   # ±30
         vz_j = -wz_sign * self.w * self.L / 2  # ∓30
         my_i = 0.0
@@ -199,7 +181,7 @@ class TestSimplySupportedUniformLoad:
         )
 
     def test_shear_linear_positive_convention(self):
-        """Vz linéaire avec convention positive (wz>0 = bas)."""
+        """Test shear linear positive convention."""
         r = self._make_result(wz_sign=+1.0)
         result = interpolate_internal_forces(r, self.L, wz=+self.w, n_points=21)
 
@@ -208,7 +190,7 @@ class TestSimplySupportedUniformLoad:
             assert_close(vz, expected, msg=f"Vz(x={x:.2f})")
 
     def test_shear_zero_at_midspan(self):
-        """Vz(L/2) = 0 par symétrie."""
+        """Test shear zero at midspan."""
         r = self._make_result(wz_sign=+1.0)
         result = interpolate_internal_forces(r, self.L, wz=+self.w, n_points=21)
 
@@ -225,7 +207,7 @@ class TestSimplySupportedUniformLoad:
             assert_close(my, expected, msg=f"My(x={x:.2f})")
 
     def test_moment_max_at_midspan(self):
-        """My_max = wL²/8 = 45 kN·m à mi-travée."""
+        """Test moment maximum at midspan."""
         r = self._make_result(wz_sign=+1.0)
         result = interpolate_internal_forces(r, self.L, wz=+self.w, n_points=21)
 
@@ -234,7 +216,7 @@ class TestSimplySupportedUniformLoad:
                       msg="My_max")
 
     def test_moment_zero_at_supports(self):
-        """My(0) = My(L) = 0 (appuis simples)."""
+        """Test moment zero at supports."""
         r = self._make_result(wz_sign=+1.0)
         result = interpolate_internal_forces(r, self.L, wz=+self.w, n_points=21)
 
@@ -242,49 +224,45 @@ class TestSimplySupportedUniformLoad:
         assert_close(result["My"][-1], 0.0, tol=0.001, msg="My(L)")
 
     def test_opensees_sign_convention(self):
-        """Même résultat avec la convention OpenSees (wz<0 = vers le bas).
-
-        OpenSees : Vz_i = -wL/2 = -30, wz = -10.
-        Le signe My doit être inversé (négatif = sagging dans OpenSees).
-        """
+        """Test OpenSees sign convention."""
         r = self._make_result(wz_sign=-1.0)
         result = interpolate_internal_forces(r, self.L, wz=-self.w, n_points=21)
 
-        # Vz doit être le négatif de la convention ingénieur
+        # Vz must be the negative of the engineering convention
         for x, vz in zip(result["x"], result["Vz"]):
             expected = -(self.w * self.L / 2 - self.w * x)
             assert_close(vz, expected, msg=f"Vz_ops(x={x:.2f})")
 
-        # My doit être le négatif aussi (sagging négatif dans OpenSees)
+        # My must be negative too (negative sagging in OpenSees)
         mid_idx = len(result["x"]) // 2
         assert_close(result["My"][mid_idx], -self.w * self.L**2 / 8,
                       msg="My_max_opensees")
 
 
 # ═══════════════════════════════════════════════════════════════════════════
-#  Cas 3 : Poutre bi-encastrée — charge répartie uniforme
+#  Case 3: fixed-fixed beam — uniform distributed load
 #
 #    Z ↑
-#    ███━━━━━━━━━━━━━━━━███ → X      w = 10 kN/m vers le bas
+#    ███----------------███ -> X      w = 10 kN/m downward
 #      ↓↓↓↓↓↓↓↓↓↓↓↓↓↓↓↓
 #      x=0             x=L=3m
 #
-#  Convention ingénieur (positive = vers le haut / sagging) :
-#    Réactions : R = wL/2 = 15 kN
-#    Moments : My(0) = My(L) = -wL²/12 = -7.5 kN·m (hogging, négatif)
-#              My(L/2) = +wL²/24 = +3.75 kN·m (sagging, positif)
-#    Tranchant : Vz(0) = +15, Vz(L/2) = 0, Vz(L) = -15
+#  Engineering convention (positive = upward / sagging):
+#    Reactions: R = wL/2 = 15 kN
+#    Moments: My(0) = My(L) = -wL^2/12 = -7.5 kN*m (hogging, negative)
+#              My(L/2) = +wL^2/24 = +3.75 kN*m (sagging, positive)
+#    Shear: Vz(0) = +15, Vz(L/2) = 0, Vz(L) = -15
 # ═══════════════════════════════════════════════════════════════════════════
 
 
 class TestFixedFixedUniformLoad:
-    """Poutre bi-encastrée L=3m, charge uniforme w=10 kN/m."""
+    """Tests for fixed fixed uniform load."""
 
     w = 10.0   # kN/m
     L = 3.0    # m
 
     def _make_result(self):
-        """Convention ingénieur positive."""
+        """Create result."""
         return ElementResult(
             tag=1,
             vz_i=self.w * self.L / 2,        # +15
@@ -328,54 +306,47 @@ class TestFixedFixedUniformLoad:
         assert_close(result["My"][mid], expected, msg="My(L/2)")
 
     def test_interpolated_my_equals_endpoint(self):
-        """My interpolé à x=L doit coincider avec My(0) par symétrie."""
+        """Test interpolated my equals endpoint."""
         r = self._make_result()
         result = interpolate_internal_forces(r, self.L, wz=self.w, n_points=21)
 
-        # My calculé par formule à x=L
+        # My computed by the formula at x=L
         my_L = result["My"][-1]
-        # Doit être = my_j = -7.5
+        # Must be = my_j = -7.5
         assert_close(my_L, r.my_j, tol=0.001,
                       msg="My(L) vs my_j")
 
 
 # ═══════════════════════════════════════════════════════════════════════════
-#  Cas 4 : Cohérence convention OpenSees / convention formule
+#  Case 4: OpenSees convention / formula convention consistency
 #
-#  OpenSees avec vecxz=(0,0,1) : local_z = Z (vers le haut).
-#  Pour une charge de gravité -10 kN/m :
+#  OpenSees with vecxz=(0,0,1): local_z = Z (upward).
+#  For a -10 kN/m gravity load:
 #    ops.eleLoad(..., "-beamUniform", 0, -10, 0)  → Wz = -10
-#    eleForce : forces[2] = -wL/2 (= -15 pour L=3)
+#    eleForce: forces[2] = -wL/2 (= -15 for L=3)
 #    ResultsExtractor : vz_i = forces[2] = -15
 #
 #  La formule : Vz(x) = vz_i - wz*x = -15 - (-10)*x = -15 + 10x
 #    Vz(0) = -15, Vz(1.5) = 0, Vz(3) = +15
 #
-#  C'est le MIROIR de la convention ingénieur (signes inversés).
-#  Physiquement : Vz<0 = force interne vers le bas = réaction vers le haut
-#  aux appuis, ce qui est correct (la réaction pousse le nœud vers le haut).
+#  This is the MIRROR of the engineering convention (inverted signs).
+#  Physically: Vz<0 = downward internal force = upward reaction
+#  at the supports, which is correct (the reaction pushes the node upward).
 # ═══════════════════════════════════════════════════════════════════════════
 
 
 class TestOpenSeesSignConvention:
-    """Vérifie que la formule fonctionne avec les signes OpenSees bruts."""
+    """Tests for OpenSees sign convention."""
 
     w = 10.0   # kN/m
     L = 3.0    # m
 
     def _make_result_opensees(self):
-        """Résultat tel que retourné par get_element_forces() pour une
-        poutre bi-encastrée avec charge wz=-10 kN/m (gravité).
-
-        OpenSees convention (eleForce) :
-            forces[2] = Vz_nodal_i → vz_i = forces[2]
-            forces[4] = My_nodal_i → my_i = forces[4]
-            forces[8] = Vz_nodal_j → vz_j = -forces[8]
-        """
+        """Create result OpenSees."""
         # eleForce at node i : Vz = -wL/2 (element pushes node down)
         vz_i = -self.w * self.L / 2   # = -15
         # eleForce at node j after sign flip: vz_j = -(-forces[8])
-        # For symmetric bi-encastré : vz_j = +15
+        # For symmetric fixed-fixed beam: vz_j = +15
         vz_j = +self.w * self.L / 2   # = +15
 
         # My at encastrement (OpenSees convention)
@@ -390,11 +361,11 @@ class TestOpenSeesSignConvention:
         )
 
     def test_shear_opensees(self):
-        """Vz avec convention OpenSees : wz=-10 (global Z, négatif = bas)."""
+        """Test shear OpenSees."""
         r = self._make_result_opensees()
         result = interpolate_internal_forces(r, self.L, wz=-self.w, n_points=11)
 
-        # Vz(0) = -15 (négatif = force vers le bas sur le nœud)
+        # Vz(0) = -15 (negative = downward force on the node)
         assert_close(result["Vz"][0], -15.0, msg="Vz(0)")
         # Vz(L/2) = 0
         mid = len(result["x"]) // 2
@@ -407,20 +378,20 @@ class TestOpenSeesSignConvention:
         r = self._make_result_opensees()
         result = interpolate_internal_forces(r, self.L, wz=-self.w, n_points=11)
 
-        # My(0) = +7.5 (hogging, positif dans OpenSees)
+        # My(0) = +7.5 (hogging, positive in OpenSees)
         assert_close(result["My"][0], +7.5, msg="My(0)")
 
-        # My(L/2) = négatif (sagging dans OpenSees)
+        # My(L/2) = negative (sagging in OpenSees)
         mid = len(result["x"]) // 2
         assert_close(result["My"][mid], -self.w * self.L**2 / 24,
                       msg="My(L/2)")
 
-        # My(L) = +7.5 (hogging symétrique)
+        # My(L) = +7.5 (symmetric hogging)
         assert_close(result["My"][-1], +7.5, msg="My(L)")
 
     def test_consistency_magnitude(self):
-        """Les MAGNITUDES sont identiques quelle que soit la convention."""
-        # Convention ingénieur
+        """Test consistency magnitude."""
+        # Engineering convention
         r_eng = ElementResult(
             tag=1,
             vz_i=+15.0, vz_j=-15.0,
@@ -432,7 +403,7 @@ class TestOpenSeesSignConvention:
         r_ops = self._make_result_opensees()
         res_ops = interpolate_internal_forces(r_ops, self.L, wz=-self.w, n_points=11)
 
-        # Magnitudes identiques à chaque point
+        # Identical magnitudes at each point
         for k in range(len(res_eng["x"])):
             assert_close(abs(res_eng["Vz"][k]), abs(res_ops["Vz"][k]),
                           msg=f"|Vz|[{k}]")
@@ -441,11 +412,11 @@ class TestOpenSeesSignConvention:
 
 
 # ═══════════════════════════════════════════════════════════════════════════
-#  Cas 5 : Vérification du pipeline diagram_renderer
+#  Case 5: diagram_renderer pipeline check
 #
-#  Le diagram_renderer lit el.wz et le passe directement à
-#  interpolate_internal_forces. Vérifions que c'est cohérent
-#  avec les résultats d'OpenSees.
+#  diagram_renderer reads el.wz and passes it directly to
+#  interpolate_internal_forces. Check that this is consistent
+#  with OpenSees results.
 # ═══════════════════════════════════════════════════════════════════════════
 
 
@@ -456,13 +427,8 @@ class TestDiagramPipeline:
     L = 6.0    # m
 
     def test_ss_beam_pipeline(self):
-        """Pipeline pour poutre SS : el.wz → interpolation → diagram.
-
-        L'utilisateur entre wz=-10 (gravité globale).
-        OpenSees retourne vz_i = -30, my_i = 0.
-        Le diagram_renderer passe wz=-10 à l'interpolation.
-        """
-        # Résultats OpenSees (convention OpenSees)
+        """Test ss beam pipeline."""
+        # OpenSees results (OpenSees convention)
         r = ElementResult(
             tag=1,
             vz_i=-self.w * self.L / 2,   # -30
@@ -476,28 +442,24 @@ class TestDiagramPipeline:
 
         result = interpolate_internal_forces(r, self.L, wz=wz_global, n_points=21)
 
-        # Vérifier la forme du diagramme (magnitudes)
+        # Check the diagram shape (magnitudes)
         mid = len(result["x"]) // 2
 
-        # Tranchant : zéro au milieu
+        # Shear: zero at midspan
         assert abs(result["Vz"][mid]) < 0.01, "Vz(L/2) ≠ 0"
 
-        # Moment : maximum (en valeur absolue) au milieu
+        # Moment: maximum absolute value at midspan
         my_mid = result["My"][mid]
-        my_expected = -self.w * self.L**2 / 8  # = -45 (sagging négatif dans OpenSees)
+        my_expected = -self.w * self.L**2 / 8  # = -45 (negative sagging in OpenSees)
         assert_close(my_mid, my_expected, msg="My(L/2) pipeline")
 
-        # Le moment aux appuis = 0
+        # Support moments = 0
         assert abs(result["My"][0]) < 0.01, "My(0) ≠ 0"
         assert abs(result["My"][-1]) < 0.01, "My(L) ≠ 0"
 
     def test_diagram_wz_sign_sensitivity(self):
-        """Montre l'ERREUR si on inverse le signe de wz.
-
-        Si on passe wz=+10 au lieu de -10 avec des résultats OpenSees,
-        le diagramme est FAUX.
-        """
-        # Résultats OpenSees
+        """Test diagram wz sign sensitivity."""
+        # OpenSees results
         r = ElementResult(
             tag=1,
             vz_i=-30.0, vz_j=+30.0,
@@ -506,42 +468,42 @@ class TestDiagramPipeline:
 
         # CORRECT : wz = -10 (global)
         res_ok = interpolate_internal_forces(r, self.L, wz=-self.w, n_points=11)
-        # FAUX : wz = +10 (signe inversé)
+        # WRONG: wz = +10 (inverted sign)
         res_bad = interpolate_internal_forces(r, self.L, wz=+self.w, n_points=11)
 
         mid = len(res_ok["x"]) // 2
 
-        # Le correct a Vz=0 au milieu
+        # The correct version has Vz=0 at midspan
         assert abs(res_ok["Vz"][mid]) < 0.01, "Vz correct au milieu"
 
-        # Le faux a Vz ≠ 0 au milieu
+        # The wrong version has Vz != 0 at midspan
         assert abs(res_bad["Vz"][mid]) > 1.0, (
             "Avec le mauvais signe, Vz n'est PAS zéro au milieu"
         )
 
 
 # ═══════════════════════════════════════════════════════════════════════════
-#  Cas 6 : Console avec charge répartie (My parabolique)
+#  Case 6: cantilever with distributed load (parabolic My)
 #
 #    Z ↑
-#    ███━━━━━━━━━━━━━● → X      w = 5 kN/m vers le bas
+#    ███-------------● -> X      w = 5 kN/m downward
 #      ↓↓↓↓↓↓↓↓↓↓↓↓↓
 #      x=0           x=L=4m
 #
-#  Convention ingénieur :
+#  Engineering convention:
 #    Vz(x) = w*(L-x)           → Vz(0)=20, Vz(L)=0
 #    My(x) = -w*(L-x)²/2       → My(0)=-40, My(L)=0
 # ═══════════════════════════════════════════════════════════════════════════
 
 
 class TestCantileverUniformLoad:
-    """Console L=4m, charge répartie w=5 kN/m vers le bas."""
+    """Tests for cantilever uniform load."""
 
     w = 5.0
     L = 4.0
 
     def _make_result(self):
-        """Convention ingénieur."""
+        """Create result."""
         return ElementResult(
             tag=1,
             vz_i=self.w * self.L,              # +20
@@ -551,7 +513,7 @@ class TestCantileverUniformLoad:
         )
 
     def test_shear_linear(self):
-        """Vz(x) = w*(L-x), linéaire de wL à 0."""
+        """Test shear linear."""
         r = self._make_result()
         result = interpolate_internal_forces(r, self.L, wz=self.w, n_points=21)
 
@@ -570,7 +532,7 @@ class TestCantileverUniformLoad:
 
 
 # ═══════════════════════════════════════════════════════════════════════════
-#  Cas 7 : Effort normal (compression/traction)
+#  Case 7: axial force (compression/tension)
 # ═══════════════════════════════════════════════════════════════════════════
 
 
@@ -594,9 +556,9 @@ class TestNormalForce:
             assert_close(n, +50.0, msg="N")
 
     def test_normal_with_axial_load(self):
-        """N linéaire avec charge axiale wx."""
+        """Test normal with axial load."""
         r = ElementResult(tag=1, n_i=-100.0, n_j=-80.0)
-        # wx = 4 kN/m (charge axiale sur L=5m : ΔN = wx*L = 20)
+        # wx = 4 kN/m (axial load over L=5m: Delta N = wx*L = 20)
         result = interpolate_internal_forces(r, length=5.0, wx=4.0, n_points=11)
 
         # N(x) = N_i - wx*x = -100 - 4x
@@ -606,15 +568,15 @@ class TestNormalForce:
 
 
 # ═══════════════════════════════════════════════════════════════════════════
-#  Cas 8 : Vérification croisée Vy/Mz (plan horizontal)
+#  Case 8: Vy/Mz cross-check (horizontal plane)
 # ═══════════════════════════════════════════════════════════════════════════
 
 
 class TestLateralBending:
-    """Flexion latérale (plan XY) pour vérifier la symétrie Vy/Mz."""
+    """Tests for lateral bending."""
 
     def test_lateral_ss_beam(self):
-        """Poutre SS avec charge latérale wy=8 kN/m en Y."""
+        """Test lateral ss beam."""
         L = 5.0
         w = 8.0
 
@@ -631,17 +593,17 @@ class TestLateralBending:
         mid = len(result["x"]) // 2
         assert_close(result["Mz"][mid], w * L**2 / 8, msg="Mz_max")
 
-        # Vy = 0 au milieu
+        # Vy = 0 at midspan
         assert abs(result["Vy"][mid]) < 0.01, "Vy(L/2)"
 
 
 # ═══════════════════════════════════════════════════════════════════════════
-#  Cas 9 : Résultats à zéro si pas de charge
+#  Case 9: zero results with no load
 # ═══════════════════════════════════════════════════════════════════════════
 
 
 class TestNoLoad:
-    """Pas de charge → tous les efforts sont nuls."""
+    """Tests for no load."""
 
     def test_all_zero(self):
         r = ElementResult(tag=1)
@@ -758,18 +720,18 @@ def _make_spatial_frame_project() -> ProjectModel:
         inertia_z=603e-8,
     )
 
-    # Colonnes
+    # Columns
     for base in (1, 4, 7, 10):
         project.add_element(base, base + 1, section_tag=1)
         project.add_element(base + 1, base + 2, section_tag=1)
 
-    # Poutres suivant X sur les deux niveaux, plans Y = cst -> XZ
+    # Beams along X on both levels, Y = constant planes -> XZ
     project.add_element(2, 8, section_tag=1)
     project.add_element(5, 11, section_tag=1)
     project.add_element(3, 9, section_tag=1)
     project.add_element(6, 12, section_tag=1)
 
-    # Poutres suivant Y sur les deux niveaux, plans X = cst -> YZ
+    # Beams along Y on both levels, X = constant planes -> YZ
     project.add_element(2, 5, section_tag=1)
     project.add_element(8, 11, section_tag=1)
     project.add_element(3, 6, section_tag=1)

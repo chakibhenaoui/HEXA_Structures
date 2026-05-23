@@ -1,7 +1,4 @@
-"""
-HEXA Structures - Application de Calcul de Structures
-Point d'entrée de l'application.
-"""
+"""HEXA Structures application entry point."""
 
 import os
 import sys
@@ -14,7 +11,7 @@ from gui.resources import app_resource_path
 
 
 def _configure_qt_opengl() -> None:
-    """Stabilise l'initialisation OpenGL/VTK sous Windows."""
+    """Configure Qt opengl."""
     QApplication.setAttribute(Qt.AA_ShareOpenGLContexts, True)
     if os.name == "nt":
         os.environ["QT_OPENGL"] = "desktop"
@@ -22,10 +19,7 @@ def _configure_qt_opengl() -> None:
 
 
 def _create_startup_splash() -> QSplashScreen:
-    """
-    Crée une fenêtre de chargement personnalisee au démarrage de l'application.
-    Elle affiche le nom, la version, un logo sobre et des messages d'état.
-    """
+    """Create startup splash."""
 
     pixmap = QPixmap(520, 300)
     pixmap.fill(QColor("#f7f9fb"))
@@ -62,14 +56,7 @@ def _create_startup_splash() -> QSplashScreen:
 
 
 def _draw_startup_logo(painter: QPainter) -> None:
-    """
-    Dessine un logo géométrique sobre pour la fenêtre de chargement.
-
-    Le logo représente un hexagone stylisé, symbolisant la structure et la stabilité,
-    avec des lignes internes reliant certains sommets au centre pour évoquer la connectivité
-    et la modularité. Les nœuds sont accentués par des cercles pour rappeler les points-clés
-    d'une structure maillée, en cohérence avec le domaine du calcul de structures.
-    """
+    """Draw startup logo."""
 
     points = [
         (410, 58),

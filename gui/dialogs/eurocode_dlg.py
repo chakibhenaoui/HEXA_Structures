@@ -1,10 +1,4 @@
-"""
-Dialogue de paramètres Eurocodes (AN française).
-
-Permet à l'utilisateur de visualiser et modifier les coefficients partiels
-(gamma), les coefficients psi par catégorie, et les coefficients matériaux.
-Toute modification declenche un avertissement.
-"""
+"""Eurocode parameter dialog."""
 
 from __future__ import annotations
 
@@ -43,7 +37,7 @@ _PSI_LABELS: dict[str, str] = {
 
 
 class EurocodeSettingsDialog(QDialog):
-    """Dialogue des paramètres Eurocodes (coefficients partiels et psi)."""
+    """Eurocode settings dialog."""
 
     def __init__(self, parent=None):
         super().__init__(parent)
@@ -109,10 +103,10 @@ class EurocodeSettingsDialog(QDialog):
                 spn.setValue(val)
                 self._tbl_psi.setCellWidget(row, col, spn)
 
-    # ── Chargement / sauvegarde ──
+    # -- Loading / saving --
 
     def _load_values(self) -> None:
-        """Charge les valeurs actuelles depuis config.eurocodes."""
+        """Load values."""
         self._spn_gamma_g_sup.setValue(ec.GAMMA_G_SUP)
         self._spn_gamma_g_inf.setValue(ec.GAMMA_G_INF)
         self._spn_gamma_q.setValue(ec.GAMMA_Q)
@@ -128,7 +122,7 @@ class EurocodeSettingsDialog(QDialog):
         self._spn_gamma_m2.setValue(ec.GAMMA_M2)
 
     def _on_accept(self) -> None:
-        """Applique les modifications avec avertissement."""
+        """Handle accept."""
         if self._has_changes():
             reply = QMessageBox.warning(
                 self,
@@ -148,7 +142,7 @@ class EurocodeSettingsDialog(QDialog):
         self.accept()
 
     def _has_changes(self) -> bool:
-        """Verifie si des valeurs ont été modifiées."""
+        """Return whether changes."""
         if abs(self._spn_gamma_g_sup.value() - ec.GAMMA_G_SUP) > 1e-6:
             return True
         if abs(self._spn_gamma_g_inf.value() - ec.GAMMA_G_INF) > 1e-6:
@@ -182,7 +176,7 @@ class EurocodeSettingsDialog(QDialog):
         return False
 
     def _apply_values(self) -> None:
-        """Ecrit les nouvelles valeurs dans config.eurocodes (en memoire)."""
+        """Apply values."""
         ec.GAMMA_G_SUP = self._spn_gamma_g_sup.value()
         ec.GAMMA_G_INF = self._spn_gamma_g_inf.value()
         ec.GAMMA_Q = self._spn_gamma_q.value()
@@ -206,7 +200,7 @@ class EurocodeSettingsDialog(QDialog):
             ec.PSI_COEFFICIENTS[key] = tuple(vals)
 
     def _reset_defaults(self) -> None:
-        """Réinitialise toutes les valeurs aux défauts AN française."""
+        """Reset defaults."""
         self._spn_gamma_g_sup.setValue(1.35)
         self._spn_gamma_g_inf.setValue(1.00)
         self._spn_gamma_q.setValue(1.50)

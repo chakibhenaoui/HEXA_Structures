@@ -1,9 +1,4 @@
-"""
-Paramètres globaux de l'application : unités, chemins, préférences.
-
-Ce module fournit la classe Settings qui centralise tous les réglages
-de l'application HEXA Structures, avec sauvegarde/chargement JSON.
-"""
+"""Application settings, paths, units, and preferences."""
 
 from __future__ import annotations
 
@@ -13,44 +8,40 @@ from pathlib import Path
 
 
 # ---------------------------------------------------------------------------
-#  Constantes de l'application
+#  Application constants
 # ---------------------------------------------------------------------------
 
 APP_NAME: str = "HEXA Structures"
 APP_VERSION: str = "0.1.0"
 APP_AUTHOR: str = "HEXA Structures Contributors"
 
-# Répertoire de configuration utilisateur
+# User configuration directory
 CONFIG_DIR: Path = Path.home() / ".hexa_structures"
 SETTINGS_FILE: Path = CONFIG_DIR / "settings.json"
 LEGACY_CONFIG_DIR: Path = Path.home() / ".opensees_fr"
 LEGACY_SETTINGS_FILE: Path = LEGACY_CONFIG_DIR / "settings.json"
 
-# Répertoire du projet (racine du package)
+# Project directory (package root)
 PROJECT_ROOT: Path = Path(__file__).resolve().parent.parent
 
-# Ressources embarquées
+# Bundled resources
 RESOURCES_DIR: Path = PROJECT_ROOT / "resources"
 ICONS_DIR: Path = RESOURCES_DIR / "icons"
 PROFILES_DIR: Path = RESOURCES_DIR / "profiles"
 TEMPLATES_DIR: Path = RESOURCES_DIR / "templates"
 
-# Extensions de fichier
+# File extensions
 PROJECT_EXTENSION: str = ".osfr"
 DB_EXTENSION: str = ".db"
 
 
 # ---------------------------------------------------------------------------
-#  Paramètres par défaut
+#  Default parameters
 # ---------------------------------------------------------------------------
 
 @dataclass
 class DisplayUnits:
-    """Unités d'affichage choisies par l'utilisateur.
-
-    Les unités internes restent toujours kN, m, kPa.
-    Ces réglages contrôlent uniquement l'affichage dans la GUI.
-    """
+    """Display units."""
 
     length: str = "m"
     force: str = "kN"
@@ -62,19 +53,19 @@ class DisplayUnits:
 
 @dataclass
 class AnalysisDefaults:
-    """Paramètres par défaut pour les analyses."""
+    """Analysis defaults."""
 
-    ndm: int = 3          # nombre de dimensions du modèle
-    ndf: int = 6          # nombre de degrés de liberté par nœud
-    solver_engine: str = "pynite"  # moteur par défaut : PyNite intégré
+    ndm: int = 3          # number of model dimensions
+    ndf: int = 6          # number of degrees of freedom per node
+    solver_engine: str = "pynite"  # default engine: integrated PyNite
     max_iterations: int = 100
     tolerance: float = 1e-6
-    num_modes: int = 10   # nombre de modes pour l'analyse modale
+    num_modes: int = 10   # number of modes for modal analysis
 
 
 @dataclass
 class GuiPreferences:
-    """Préférences de l'interface graphique."""
+    """GUI preferences."""
 
     theme: str = "dark"
     language: str = "fr"
@@ -85,22 +76,18 @@ class GuiPreferences:
     diagram_window_x: int = -1
     diagram_window_y: int = -1
     show_grid: bool = True
-    grid_spacing: float = 1.0  # mètre
+    grid_spacing: float = 1.0  # meter
     snap_to_grid: bool = True
     font_size: int = 10
     recent_projects_max: int = 10
-    show_node_tags: bool = True       # numéros des nœuds (visible par défaut)
-    show_section_names: bool = False   # noms des sections sur les éléments
-    show_extruded_sections: bool = False  # affichage 3D extrudé des sections
+    show_node_tags: bool = True       # node numbers (visible by default)
+    show_section_names: bool = False   # section names on elements
+    show_extruded_sections: bool = False  # 3D extruded section display
 
 
 @dataclass
 class Settings:
-    """Paramètres globaux de l'application.
-
-    Chargés au démarrage depuis ~/.opensees_fr/settings.json.
-    Sauvegardés automatiquement à chaque modification.
-    """
+    """Settings."""
 
     display_units: DisplayUnits = field(default_factory=DisplayUnits)
     analysis: AnalysisDefaults = field(default_factory=AnalysisDefaults)
@@ -108,14 +95,10 @@ class Settings:
     recent_projects: list[str] = field(default_factory=list)
     last_project_dir: str = ""
 
-    # --- Sérialisation ---
+    # --- Serialization ---
 
     def save(self, path: Path | None = None) -> None:
-        """Sauvegarde les paramètres dans un fichier JSON.
-
-        Args:
-            path: Chemin du fichier. Par défaut : ~/.opensees_fr/settings.json.
-        """
+        """Handle save."""
         target = path or SETTINGS_FILE
         target.parent.mkdir(parents=True, exist_ok=True)
         with open(target, "w", encoding="utf-8") as f:
@@ -123,16 +106,7 @@ class Settings:
 
     @classmethod
     def load(cls, path: Path | None = None) -> Settings:
-        """Charge les paramètres depuis un fichier JSON.
-
-        Si le fichier n'existe pas, retourne les paramètres par défaut.
-
-        Args:
-            path: Chemin du fichier. Par défaut : ~/.opensees_fr/settings.json.
-
-        Returns:
-            Instance Settings chargée.
-        """
+        """Handle load."""
         target = path or SETTINGS_FILE
         if (
             not target.exists()
@@ -170,18 +144,14 @@ class Settings:
             last_project_dir=data.get("last_project_dir", ""),
         )
 
-    # --- Projets récents ---
+    # --- Recent projects ---
 
     def add_recent_project(self, project_path: str) -> None:
-        """Ajoute un projet à la liste des projets récents.
-
-        Args:
-            project_path: Chemin absolu du fichier projet.
-        """
+        """Add recent project."""
         if project_path in self.recent_projects:
             self.recent_projects.remove(project_path)
         self.recent_projects.insert(0, project_path)
-        # Garder seulement les N plus récents
+        # Keep only the N most recent entries
         self.recent_projects = self.recent_projects[
             : self.gui.recent_projects_max
         ]

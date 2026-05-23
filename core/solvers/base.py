@@ -1,6 +1,4 @@
-"""
-Types de base pour l'architecture multi-solveur.
-"""
+"""Base types for the multi-solver architecture."""
 
 from __future__ import annotations
 
@@ -9,14 +7,14 @@ from enum import Enum
 
 
 class SolverEngine(str, Enum):
-    """Moteurs de calcul supportes par l'application."""
+    """Solver engine."""
 
     PYNITE = "pynite"
     OPENSEES = "opensees"
 
 
 class AnalysisFeature(str, Enum):
-    """Familles d'analyses pilotees par le logiciel."""
+    """Analysis feature."""
 
     STATIC_LINEAR = "static_linear"
     MODAL = "modal"
@@ -27,7 +25,7 @@ class AnalysisFeature(str, Enum):
 
 
 class CapabilityLevel(str, Enum):
-    """Niveau de disponibilité d'une analyse pour un moteur donne."""
+    """Capability level."""
 
     READY = "ready"
     ENGINE_ONLY = "engine_only"
@@ -37,7 +35,7 @@ class CapabilityLevel(str, Enum):
 
 @dataclass(frozen=True)
 class AnalysisCapability:
-    """Capacite d'un moteur pour une famille d'analyse."""
+    """Analysis capability."""
 
     feature: AnalysisFeature
     level: CapabilityLevel
@@ -46,7 +44,7 @@ class AnalysisCapability:
 
 @dataclass(frozen=True)
 class SolverInfo:
-    """état d'un solveur détecté sur la machine."""
+    """Solver info."""
 
     engine: SolverEngine
     label: str

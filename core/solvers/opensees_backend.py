@@ -1,6 +1,4 @@
-"""
-Backend OpenSeesPy encapsulé derrière l'interface multi-solveur.
-"""
+"""OpenSees solver backend."""
 
 from __future__ import annotations
 
@@ -22,7 +20,7 @@ def _require_opensees():
     try:
         ensure_external_module_search_paths("openseespy", "openseespywin")
         import openseespy.opensees as ops
-    except ImportError as exc:  # pragma: no cover - dépend de l'environnement
+    except ImportError as exc:  # pragma: no cover - environment-dependent
         raise ImportError(
             "OpenSeesPy n'est pas installé. "
             "Installez-le avec 'pip install openseespy'."
@@ -33,7 +31,7 @@ def _require_opensees():
 def _require_opsvis_section_force_distribution_3d():
     try:
         from opsvis.secforces import section_force_distribution_3d
-    except ImportError as exc:  # pragma: no cover - depend de l'environnement
+    except ImportError as exc:  # pragma: no cover - environment-dependent
         raise ImportError(
             "opsvis n'est pas installé. "
             "Les diagrammes détaillés ne sont donc pas disponibles."
@@ -44,7 +42,7 @@ def _require_opsvis_section_force_distribution_3d():
 def _current_element_load_data() -> dict:
     try:
         from opsvis.model import get_Ew_data_from_ops_domain_3d
-    except Exception:  # pragma: no cover - depend de l'environnement
+    except Exception:  # pragma: no cover - environment-dependent
         return {}
     if not callable(get_Ew_data_from_ops_domain_3d):
         return {}
@@ -62,7 +60,7 @@ _COMP_IDX: dict[str, int] = {
 
 
 class OpenSeesBackend:
-    """Backend OpenSees pour l'analyse et l'extraction des résultats."""
+    """OpenSees backend."""
 
     engine_name = "opensees"
     supports_diagrams = True
@@ -190,7 +188,7 @@ class OpenSeesBackend:
         }
 
     def _prepare_analysis_model(self) -> None:
-        """Construit le modèle temporaire transmis à OpenSees."""
+        """Handle prepare analysis model."""
         self.analysis_project = build_analysis_model(self.project)
         self.generated_plate_meshes = getattr(
             self.analysis_project,
@@ -200,7 +198,7 @@ class OpenSeesBackend:
         self.builder = OpsBuilder(self.analysis_project)
 
     def _attach_analysis_context(self, results: dict) -> None:
-        """Ajoute le modele enrichi utile aux cartes de resultats plaques."""
+        """Handle attach analysis context."""
         results["analysis_project"] = self.analysis_project
         results["generated_plate_meshes"] = self.generated_plate_meshes
         context = results.setdefault("result_context", {})
@@ -234,7 +232,7 @@ class OpenSeesBackend:
         component: str,
         nep: int = 17,
     ) -> tuple[np.ndarray, np.ndarray] | None:
-        """échantillonné une composante interne depuis le domaine OpenSees actif."""
+        """Handle sample diagram component."""
         component_idx = _COMP_IDX.get(component)
         if component_idx is None:
             return None

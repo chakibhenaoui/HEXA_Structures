@@ -1,16 +1,4 @@
-"""Comparaison directe entre notre extraction et la référence OpenSees/opsvis.
-
-Ces tests construisent un vrai modèle OpenSees via le `ProjectModel`,
-lancent une analyse linéaire, puis comparent :
-
-1. les efforts d'extrémité extraits par `ResultsExtractor`,
-2. la distribution interpolée par `interpolate_internal_forces`,
-3. la distribution retournée par `opsvis.section_force_distribution_3d`.
-
-L'objectif est de verrouiller la convention locale et de détecter toute
-régression d'orientation/signes sur les poutres 3D, en particulier pour
-les éléments inclinés ou verticaux.
-"""
+"""Helpers for test results vs opsvis."""
 
 from __future__ import annotations
 
@@ -133,7 +121,7 @@ def test_element_end_forces_match_opensees_local_force(
     ):
         assert getattr(actual, attr) == pytest.approx(getattr(expected, attr), abs=1e-9)
 
-    # Le test repose bien sur le domaine OpenSees construit par notre projet.
+    # This test relies on the OpenSees domain built by our project.
     assert set(project.elements) == {1}
 
 

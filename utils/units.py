@@ -1,10 +1,4 @@
-"""
-Système d'unités SI pour le calcul de structures.
-
-Unités internes : kN, m, kPa (système génie civil courant).
-Ce module centralise toutes les conversions entre les unités
-d'affichage (mm, cm, MPa, cm², cm⁴…) et les unités internes.
-"""
+"""SI unit system for structural calculations."""
 
 from __future__ import annotations
 
@@ -14,15 +8,15 @@ from typing import ClassVar
 
 
 # ---------------------------------------------------------------------------
-#  Facteurs de conversion vers les unités internes (kN, m, kPa)
+#  Conversion factors to internal units (kN, m, kPa)
 # ---------------------------------------------------------------------------
 
-# Longueur → mètre
+# Length -> meter
 MM_TO_M: float = 1e-3
 CM_TO_M: float = 1e-2
 M_TO_M: float = 1.0
 
-# Surface → m²
+# Area -> m2
 MM2_TO_M2: float = 1e-6
 CM2_TO_M2: float = 1e-4
 M2_TO_M2: float = 1.0
@@ -43,7 +37,7 @@ KPA_TO_KPA: float = 1.0
 MPA_TO_KPA: float = 1e3
 GPA_TO_KPA: float = 1e6
 
-# Charge linéique → kN/m
+# Line load -> kN/m
 N_M_TO_KN_M: float = 1e-3
 KN_M_TO_KN_M: float = 1.0
 
@@ -51,15 +45,15 @@ KN_M_TO_KN_M: float = 1.0
 NM_TO_KNM: float = 1e-3
 KNM_TO_KNM: float = 1.0
 
-# Masse → kg
+# Mass -> kg
 KG_TO_KG: float = 1.0
 T_TO_KG: float = 1e3
 
-# Masse volumique → kg/m³
+# Density -> kg/m3
 KG_M3_TO_KG_M3: float = 1.0
 
-# Accélération → m/s²
-G_STANDARD: float = 9.80665  # accélération gravitationnelle standard
+# Acceleration -> m/s2
+G_STANDARD: float = 9.80665  # standard gravitational acceleration
 
 
 # ---------------------------------------------------------------------------
@@ -67,7 +61,7 @@ G_STANDARD: float = 9.80665  # accélération gravitationnelle standard
 # ---------------------------------------------------------------------------
 
 class Quantity(Enum):
-    """Grandeurs physiques gérées par le système d'unités."""
+    """Quantity."""
 
     LENGTH = "length"
     AREA = "area"
@@ -82,12 +76,12 @@ class Quantity(Enum):
 
 
 # ---------------------------------------------------------------------------
-#  Définition des unités
+#  Unit definitions
 # ---------------------------------------------------------------------------
 
 @dataclass(frozen=True)
 class UnitDef:
-    """Définition d'une unité avec son facteur de conversion vers l'unité interne."""
+    """Unit def."""
 
     symbol: str
     label_fr: str
@@ -95,11 +89,11 @@ class UnitDef:
     quantity: Quantity
 
     def convert_to_internal(self, value: float) -> float:
-        """Convertit une valeur de cette unité vers l'unité interne."""
+        """Convert to internal."""
         return value * self.to_internal
 
     def convert_from_internal(self, value: float) -> float:
-        """Convertit une valeur de l'unité interne vers cette unité."""
+        """Convert from internal."""
         return value / self.to_internal
 
 
@@ -108,7 +102,7 @@ MM = UnitDef("mm", "millimètre", MM_TO_M, Quantity.LENGTH)
 CM = UnitDef("cm", "centimètre", CM_TO_M, Quantity.LENGTH)
 M = UnitDef("m", "mètre", M_TO_M, Quantity.LENGTH)
 
-# --- Surface ---
+# --- Area ---
 MM2 = UnitDef("mm²", "millimètre carré", MM2_TO_M2, Quantity.AREA)
 CM2 = UnitDef("cm²", "centimètre carré", CM2_TO_M2, Quantity.AREA)
 M2 = UnitDef("m²", "mètre carré", M2_TO_M2, Quantity.AREA)
@@ -129,7 +123,7 @@ KPA = UnitDef("kPa", "kilopascal", KPA_TO_KPA, Quantity.STRESS)
 MPA = UnitDef("MPa", "mégapascal", MPA_TO_KPA, Quantity.STRESS)
 GPA = UnitDef("GPa", "gigapascal", GPA_TO_KPA, Quantity.STRESS)
 
-# --- Charge linéique ---
+# --- Line load ---
 N_PER_M = UnitDef("N/m", "newton par mètre", N_M_TO_KN_M, Quantity.LINE_LOAD)
 KN_PER_M = UnitDef("kN/m", "kilonewton par mètre", KN_M_TO_KN_M, Quantity.LINE_LOAD)
 
@@ -137,19 +131,19 @@ KN_PER_M = UnitDef("kN/m", "kilonewton par mètre", KN_M_TO_KN_M, Quantity.LINE_
 NM = UnitDef("N·m", "newton-mètre", NM_TO_KNM, Quantity.MOMENT)
 KNM = UnitDef("kN·m", "kilonewton-mètre", KNM_TO_KNM, Quantity.MOMENT)
 
-# --- Masse ---
+# --- Mass ---
 KG = UnitDef("kg", "kilogramme", KG_TO_KG, Quantity.MASS)
 T = UnitDef("t", "tonne", T_TO_KG, Quantity.MASS)
 
-# --- Masse volumique ---
+# --- Density ---
 KG_PER_M3 = UnitDef("kg/m³", "kilogramme par mètre cube", KG_M3_TO_KG_M3, Quantity.DENSITY)
 
-# --- Accélération ---
+# --- Acceleration ---
 M_PER_S2 = UnitDef("m/s²", "mètre par seconde carrée", 1.0, Quantity.ACCELERATION)
 
 
 # ---------------------------------------------------------------------------
-#  Registre : unités groupées par grandeur
+#  Registry: units grouped by quantity
 # ---------------------------------------------------------------------------
 
 UNITS_BY_QUANTITY: dict[Quantity, list[UnitDef]] = {
@@ -165,7 +159,7 @@ UNITS_BY_QUANTITY: dict[Quantity, list[UnitDef]] = {
     Quantity.ACCELERATION: [M_PER_S2],
 }
 
-# Unités internes par défaut (pour affichage)
+# Default internal units (for display)
 INTERNAL_UNITS: dict[Quantity, UnitDef] = {
     Quantity.LENGTH: M,
     Quantity.AREA: M2,
@@ -185,19 +179,7 @@ INTERNAL_UNITS: dict[Quantity, UnitDef] = {
 # ---------------------------------------------------------------------------
 
 def convert(value: float, from_unit: UnitDef, to_unit: UnitDef) -> float:
-    """Convertit une valeur entre deux unités de même grandeur.
-
-    Args:
-        value: Valeur à convertir.
-        from_unit: Unité source.
-        to_unit: Unité cible.
-
-    Returns:
-        Valeur convertie.
-
-    Raises:
-        ValueError: Si les unités ne sont pas de la même grandeur.
-    """
+    """Handle convert."""
     if from_unit.quantity != to_unit.quantity:
         raise ValueError(
             f"Conversion impossible : {from_unit.symbol} ({from_unit.quantity.value}) "
@@ -209,24 +191,17 @@ def convert(value: float, from_unit: UnitDef, to_unit: UnitDef) -> float:
 
 
 def to_internal(value: float, unit: UnitDef) -> float:
-    """Raccourci : convertit vers l'unité interne."""
+    """Handle to internal."""
     return value * unit.to_internal
 
 
 def from_internal(value: float, unit: UnitDef) -> float:
-    """Raccourci : convertit depuis l'unité interne."""
+    """Handle from internal."""
     return value / unit.to_internal
 
 
 def find_unit(symbol: str) -> UnitDef | None:
-    """Recherche une unité par son symbole.
-
-    Args:
-        symbol: Symbole de l'unité (ex. "mm", "MPa", "kN/m").
-
-    Returns:
-        L'UnitDef correspondante ou None si non trouvée.
-    """
+    """Find unit."""
     for units in UNITS_BY_QUANTITY.values():
         for u in units:
             if u.symbol == symbol:

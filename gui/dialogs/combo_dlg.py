@@ -1,10 +1,4 @@
-"""
-Dialogue de génération automatique des combinaisons EC0.
-
-Permet de sélectionner les types de combinaisons à générer
-(ELU fondamental, ELS caractéristique, fréquente, quasi-permanente, sismique)
-et affiche un aperçu des combinaisons générées.
-"""
+"""Load combination management dialog."""
 
 from __future__ import annotations
 
@@ -52,7 +46,7 @@ COMBO_TYPES = [
 
 
 class CombinationEditDialog(QDialog):
-    """Dialogue d'ajout/modification d'une combinaison."""
+    """Combination edit dialog."""
 
     def __init__(
         self,
@@ -121,7 +115,7 @@ class CombinationEditDialog(QDialog):
         root.addWidget(buttons)
 
     def _load_values(self) -> None:
-        """Remplit le dialogue avec les valeurs existantes."""
+        """Load values."""
         if self._combo is None:
             self.edit_name.setText(f"Combinaison {self._tag}")
             idx = self.combo_type.findData("Manuelle")
@@ -142,7 +136,7 @@ class CombinationEditDialog(QDialog):
                 spin.setValue(float(factor))
 
     def _on_accept(self) -> None:
-        """Valide la combinaison."""
+        """Handle accept."""
         name = self.edit_name.text().strip()
         if not name:
             self.edit_name.setFocus()
@@ -170,13 +164,13 @@ class CombinationEditDialog(QDialog):
         self.accept()
 
     def result(self) -> CombinationData:
-        """Retourne la combinaison saisie."""
+        """Handle result."""
         assert self._combo is not None
         return deepcopy(self._combo)
 
 
 class CombinationManagerDialog(QDialog):
-    """Fenêtre de gestion des combinaisons."""
+    """Combination manager dialog."""
 
     def __init__(
         self,
@@ -261,7 +255,7 @@ class CombinationManagerDialog(QDialog):
         root.addWidget(buttons)
 
     def _refresh_list(self) -> None:
-        """Met à jour la liste des combinaisons."""
+        """Refresh list."""
         current_tag = self.current_tag()
         self.list_items.clear()
 
@@ -283,7 +277,7 @@ class CombinationManagerDialog(QDialog):
         self._refresh_buttons()
 
     def _refresh_buttons(self) -> None:
-        """Active/desactive les actions selon le contexte."""
+        """Refresh buttons."""
         has_loads = bool(self._loads)
         has_selection = self.current_tag() is not None
         self.btn_generate.setEnabled(has_loads)
@@ -294,18 +288,18 @@ class CombinationManagerDialog(QDialog):
         self.btn_switch_loads.setEnabled(True)
 
     def current_tag(self) -> int | None:
-        """Retourne le tag sélectionné."""
+        """Return tag."""
         item = self.list_items.currentItem()
         if item is None:
             return None
         return item.data(Qt.UserRole)
 
     def _next_tag(self) -> int:
-        """Retourne le prochain tag disponible."""
+        """Return the next tag."""
         return max(self._combinations.keys(), default=0) + 1
 
     def _generate_ec0(self) -> None:
-        """Genere les combinaisons EC0 et les ajoute à la liste."""
+        """Handle generate EC0."""
         if not self._loads:
             return
         dlg = ComboDialog(self, loads=self._loads)
@@ -329,7 +323,7 @@ class CombinationManagerDialog(QDialog):
         self._refresh_list()
 
     def _add_combination(self) -> None:
-        """Ajoute une combinaison manuelle."""
+        """Add combination."""
         dlg = CombinationEditDialog(
             self,
             loads=self._loads,
@@ -342,7 +336,7 @@ class CombinationManagerDialog(QDialog):
         self._refresh_list()
 
     def _copy_combination(self) -> None:
-        """Duplique la combinaison sélectionnée."""
+        """Copy combination."""
         tag = self.current_tag()
         if tag is None:
             return
@@ -358,7 +352,7 @@ class CombinationManagerDialog(QDialog):
         self._refresh_list()
 
     def _modify_combination(self) -> None:
-        """Modifie la combinaison sélectionnée."""
+        """Handle modify combination."""
         tag = self.current_tag()
         if tag is None:
             return
@@ -374,7 +368,7 @@ class CombinationManagerDialog(QDialog):
         self._refresh_list()
 
     def _delete_combination(self) -> None:
-        """Supprime la combinaison sélectionnée."""
+        """Delete combination."""
         tag = self.current_tag()
         if tag is None:
             return
@@ -396,21 +390,21 @@ class CombinationManagerDialog(QDialog):
         self._refresh_list()
 
     def _switch_to_load_cases(self) -> None:
-        """Demande l'ouverture du gestionnaire de cas de charge."""
+        """Handle switch to load cases."""
         self._switch_to_load_cases_requested = True
         self.accept()
 
     def switch_to_load_cases_requested(self) -> bool:
-        """Indique si l'utilisateur veut basculer vers les cas de charge."""
+        """Handle switch to load cases requested."""
         return bool(getattr(self, "_switch_to_load_cases_requested", False))
 
     def result_combinations(self) -> dict[int, CombinationData]:
-        """Retourne les combinaisons editees."""
+        """Return combinations."""
         return deepcopy(self._combinations)
 
 
 class ComboDialog(QDialog):
-    """Dialogue de génération des combinaisons EC0."""
+    """Combination dialog."""
 
     def __init__(self, parent: QWidget | None = None,
                  loads: dict[int, LoadData] | None = None):
@@ -472,7 +466,7 @@ class ComboDialog(QDialog):
         self.ui.buttons.rejected.connect(self.reject)
 
     def _update_preview(self) -> None:
-        """Génère et affiche l'aperçu des combinaisons."""
+        """Update preview."""
         selected = [
             ct for ct, cb in self._combo_checks.items()
             if cb.isChecked()
@@ -492,5 +486,5 @@ class ComboDialog(QDialog):
         self.ui.lbl_count.setText(f"{len(self._generated)} combinaison(s) générée(s)")
 
     def result(self) -> list[CombinationData]:
-        """Retourne les combinaisons générées."""
+        """Handle result."""
         return self._generated

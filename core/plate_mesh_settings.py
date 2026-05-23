@@ -1,4 +1,4 @@
-"""Regles de maillage des plaques utilisateur."""
+"""Plate meshing rules and recommendations."""
 
 from __future__ import annotations
 
@@ -24,7 +24,7 @@ THIN_PLATE_SLENDERNESS_LIMIT = 12.0
 
 @dataclass(frozen=True)
 class PlateMeshRecommendation:
-    """Maillage effectif retenu pour une plaque macro."""
+    """Plate mesh recommendation."""
 
     mesh_nx: int
     mesh_ny: int
@@ -40,7 +40,7 @@ def effective_plate_mesh_divisions(
     project: "ProjectModel",
     plate: "PlateRegionData",
 ) -> tuple[int, int]:
-    """Retourne les divisions effectivement transmises au modele de calcul."""
+    """Handle effective plate mesh divisions."""
     mode = normalize_plate_mesh_mode(getattr(plate, "mesh_mode", None))
     if mode == PLATE_MESH_MODE_USER:
         return max(1, int(plate.mesh_nx)), max(1, int(plate.mesh_ny))
@@ -52,12 +52,7 @@ def automatic_plate_mesh_recommendation(
     project: "ProjectModel",
     plate: "PlateRegionData",
 ) -> PlateMeshRecommendation:
-    """Calcule un maillage automatique robuste pour une plaque quadrangulaire.
-
-    La methode utilise une taille maximale d'element derivee de la plus petite
-    portee de la plaque, de l'epaisseur et de la formulation. Elle reste
-    deterministe pour que les resultats soient reproductibles.
-    """
+    """Handle automatic plate mesh recommendation."""
     u_length, v_length = _plate_axis_lengths(project, plate)
     short_length = max(min(u_length, v_length), 1e-9)
     thickness = _plate_thickness(project, plate)

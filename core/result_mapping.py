@@ -1,4 +1,4 @@
-"""Mapping des resultats du modele de calcul vers le modele utilisateur."""
+"""Mapping from analysis results to user-facing results."""
 
 from __future__ import annotations
 
@@ -12,7 +12,7 @@ if TYPE_CHECKING:
 
 @dataclass
 class PlateRegionResult:
-    """Resultat agrege visible pour une plaque utilisateur macro."""
+    """Result data for plate region result."""
 
     tag: int
 
@@ -41,7 +41,7 @@ class PlateRegionResult:
 
 @dataclass
 class PlateEdgeReactionResult:
-    """Reaction agregee sur un bord appuye de plaque utilisateur."""
+    """Result data for plate edge reaction result."""
 
     plate_tag: int
     edge: str
@@ -62,7 +62,7 @@ def map_analysis_results_to_user_results(
     raw_results: dict,
     generated_plate_meshes: dict[int, "GeneratedPlateMesh"],
 ) -> dict:
-    """Filtre et enrichit les resultats OpenSees pour l'interface utilisateur."""
+    """Map analysis results to user results."""
     user_node_tags = set(user_project.nodes)
     user_element_tags = set(user_project.elements)
     generated_surface_tags = {
@@ -248,7 +248,7 @@ def _surface_component_values(
     field_name: str,
     gauss_index: int,
 ) -> list[float]:
-    """Retourne les valeurs d'un composant sur tous les points de Gauss disponibles."""
+    """Handle surface component values."""
     values: list[float] = []
     for result in surface_results:
         gauss_resultants = getattr(result, "gauss_resultants", ()) or ()
@@ -267,12 +267,7 @@ def _plate_nodal_component_values(
     field_name: str,
     gauss_index: int,
 ) -> list[float]:
-    """Extrapole les resultantes de Gauss aux coins, puis moyenne par noeud.
-
-    SAP/Robot presentent souvent les efforts plaques aux joints d'elements.
-    Cette agregation garde le tableau plaque coherent avec les cartes de
-    contours HEXA, qui utilisent la meme extrapolation nodale.
-    """
+    """Handle plate nodal component values."""
     sums: dict[int, float] = {}
     counts: dict[int, int] = {}
     fallback_values: list[float] = []
@@ -311,7 +306,7 @@ def _plate_nodal_component_values(
 
 
 def _extrapolate_ip_to_node_quad(values_at_ip: list[float]) -> list[float]:
-    """Extrapole 4 valeurs aux points de Gauss vers les 4 noeuds du quad."""
+    """Extrapolate ip to node quad."""
     xep = 0.8660254037844386
     weights = (
         (1.0 + xep, -0.5, 1.0 - xep, -0.5),

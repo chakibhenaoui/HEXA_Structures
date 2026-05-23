@@ -1,4 +1,4 @@
-"""Gestionnaire dédié aux sections plaque."""
+"""Plate section manager dialog."""
 
 from __future__ import annotations
 
@@ -22,7 +22,7 @@ from gui.dialogs.plate_section_dlg import PlateSectionDialog
 
 
 class PlateSectionManagerDialog(QDialog):
-    """Fenêtre de gestion des sections plaque."""
+    """Plate section manager dialog."""
 
     def __init__(
         self,

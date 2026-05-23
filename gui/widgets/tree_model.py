@@ -1,9 +1,4 @@
-"""
-Arbre hiérarchique du modèle.
-
-Nœuds, éléments, matériaux, sections, cas de charges, combinaisons.
-Sélection synchronisée avec la vue 3D et le panneau de propriétés.
-"""
+"""Hierarchical model tree widget."""
 
 from __future__ import annotations
 
@@ -26,7 +21,7 @@ if TYPE_CHECKING:
 
 
 class ItemKind(Enum):
-    """Type d'objet représenté par un item de l'arbre."""
+    """Enumeration of item kind."""
 
     ROOT = auto()
     NODE = auto()
@@ -38,26 +33,13 @@ class ItemKind(Enum):
     COMBINATION = auto()
 
 
-# Rôle Qt custom pour stocker le tag et le type d'objet
+# Custom Qt role for storing the tag and object type
 _ROLE_TAG = Qt.UserRole
 _ROLE_KIND = Qt.UserRole + 1
 
 
 class ModelTree(QTreeWidget):
-    """Arbre hiérarchique du modèle structurel.
-
-    Signaux :
-        node_selected(int) : tag du nœud sélectionné.
-        element_selected(int) : tag de l'élément sélectionné.
-        surface_selected(int) : tag de la surface sélectionnée.
-        material_selected(int) : tag du matériau sélectionné.
-        section_selected(int) : tag de la section sélectionnée.
-        load_selected(int) : tag du cas de charge sélectionné.
-        combination_selected(int) : tag de la combinaison sélectionnée.
-        add_requested(str) : demande d'ajout (\"node\", \"element\", etc.).
-        edit_requested(str, int) : demande d'édition (kind, tag).
-        delete_requested(str, int) : demande de suppression (kind, tag).
-    """
+    """Model tree."""
 
     node_selected = Signal(int)
     element_selected = Signal(int)
@@ -86,14 +68,10 @@ class ModelTree(QTreeWidget):
         self.customContextMenuRequested.connect(self._on_context_menu)
         self.itemDoubleClicked.connect(self._on_item_double_clicked)
 
-    # ── Mise à jour depuis le modèle ─────────────────────────────────────
+    # -- Update from the model -----------------------------------------------
 
     def refresh(self, project: ProjectModel) -> None:
-        """Reconstruit l'arbre à partir du modèle.
-
-        Args:
-            project: Modèle de données du projet.
-        """
+        """Handle refresh."""
         self._project = project
         self.clear()
 
@@ -214,7 +192,7 @@ class ModelTree(QTreeWidget):
         self._apply_default_expansion()
 
     def _add_category(self, name: str, detail: str, kind: ItemKind) -> QTreeWidgetItem:
-        """Ajoute un item racine (catégorie) à l'arbre."""
+        """Add category."""
         item = QTreeWidgetItem([name, detail])
         item.setData(0, _ROLE_KIND, kind)
         font = item.font(0)
@@ -224,7 +202,7 @@ class ModelTree(QTreeWidget):
         return item
 
     def _apply_default_expansion(self) -> None:
-        """Replie les catégories les plus volumineuses après chaque refresh."""
+        """Apply default expansion."""
         for item in (
             getattr(self, "_root_nodes", None),
             getattr(self, "_root_elements", None),
@@ -234,22 +212,22 @@ class ModelTree(QTreeWidget):
             if item is not None:
                 item.setExpanded(False)
 
-    # ── Sélection externe (depuis la vue 3D) ─────────────────────────────
+    # -- External selection (from the 3D view) -------------------------------
 
     def select_node(self, tag: int) -> None:
-        """Sélectionne un nœud dans l'arbre par son tag."""
+        """Handle select node."""
         self._select_by_kind_and_tag(ItemKind.NODE, tag)
 
     def select_element(self, tag: int) -> None:
-        """Sélectionne un élément dans l'arbre par son tag."""
+        """Handle select element."""
         self._select_by_kind_and_tag(ItemKind.ELEMENT, tag)
 
     def select_surface(self, tag: int) -> None:
-        """Sélectionne une surface dans l'arbre par son tag."""
+        """Handle select surface."""
         self._select_by_kind_and_tag(ItemKind.SURFACE, tag)
 
     def _select_by_kind_and_tag(self, kind: ItemKind, tag: int) -> None:
-        """Sélectionne un item de l'arbre par type et tag."""
+        """Handle select by kind and tag."""
         it = self._find_item(kind, tag)
         if it:
             parent = it.parent()
@@ -262,7 +240,7 @@ class ModelTree(QTreeWidget):
             self.blockSignals(False)
 
     def _find_item(self, kind: ItemKind, tag: int) -> QTreeWidgetItem | None:
-        """Recherche un item dans l'arbre."""
+        """Find item."""
         for i in range(self.topLevelItemCount()):
             root = self.topLevelItem(i)
             for j in range(root.childCount()):
@@ -272,10 +250,10 @@ class ModelTree(QTreeWidget):
                     return child
         return None
 
-    # ── Événements ────────────────────────────────────────────────────────
+    # -- Events --------------------------------------------------------------
 
     def _on_item_changed(self, current: QTreeWidgetItem, _previous) -> None:
-        """Émet le signal approprié quand la sélection change."""
+        """Handle item changed."""
         if current is None:
             return
 
@@ -298,7 +276,7 @@ class ModelTree(QTreeWidget):
             signal.emit(tag)
 
     def _on_context_menu(self, pos) -> None:
-        """Menu contextuel pour ajouter/supprimer des objets."""
+        """Handle context menu."""
         item = self.itemAt(pos)
         menu = QMenu(self)
 
@@ -309,7 +287,7 @@ class ModelTree(QTreeWidget):
         tag = item.data(0, _ROLE_TAG)
 
         if kind == ItemKind.ROOT:
-            # Menu sur une catégorie racine
+            # Menu on a root category
             text = item.text(0)
             kind_map = {
                 "Nœuds": "node",
@@ -326,7 +304,7 @@ class ModelTree(QTreeWidget):
                 act_add.triggered.connect(lambda: self.add_requested.emit(obj_type))
         elif kind in (ItemKind.NODE, ItemKind.ELEMENT, ItemKind.SURFACE, ItemKind.MATERIAL,
                       ItemKind.SECTION, ItemKind.LOAD_CASE, ItemKind.COMBINATION):
-            # Menu sur un objet
+            # Menu on an object
             kind_str = _kind_to_str(kind)
             if kind == ItemKind.SURFACE:
                 act_edit = menu.addAction(f"Modifier {item.text(0)}...")
@@ -343,7 +321,7 @@ class ModelTree(QTreeWidget):
             menu.exec(self.viewport().mapToGlobal(pos))
 
     def _on_item_double_clicked(self, item: QTreeWidgetItem, _column: int) -> None:
-        """Double-clic : ouvre le dialogue d'édition pour les cas de charge."""
+        """Handle item double clicked."""
         if item is None:
             return
         kind = item.data(0, _ROLE_KIND)
@@ -355,7 +333,7 @@ class ModelTree(QTreeWidget):
 
 
 def _kind_to_str(kind: ItemKind) -> str:
-    """Convertit un ItemKind en chaîne pour les signaux."""
+    """Handle kind to str."""
     return {
         ItemKind.NODE: "node",
         ItemKind.ELEMENT: "element",
@@ -368,7 +346,7 @@ def _kind_to_str(kind: ItemKind) -> str:
 
 
 def _french_name(obj_type: str) -> str:
-    """Nom français pour le menu contextuel."""
+    """Handle french name."""
     return {
         "node": "nœud",
         "element": "élément",
@@ -381,7 +359,7 @@ def _french_name(obj_type: str) -> str:
 
 
 def _add_action_label(obj_type: str) -> str:
-    """Libellé complet d'ajout pour les menus contextuels racine."""
+    """Add action label."""
     return {
         "node": "Ajouter un nœud...",
         "element": "Ajouter un élément...",

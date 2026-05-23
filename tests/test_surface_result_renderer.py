@@ -82,7 +82,7 @@ def _make_macro_plate_project(mesh_nx: int = 2, mesh_ny: int = 2) -> ProjectMode
 
 
 def _make_square_plate_analysis_project(load_kind: str) -> ProjectModel:
-    """Cree une dalle carree 2x2 maillee en quatre quads OpenSees."""
+    """Create square plate analysis project."""
     project = ProjectModel(name=f"square-plate-{load_kind}")
 
     for y in (0.0, 1.0, 2.0):

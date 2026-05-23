@@ -1,9 +1,4 @@
-"""
-Constantes normatives des Eurocodes avec annexes nationales françaises.
-
-Couvre EC0 (combinaisons), EC1 (charges), EC2 (béton), EC3 (acier),
-EC8 (sismique). Toutes les valeurs sont dans le système interne kN, m, kPa.
-"""
+"""Eurocode constants and French national annex data."""
 
 from __future__ import annotations
 
@@ -15,42 +10,42 @@ from enum import Enum
 #  EC0 — NF EN 1990 : Bases de calcul des structures
 # ═══════════════════════════════════════════════════════════════════════════
 
-# Coefficients partiels ELU fondamental (§6.4.3.2, tableau A1.2(B))
-GAMMA_G_SUP: float = 1.35   # actions permanentes défavorables
-GAMMA_G_INF: float = 1.00   # actions permanentes favorables
-GAMMA_Q: float = 1.50       # actions variables
+# Fundamental ULS partial factors (§6.4.3.2, table A1.2(B))
+GAMMA_G_SUP: float = 1.35   # unfavorable permanent actions
+GAMMA_G_INF: float = 1.00   # favorable permanent actions
+GAMMA_Q: float = 1.50       # variable actions
 
-# Coefficients ψ (tableau A1.1 — annexe nationale française)
-# Format : {catégorie: (ψ₀, ψ₁, ψ₂)}
+# Psi factors (table A1.1 — French national annex)
+# Format: {category: (psi0, psi1, psi2)}
 
 PSI_COEFFICIENTS: dict[str, tuple[float, float, float]] = {
-    # Charges d'exploitation — bâtiments
-    "A":  (0.7, 0.5, 0.3),   # habitation, résidentiel
-    "B":  (0.7, 0.5, 0.3),   # bureaux
-    "C":  (0.7, 0.7, 0.6),   # lieux de réunion
+    # Imposed loads — buildings
+    "A":  (0.7, 0.5, 0.3),   # housing, residential
+    "B":  (0.7, 0.5, 0.3),   # offices
+    "C":  (0.7, 0.7, 0.6),   # assembly areas
     "D":  (0.7, 0.7, 0.6),   # commerces
     "E":  (1.0, 0.9, 0.8),   # stockage
-    "F":  (0.7, 0.7, 0.6),   # zones de trafic véhicules ≤ 30 kN
-    "G":  (0.7, 0.5, 0.3),   # zones de trafic véhicules > 30 kN
-    "H":  (0.0, 0.0, 0.0),   # toitures
-    # Actions climatiques
-    "snow":  (0.5, 0.2, 0.0),  # neige (altitude ≤ 1000 m)
-    "snow_high": (0.7, 0.5, 0.2),  # neige (altitude > 1000 m)
-    "wind":  (0.6, 0.2, 0.0),  # vent
-    "temp":  (0.6, 0.5, 0.0),  # température
+    "F":  (0.7, 0.7, 0.6),   # vehicle traffic areas <= 30 kN
+    "G":  (0.7, 0.5, 0.3),   # vehicle traffic areas > 30 kN
+    "H":  (0.0, 0.0, 0.0),   # roofs
+    # Climatic actions
+    "snow":  (0.5, 0.2, 0.0),  # snow (altitude <= 1000 m)
+    "snow_high": (0.7, 0.5, 0.2),  # snow (altitude > 1000 m)
+    "wind":  (0.6, 0.2, 0.0),  # wind
+    "temp":  (0.6, 0.5, 0.0),  # temperature
 }
 
-# Coefficients de combinaison ELU accidentel / sismique
+# Accidental / seismic ULS combination factors
 GAMMA_G_ACCIDENTAL: float = 1.0
 GAMMA_Q_ACCIDENTAL: float = 1.0
 
 
 # ═══════════════════════════════════════════════════════════════════════════
-#  EC1 — NF EN 1991 : Actions sur les structures
+#  EC1 — NF EN 1991: Actions on structures
 # ═══════════════════════════════════════════════════════════════════════════
 
-# --- Charges d'exploitation (EC1-1-1, tableau 6.2 + AN FR) ---
-# Valeurs en kPa (kN/m²)
+# --- Imposed loads (EC1-1-1, table 6.2 + French NA) ---
+# Values in kPa (kN/m2)
 
 LIVE_LOADS: dict[str, tuple[float, str]] = {
     "A":  (1.5, "Habitation, résidentiel"),
@@ -67,10 +62,10 @@ LIVE_LOADS: dict[str, tuple[float, str]] = {
 }
 
 
-# --- Neige — Annexe nationale française (EC1-1-3/NA) ---
+# --- Snow — French national annex (EC1-1-3/NA) ---
 
 class SnowZone(Enum):
-    """Zones de neige métropolitaines."""
+    """Enumeration of snow zone."""
     A1 = "A1"
     A2 = "A2"
     B1 = "B1"
@@ -80,7 +75,7 @@ class SnowZone(Enum):
     D  = "D"
     E  = "E"
 
-# Charge de neige au sol sk0 (kN/m²) par zone — altitude de référence
+# Ground snow load sk0 (kN/m2) by zone — reference altitude
 SNOW_SK0: dict[str, float] = {
     "A1": 0.45,
     "A2": 0.45,
@@ -94,37 +89,27 @@ SNOW_SK0: dict[str, float] = {
 
 
 def snow_load_sk(zone: str, altitude: float) -> float:
-    """Calcule la charge de neige au sol sk selon l'AN française.
-
-    Formule : sk = sk0 + Δs1 (pour altitude > 200 m).
-
-    Args:
-        zone: Zone de neige (A1, A2, B1, B2, C1, C2, D, E).
-        altitude: Altitude du site en mètres.
-
-    Returns:
-        Charge de neige sk en kN/m².
-    """
+    """Return the ground snow load."""
     sk0 = SNOW_SK0[zone]
     if altitude <= 200:
         return sk0
-    # Δs1 selon l'altitude (formule simplifiée AN)
+    # Delta s1 by altitude (simplified NA formula)
     delta_s = (altitude - 200) / 1000
     if zone in ("D", "E"):
-        delta_s *= 2  # majoration zones fortement enneigées
+        delta_s *= 2  # increase for heavily snowed zones
     return sk0 + delta_s
 
 
-# --- Vent — Annexe nationale française (EC1-1-4/NA) ---
+# --- Wind — French national annex (EC1-1-4/NA) ---
 
 class WindZone(Enum):
-    """Zones de vent métropolitaines (AN française)."""
+    """Enumeration of wind zone."""
     ZONE_1 = 1
     ZONE_2 = 2
     ZONE_3 = 3
     ZONE_4 = 4
 
-# Vitesse de référence du vent vb,0 (m/s) par zone
+# Reference wind velocity vb,0 (m/s) by zone
 WIND_VB0: dict[int, float] = {
     1: 22.0,
     2: 24.0,
@@ -132,32 +117,25 @@ WIND_VB0: dict[int, float] = {
     4: 28.0,
 }
 
-# Pression dynamique de référence qb = 0.5 * ρ * vb² (kPa)
+# Reference dynamic pressure qb = 0.5 * rho * vb^2 (kPa)
 # ρ_air = 1.225 kg/m³
 AIR_DENSITY: float = 1.225  # kg/m³
 
 def wind_qb(zone: int) -> float:
-    """Pression dynamique de référence qb en kPa.
-
-    Args:
-        zone: Zone de vent (1 à 4).
-
-    Returns:
-        qb en kPa.
-    """
+    """Return the reference wind velocity pressure."""
     vb = WIND_VB0[zone]
     return 0.5 * AIR_DENSITY * vb**2 / 1000  # Pa → kPa
 
 
 class TerrainCategory(Enum):
-    """Catégories de terrain (EC1-1-4, tableau 4.1)."""
-    ZERO = 0   # mer, zone côtière
+    """Terrain category."""
+    ZERO = 0   # sea, coastal area
     I    = 1   # lacs, rase campagne
-    II   = 2   # campagne avec haies, petits villages
-    III  = 3   # zones suburbaines, forêts
-    IV   = 4   # zones urbaines (≥ 15% bâti)
+    II   = 2   # countryside with hedges, small villages
+    III  = 3   # suburban areas, forests
+    IV   = 4   # urban areas (>= 15% built-up)
 
-# Paramètres de rugosité par catégorie : (z0 en m, zmin en m)
+# Roughness parameters by category: (z0 in m, zmin in m)
 TERRAIN_PARAMS: dict[int, tuple[float, float]] = {
     0: (0.003, 1.0),
     1: (0.01,  1.0),
@@ -168,44 +146,41 @@ TERRAIN_PARAMS: dict[int, tuple[float, float]] = {
 
 
 # ═══════════════════════════════════════════════════════════════════════════
-#  EC2 — NF EN 1992 : Calcul des structures en béton
+#  EC2 — NF EN 1992: Design of concrete structures
 # ═══════════════════════════════════════════════════════════════════════════
 
 @dataclass(frozen=True)
 class ConcreteGrade:
-    """Propriétés d'une classe de béton EC2 (tableau 3.1).
-
-    Toutes les contraintes en kPa, module en kPa.
-    """
+    """Material grade data for concrete grade."""
 
     name: str
-    fck: float       # résistance caractéristique sur cylindre (kPa)
-    fck_cube: float  # résistance caractéristique sur cube (kPa)
-    fcm: float       # résistance moyenne (kPa)
-    fctm: float      # résistance moyenne en traction (kPa)
+    fck: float       # characteristic cylinder strength (kPa)
+    fck_cube: float  # characteristic cube strength (kPa)
+    fcm: float       # mean strength (kPa)
+    fctm: float      # mean tensile strength (kPa)
     fctk_005: float  # fractile 5% traction (kPa)
     fctk_095: float  # fractile 95% traction (kPa)
-    ecm: float       # module sécant moyen (kPa)
-    eps_c1: float    # déformation au pic (‰)
-    eps_cu1: float   # déformation ultime (‰)
+    ecm: float       # mean secant modulus (kPa)
+    eps_c1: float    # strain at peak stress (per mille)
+    eps_cu1: float   # ultimate strain (per mille)
 
     @property
     def fcd(self) -> float:
-        """Résistance de calcul fcd = αcc × fck / γc (kPa)."""
+        """Return the concrete design compressive strength."""
         return ALPHA_CC * self.fck / GAMMA_C
 
     @property
     def fctd(self) -> float:
-        """Résistance de calcul en traction fctd = αct × fctk_005 / γc (kPa)."""
+        """Return the concrete design tensile strength."""
         return ALPHA_CT * self.fctk_005 / GAMMA_C
 
 
-# Coefficients EC2
-GAMMA_C: float = 1.5      # coefficient partiel béton
-ALPHA_CC: float = 1.0     # coefficient αcc (AN française)
-ALPHA_CT: float = 1.0     # coefficient αct (AN française)
+# EC2 factors
+GAMMA_C: float = 1.5      # concrete partial factor
+ALPHA_CC: float = 1.0     # alpha_cc factor (French NA)
+ALPHA_CT: float = 1.0     # alpha_ct factor (French NA)
 
-# Classes de béton (EC2 tableau 3.1) — valeurs en kPa
+# Concrete grades (EC2 table 3.1) — values in kPa
 CONCRETE_GRADES: dict[str, ConcreteGrade] = {
     "C20/25": ConcreteGrade("C20/25", 20_000, 25_000, 28_000, 2_200, 1_500, 2_900, 30_000_000, 2.0, 3.5),
     "C25/30": ConcreteGrade("C25/30", 25_000, 30_000, 33_000, 2_600, 1_800, 3_300, 31_000_000, 2.1, 3.5),
@@ -217,24 +192,24 @@ CONCRETE_GRADES: dict[str, ConcreteGrade] = {
 }
 
 
-# --- Aciers pour béton armé (EC2 + AN FR) ---
+# --- Reinforcing steels (EC2 + French NA) ---
 
 @dataclass(frozen=True)
 class RebarGrade:
-    """Propriétés d'un acier pour armatures (EC2 annexe C)."""
+    """Material grade data for rebar grade."""
 
     name: str
-    fyk: float     # limite élastique caractéristique (kPa)
-    es: float      # module d'Young (kPa)
-    ductility: str # classe de ductilité (A, B ou C)
+    fyk: float     # characteristic yield strength (kPa)
+    es: float      # Young's modulus (kPa)
+    ductility: str # ductility class (A, B, or C)
 
     @property
     def fyd(self) -> float:
-        """Résistance de calcul fyd = fyk / γs (kPa)."""
+        """Return the steel design yield strength."""
         return self.fyk / GAMMA_S
 
 
-GAMMA_S: float = 1.15  # coefficient partiel acier armatures
+GAMMA_S: float = 1.15  # reinforcement steel partial factor
 
 REBAR_GRADES: dict[str, RebarGrade] = {
     "B500A": RebarGrade("B500A", 500_000, 200_000_000, "A"),
@@ -249,22 +224,22 @@ REBAR_GRADES: dict[str, RebarGrade] = {
 
 @dataclass(frozen=True)
 class SteelGrade:
-    """Propriétés d'un acier de construction (EC3 tableau 3.1)."""
+    """Material grade data for steel grade."""
 
     name: str
-    fy: float      # limite élastique (kPa) — épaisseur ≤ 40 mm
-    fu: float      # résistance à la traction (kPa)
-    es: float      # module d'Young (kPa)
+    fy: float      # yield strength (kPa) — thickness <= 40 mm
+    fu: float      # tensile strength (kPa)
+    es: float      # Young's modulus (kPa)
 
     @property
     def fyd(self) -> float:
-        """Résistance de calcul fyd = fy / γM0 (kPa)."""
+        """Return the steel design yield strength."""
         return self.fy / GAMMA_M0
 
 
-GAMMA_M0: float = 1.0   # coefficient partiel résistance sections
-GAMMA_M1: float = 1.0   # coefficient partiel instabilités
-GAMMA_M2: float = 1.25  # coefficient partiel sections nettes / boulons
+GAMMA_M0: float = 1.0   # section resistance partial factor
+GAMMA_M1: float = 1.0   # instability partial factor
+GAMMA_M2: float = 1.25  # net section / bolt partial factor
 
 STEEL_GRADES: dict[str, SteelGrade] = {
     "S235": SteelGrade("S235", 235_000, 360_000, 210_000_000),
@@ -275,18 +250,18 @@ STEEL_GRADES: dict[str, SteelGrade] = {
 
 
 # ═══════════════════════════════════════════════════════════════════════════
-#  EC8 — NF EN 1998 : Calcul des structures pour la résistance aux séismes
+#  EC8 — NF EN 1998: Design of structures for earthquake resistance
 # ═══════════════════════════════════════════════════════════════════════════
 
 class SeismicZone(Enum):
-    """Zones de sismicité France (décret 2010-1255)."""
-    ZONE_1 = 1   # très faible
+    """Enumeration of seismic zone."""
+    ZONE_1 = 1   # very low
     ZONE_2 = 2   # faible
-    ZONE_3 = 3   # modérée
+    ZONE_3 = 3   # moderate
     ZONE_4 = 4   # moyenne
     ZONE_5 = 5   # forte (Antilles)
 
-# Accélération de référence agR (m/s²) par zone sismique
+# Reference acceleration agR (m/s2) by seismic zone
 SEISMIC_AGR: dict[int, float] = {
     1: 0.4,
     2: 0.7,
@@ -297,13 +272,13 @@ SEISMIC_AGR: dict[int, float] = {
 
 
 class ImportanceClass(Enum):
-    """Classes d'importance des bâtiments (EC8 §4.2.5)."""
-    I   = 1   # bâtiments agricoles, etc.
-    II  = 2   # bâtiments courants
-    III = 3   # écoles, salles de réunion
-    IV  = 4   # hôpitaux, casernes de pompiers
+    """Enumeration of importance class."""
+    I   = 1   # agricultural buildings, etc.
+    II  = 2   # ordinary buildings
+    III = 3   # schools, assembly rooms
+    IV  = 4   # hospitals, fire stations
 
-# Coefficient d'importance γI par classe
+# Importance factor gamma_I by class
 IMPORTANCE_FACTOR: dict[int, float] = {
     1: 0.8,
     2: 1.0,
@@ -313,16 +288,16 @@ IMPORTANCE_FACTOR: dict[int, float] = {
 
 
 class SoilClass(Enum):
-    """Classes de sol (EC8 §3.1.2)."""
+    """Enumeration of soil class."""
     A = "A"  # rocher
-    B = "B"  # dépôts raides
-    C = "C"  # dépôts profonds de sable/gravier dense
-    D = "D"  # dépôts lâches
-    E = "E"  # couche superficielle d'alluvions sur rocher
+    B = "B"  # stiff deposits
+    C = "C"  # deep deposits of dense sand/gravel
+    D = "D"  # loose deposits
+    E = "E"  # shallow alluvial layer over rock
 
 
-# Paramètres spectre type 1 (AN française, tableau 3.2)
-# Format : (S, TB, TC, TD) en secondes
+# Type 1 spectrum parameters (French NA, table 3.2)
+# Format: (S, TB, TC, TD) in seconds
 
 SPECTRUM_TYPE1: dict[str, tuple[float, float, float, float]] = {
     "A": (1.0, 0.03, 0.20, 2.5),
@@ -332,7 +307,7 @@ SPECTRUM_TYPE1: dict[str, tuple[float, float, float, float]] = {
     "E": (1.80, 0.08, 0.45, 1.25),
 }
 
-# Paramètres spectre type 2 (AN française, tableau 3.3)
+# Type 2 spectrum parameters (French NA, table 3.3)
 SPECTRUM_TYPE2: dict[str, tuple[float, float, float, float]] = {
     "A": (1.0, 0.03, 0.20, 2.5),
     "B": (1.35, 0.05, 0.25, 2.5),
@@ -341,19 +316,12 @@ SPECTRUM_TYPE2: dict[str, tuple[float, float, float, float]] = {
     "E": (1.80, 0.08, 0.45, 1.25),
 }
 
-# Coefficient η = √(10 / (5 + ξ)) ≥ 0.55 (EC8 §3.2.2.2)
-DEFAULT_DAMPING: float = 5.0  # amortissement % (béton armé)
+# Factor eta = sqrt(10 / (5 + xi)) >= 0.55 (EC8 §3.2.2.2)
+DEFAULT_DAMPING: float = 5.0  # damping % (reinforced concrete)
 
 
 def damping_correction(xi: float = DEFAULT_DAMPING) -> float:
-    """Coefficient de correction d'amortissement η (EC8 §3.2.2.2).
-
-    Args:
-        xi: Pourcentage d'amortissement visqueux (5% par défaut).
-
-    Returns:
-        Coefficient η.
-    """
+    """Return the EC8 damping correction factor."""
     eta = (10.0 / (5.0 + xi)) ** 0.5
     return max(eta, 0.55)
 
@@ -366,21 +334,7 @@ def elastic_spectrum(
     spectrum_type: int = 1,
     damping: float = DEFAULT_DAMPING,
 ) -> float:
-    """Ordonnée du spectre de réponse élastique Se(T) en m/s².
-
-    EC8 §3.2.2.2, expressions (3.2) à (3.5).
-
-    Args:
-        T: Période en secondes.
-        zone: Zone de sismicité (1 à 5).
-        importance: Classe d'importance (1 à 4).
-        soil: Classe de sol ('A' à 'E').
-        spectrum_type: Type de spectre (1 ou 2).
-        damping: Amortissement en % (5% par défaut).
-
-    Returns:
-        Accélération spectrale Se(T) en m/s².
-    """
+    """Return the elastic response spectrum ordinate."""
     agr = SEISMIC_AGR[zone]
     gamma_i = IMPORTANCE_FACTOR[importance]
     ag = agr * gamma_i
@@ -410,21 +364,7 @@ def design_spectrum(
     q: float = 1.5,
     spectrum_type: int = 1,
 ) -> float:
-    """Ordonnée du spectre de calcul Sd(T) en m/s².
-
-    EC8 §3.2.2.5, expressions (3.13) à (3.16).
-
-    Args:
-        T: Période en secondes.
-        zone: Zone de sismicité (1 à 5).
-        importance: Classe d'importance (1 à 4).
-        soil: Classe de sol ('A' à 'E').
-        q: Coefficient de comportement.
-        spectrum_type: Type de spectre (1 ou 2).
-
-    Returns:
-        Accélération spectrale Sd(T) en m/s².
-    """
+    """Return the design response spectrum ordinate."""
     agr = SEISMIC_AGR[zone]
     gamma_i = IMPORTANCE_FACTOR[importance]
     ag = agr * gamma_i

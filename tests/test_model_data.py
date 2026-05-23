@@ -1,4 +1,4 @@
-"""Tests unitaires pour le modèle de données interne (3D — 6 DDL)."""
+"""Helpers for test model data."""
 
 import pytest
 
@@ -24,13 +24,13 @@ class TestNodeData:
         assert not node.is_fixed
 
     def test_fixities_pinned(self):
-        """Rotule 3D : translations bloquées, rotations libres."""
+        """Test fixities pinned."""
         node = NodeData(tag=1, x=0, y=0, fixities=(1, 1, 1, 0, 0, 0))
         assert node.is_fixed
         assert node.is_support
 
     def test_fixities_fixed(self):
-        """Encastrement : tout bloqué."""
+        """Test fixities fixed."""
         node = NodeData(tag=1, x=0, y=0, fixities=(1, 1, 1, 1, 1, 1))
         assert node.is_fixed
         assert node.is_support
@@ -233,10 +233,10 @@ class TestProjectModel:
 
 class TestSQLitePersistence:
     def test_save_and_load(self, tmp_path):
-        """Sauvegarde et rechargement complet d'un projet 3D."""
+        """Test save and load."""
         db_path = tmp_path / "test_project.db"
 
-        # Créer un projet avec fixités 6 DDL
+        # Create a project with 6-DOF fixities
         p = ProjectModel(name="Test projet")
         p.add_node(0, 0, fixities=(1, 1, 1, 1, 1, 1))  # encastrement
         p.add_node(5, 0)
@@ -298,7 +298,7 @@ class TestSQLitePersistence:
         assert len(p2.plate_surface_loads) == 1
         assert len(p2.plate_edge_supports) == 1
 
-        # Vérifier les fixités 6 DDL
+        # Check 6-DOF fixities
         assert p2.nodes[1].fixities == (1, 1, 1, 1, 1, 1)
         assert p2.nodes[2].fixities == (0, 0, 0, 0, 0, 0)
         assert p2.nodes[3].fixities == (1, 1, 1, 0, 0, 0)

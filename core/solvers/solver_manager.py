@@ -1,6 +1,4 @@
-"""
-Gestionnaire central de détection des solveurs.
-"""
+"""Solver discovery and capability management."""
 
 from __future__ import annotations
 
@@ -21,7 +19,7 @@ from core.solvers.base import (
 
 
 class SolverManager:
-    """Détecte les solveurs installés et résout le moteur à utiliser."""
+    """Solver manager."""
 
     FEATURE_LABELS = {
         AnalysisFeature.STATIC_LINEAR: "Statique linéaire",
@@ -43,11 +41,11 @@ class SolverManager:
     _PLUGIN_ID_MAP = get_solver_plugin_id_map()
 
     def detect_engines(self) -> list[SolverInfo]:
-        """Retourne l'état des solveurs connus."""
+        """Detect engines."""
         return [plugin.detect() for plugin in get_solver_plugins()]
 
     def is_available(self, engine: SolverEngine | str) -> bool:
-        """Indique si un solveur demande est disponible."""
+        """Return whether available."""
         normalized = self._normalize_engine(engine)
         return any(
             info.engine == normalized and info.available
@@ -55,7 +53,7 @@ class SolverManager:
         )
 
     def resolve_engine(self, requested: SolverEngine | str | None) -> SolverEngine:
-        """Resout le moteur effectif à utiliser."""
+        """Handle resolve engine."""
         preferred = self._normalize_engine(requested)
         if self.is_available(preferred):
             return preferred
@@ -65,7 +63,7 @@ class SolverManager:
         return SolverEngine.PYNITE
 
     def get_display_info(self) -> list[dict[str, str | bool]]:
-        """Retourne des metadonnées prétés pour la GUI."""
+        """Return display info."""
         rows: list[dict[str, str | bool]] = []
         for info in self.detect_engines():
             suffix = []
@@ -111,7 +109,7 @@ class SolverManager:
         return plugin.create(project), plugin.plugin_id
 
     def create_backend(self, project, requested: SolverEngine | str | None):
-        """Instancie le backend correspondant au moteur resolu."""
+        """Instantiate the backend for the resolved engine."""
         solver, solver_id = self.create_solver(project, requested)
         plugin = self._PLUGIN_ID_MAP.get(
             solver_id,
@@ -123,7 +121,7 @@ class SolverManager:
         self,
         engine: SolverEngine | str,
     ) -> dict[AnalysisFeature, AnalysisCapability]:
-        """Retourne la table des capacités connues pour un moteur."""
+        """Return capabilities."""
         plugin = self._plugin_for_request(engine)
         if plugin is None:
             plugin = self._PLUGIN_MAP[SolverEngine.PYNITE]
@@ -140,7 +138,7 @@ class SolverManager:
         return plugin.capabilities
 
     def get_capability_matrix(self) -> list[dict[str, str]]:
-        """Retourne une matrice lisible des capacités par moteur."""
+        """Return capability matrix."""
         rows: list[dict[str, str]] = []
         pynite_caps = self.get_capabilities(SolverEngine.PYNITE)
         opensees_caps = self.get_capabilities(SolverEngine.OPENSEES)
@@ -165,7 +163,7 @@ class SolverManager:
         feature: AnalysisFeature,
         requested: SolverEngine | str | None = None,
     ) -> SolverEngine:
-        """Retourne le meilleur moteur à utiliser pour une famille d'analyse."""
+        """Handle best engine for feature."""
         preferred = self.resolve_engine(requested)
         preferred_cap = self.get_capabilities(preferred)[feature].level
         if preferred_cap in {CapabilityLevel.READY, CapabilityLevel.ENGINE_ONLY}:
@@ -182,11 +180,11 @@ class SolverManager:
         return preferred
 
     def feature_label(self, feature: AnalysisFeature) -> str:
-        """Libellé utilisateur d'une famille d'analyse."""
+        """Handle feature label."""
         return self.FEATURE_LABELS[feature]
 
     def capability_label(self, level: CapabilityLevel) -> str:
-        """Libellé utilisateur d'un niveau de capacité."""
+        """Handle capability label."""
         return self.CAPABILITY_LABELS[level]
 
     @staticmethod

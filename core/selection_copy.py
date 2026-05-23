@@ -1,4 +1,4 @@
-"""Helpers pour la copie géométrique des sélections."""
+"""Helpers for copying selected model geometry."""
 
 from __future__ import annotations
 
@@ -8,7 +8,7 @@ from typing import Iterable, Mapping
 def selection_reference_point(
     points: Iterable[tuple[float, float, float]],
 ) -> tuple[float, float, float]:
-    """Retourne le centre moyen d'un ensemble de points 3D."""
+    """Handle selection reference point."""
     pts = list(points)
     if not pts:
         raise ValueError("At least one point is required to build a copy reference.")
@@ -24,11 +24,7 @@ def selection_reference_point(
 def selection_anchor_point(
     points: Iterable[tuple[float, float, float]],
 ) -> tuple[float, float, float]:
-    """Retourne le point d'ancrage bas-gauche de la sélection.
-
-    La priorite suit l'ordre : Z minimum, puis X minimum, puis Y minimum.
-    Cela donne un comportement stable pour les poteaux et portiques copies.
-    """
+    """Handle selection anchor point."""
     pts = list(points)
     if not pts:
         raise ValueError("At least one point is required to build a copy anchor.")
@@ -43,7 +39,7 @@ def build_copy_instance_points(
     dz: float,
     copy_count: int,
 ) -> list[dict[int, tuple[float, float, float]]]:
-    """Construit les positions cible des copies successives."""
+    """Build copy instance points."""
     if copy_count < 1:
         raise ValueError("copy_count must be at least 1.")
 

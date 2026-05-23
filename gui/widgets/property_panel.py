@@ -1,9 +1,4 @@
-"""
-Panneau de propriétés de l'élément sélectionné.
-
-Affiche et permet l'édition des propriétés (nœud, élément, section, matériau).
-Formulaire dynamique qui s'adapte au type d'objet sélectionné.
-"""
+"""Editable property panel for selected objects."""
 
 from __future__ import annotations
 
@@ -47,7 +42,7 @@ from core.model_data import (
 from core.plate_mesh_settings import effective_plate_mesh_divisions
 from core.loads import ComboType, COMBO_LABELS
 
-# Types de charge avec labels français (cohérent avec load_dlg.py)
+# Load types with French labels (consistent with load_dlg.py)
 _LOAD_TYPES = {
     "permanent": "Permanente (G)",
     "variable": "Exploitation (Q)",
@@ -59,7 +54,7 @@ _LOAD_TYPES = {
 if TYPE_CHECKING:
     from core.model_data import ProjectModel, SurfaceElementData
 
-# Nuances par type de matériau
+# Grades by material type
 _GRADES_BY_TYPE: dict[str, list[str]] = {
     "concrete": list(CONCRETE_GRADES.keys()),
     "rebar": list(REBAR_GRADES.keys()),
@@ -74,16 +69,7 @@ _MATERIAL_INFOS: dict[str, str] = {
 
 
 class PropertyPanel(QScrollArea):
-    """Panneau de propriétés éditable pour l'objet sélectionné.
-
-    Signaux :
-        node_modifiéd(int) : un nœud a été modifié (tag).
-        element_modifiéd(int) : un élément a été modifié (tag).
-        surface_modifiéd(int) : une surface a été modifiée (tag).
-        material_modifiéd(int) : un matériau a été modifié (tag).
-        section_modifiéd(int) : une section a été modifiée (tag).
-        model_changed() : le modèle a changé (signal générique).
-    """
+    """Editable property panel."""
 
     node_modified = Signal(int)
     element_modified = Signal(int)
@@ -117,11 +103,11 @@ class PropertyPanel(QScrollArea):
         self._layout.addWidget(self._placeholder)
 
     def set_project(self, project: ProjectModel) -> None:
-        """Définit le projet courant."""
+        """Set project."""
         self._project = project
 
     def set_plate_editing_enabled(self, enabled: bool, reason: str = "") -> None:
-        """Active ou non l'édition des plaques selon le solveur courant."""
+        """Set plate editing enabled."""
         changed = (
             self._plate_editing_enabled != enabled
             or self._plate_editing_reason != reason
@@ -144,16 +130,16 @@ class PropertyPanel(QScrollArea):
                 self.show_section(self._current_tag)
 
     def clear_display(self) -> None:
-        """Efface le contenu et affiche le placeholder."""
+        """Clear display."""
         self._clear_form()
         self._placeholder.setVisible(True)
         self._current_kind = ""
         self._current_tag = -1
 
-    # ── Affichage par type d'objet ────────────────────────────────────────
+    # -- Display by object type -----------------------------------------------
 
     def show_node(self, tag: int) -> None:
-        """Affiche les propriétés d'un nœud."""
+        """Show node."""
         if self._project is None or tag not in self._project.nodes:
             return
         self._current_kind = "node"
@@ -164,7 +150,7 @@ class PropertyPanel(QScrollArea):
         group = QGroupBox(f"Nœud N{tag}")
         form = QFormLayout(group)
 
-        # Coordonnées
+        # Coordinates
         self._spin_x = self._make_spin(node.x, -1e6, 1e6, " m")
         self._spin_y = self._make_spin(node.y, -1e6, 1e6, " m")
         self._spin_z = self._make_spin(node.z, -1e6, 1e6, " m")
@@ -172,7 +158,7 @@ class PropertyPanel(QScrollArea):
         form.addRow("Y :", self._spin_y)
         form.addRow("Z :", self._spin_z)
 
-        # Conditions d'appui (6 DDL)
+        # Support conditions (6 DOF)
         dof_labels = ("Ux (translation X)", "Uy (translation Y)",
                       "Uz (translation Z)", "Rx (rotation X)",
                       "Ry (rotation Y)", "Rz (rotation Z)")
@@ -188,7 +174,7 @@ class PropertyPanel(QScrollArea):
         self._layout.addWidget(group)
 
     def show_element(self, tag: int) -> None:
-        """Affiche les propriétés d'un élément (tout éditable)."""
+        """Show element."""
         if self._project is None or tag not in self._project.elements:
             return
         self._current_kind = "element"
@@ -199,7 +185,7 @@ class PropertyPanel(QScrollArea):
         group = QGroupBox(f"Élément E{tag}")
         form = QFormLayout(group)
 
-        # Nœuds (éditables via combobox)
+        # Nodes (editable through combobox)
         self._combo_node_i = QComboBox()
         self._combo_node_j = QComboBox()
         for ntag in sorted(self._project.nodes.keys()):
@@ -215,7 +201,7 @@ class PropertyPanel(QScrollArea):
         form.addRow("Nœud I :", self._combo_node_i)
         form.addRow("Nœud J :", self._combo_node_j)
 
-        # Section (éditable via combobox)
+        # Section (editable through combobox)
         self._combo_section = QComboBox()
         for stag, sec in self._project.sections.items():
             if sec.is_surface:
@@ -225,7 +211,7 @@ class PropertyPanel(QScrollArea):
                 self._combo_section.setCurrentIndex(self._combo_section.count() - 1)
         form.addRow("Section :", self._combo_section)
 
-        # Type (éditable)
+        # Type (editable)
         self._combo_elem_type = QComboBox()
         elem_types = ["elasticBeamColumn", "forceBeamColumn", "truss", "corotTruss"]
         self._combo_elem_type.addItems(elem_types)
@@ -246,7 +232,7 @@ class PropertyPanel(QScrollArea):
         self._layout.addWidget(group)
 
     def show_surface(self, tag: int) -> None:
-        """Affiche les propriétés d'un élément surfacique."""
+        """Show surface."""
         if self._project is None:
             return
         if tag in self._project.plate_regions:
@@ -307,7 +293,7 @@ class PropertyPanel(QScrollArea):
         self._layout.addWidget(group)
 
     def _show_plate_region(self, tag: int) -> None:
-        """Affiche une plaque utilisateur macro."""
+        """Show plate region."""
         if self._project is None or tag not in self._project.plate_regions:
             return
         self._current_kind = "surface"
@@ -373,7 +359,7 @@ class PropertyPanel(QScrollArea):
         self._layout.addWidget(group)
 
     def show_material(self, tag: int) -> None:
-        """Affiche les propriétés d'un matériau (tout éditable)."""
+        """Show material."""
         if self._project is None or tag not in self._project.materials:
             return
         self._current_kind = "material"
@@ -454,7 +440,7 @@ class PropertyPanel(QScrollArea):
         self._layout.addWidget(group)
 
     def show_section(self, tag: int) -> None:
-        """Affiche les propriétés d'une section (tout éditable)."""
+        """Show section."""
         if self._project is None or tag not in self._project.sections:
             return
         self._current_kind = "section"
@@ -468,7 +454,7 @@ class PropertyPanel(QScrollArea):
         self._edit_sec_name = QLineEdit(sec.name)
         form.addRow("Nom :", self._edit_sec_name)
 
-        # Type (éditable)
+        # Type (editable)
         self._combo_sec_type = QComboBox()
         sec_types = [
             ("rectangular", "Rectangulaire"),
@@ -484,7 +470,7 @@ class PropertyPanel(QScrollArea):
             self._combo_sec_type.setCurrentIndex(idx)
         form.addRow("Type :", self._combo_sec_type)
 
-        # Matériau associé (éditable)
+        # Associated material (editable)
         self._combo_sec_material = QComboBox()
         for mtag, mat in self._project.materials.items():
             self._combo_sec_material.addItem(f"{mat.name} ({mat.grade})", mtag)
@@ -513,7 +499,7 @@ class PropertyPanel(QScrollArea):
             self._combo_sec_surface_formulation.setCurrentIndex(idx_formulation)
         form.addRow("Formulation :", self._combo_sec_surface_formulation)
 
-        # Propriétés géométriques (éditables)
+        # Geometric properties (editable)
         self._spin_area = self._make_spin(sec.area * 1e4, 0, 1e6)
         self._spin_area.setSuffix(" cm²")
         form.addRow("Aire :", self._spin_area)
@@ -548,7 +534,7 @@ class PropertyPanel(QScrollArea):
         self._layout.addWidget(group)
 
     def show_load(self, tag: int) -> None:
-        """Affiche les propriétés d'un cas de charge (éditable)."""
+        """Show load."""
         if self._project is None or tag not in self._project.loads:
             return
         self._current_kind = "load"
@@ -576,7 +562,7 @@ class PropertyPanel(QScrollArea):
 
         form.addRow(self._make_buttons(self._apply_load))
 
-        # Lister les charges nodales de ce cas
+        # List nodal loads for this case
         nodal = [nl for nl in self._project.nodal_loads if nl.load_tag == tag]
         if nodal:
             form.addRow(QLabel(f"— {len(nodal)} charge(s) nodale(s) —"))
@@ -590,7 +576,7 @@ class PropertyPanel(QScrollArea):
                         parts.append(f"{label}={val:.1f} {unit}")
                 form.addRow(f"  N{nl.node_tag} :", QLabel(", ".join(parts) if parts else "0"))
 
-        # Charges réparties
+        # Distributed loads
         elem_loads = [el for el in self._project.element_loads if el.load_tag == tag]
         if elem_loads:
             form.addRow(QLabel(f"— {len(elem_loads)} charge(s) répartie(s) —"))
@@ -607,7 +593,7 @@ class PropertyPanel(QScrollArea):
         self._layout.addWidget(group)
 
     def show_combination(self, tag: int) -> None:
-        """Affiche les propriétés d'une combinaison (éditable)."""
+        """Show combination."""
         if self._project is None or tag not in self._project.combinations:
             return
         self._current_kind = "combination"
@@ -629,7 +615,7 @@ class PropertyPanel(QScrollArea):
             self._combo_combo_type.setCurrentIndex(idx)
         form.addRow("Type :", self._combo_combo_type)
 
-        # Facteurs éditables
+        # Editable factors
         self._combo_factor_spins: dict[int, QDoubleSpinBox] = {}
         if self._project.loads:
             form.addRow(QLabel("— Facteurs —"))
@@ -648,7 +634,7 @@ class PropertyPanel(QScrollArea):
     # ── Application des modifications ─────────────────────────────────────
 
     def _apply_node(self) -> None:
-        """Applique les modifications du nœud courant."""
+        """Apply node."""
         if self._project is None or self._current_tag not in self._project.nodes:
             return
         node = self._project.nodes[self._current_tag]
@@ -662,7 +648,7 @@ class PropertyPanel(QScrollArea):
         self.model_changed.emit()
 
     def _apply_element(self) -> None:
-        """Applique les modifications de l'élément courant."""
+        """Apply element."""
         if self._project is None or self._current_tag not in self._project.elements:
             return
         elem = self._project.elements[self._current_tag]
@@ -683,7 +669,7 @@ class PropertyPanel(QScrollArea):
         self.model_changed.emit()
 
     def _apply_surface(self) -> None:
-        """Applique les modifications de la surface courante."""
+        """Apply surface."""
         if self._project is None or self._current_tag not in self._project.surface_elements:
             return
         surface = self._project.surface_elements[self._current_tag]
@@ -711,7 +697,7 @@ class PropertyPanel(QScrollArea):
         self.model_changed.emit()
 
     def _apply_plate_region(self) -> None:
-        """Applique les modifications de maillage d'une plaque macro."""
+        """Apply plate region."""
         if self._project is None or self._current_tag not in self._project.plate_regions:
             return
         plate = self._project.plate_regions[self._current_tag]
@@ -723,7 +709,7 @@ class PropertyPanel(QScrollArea):
         self.show_surface(self._current_tag)
 
     def _apply_material(self) -> None:
-        """Applique les modifications du matériau courant."""
+        """Apply material."""
         if self._project is None or self._current_tag not in self._project.materials:
             return
         mat = self._project.materials[self._current_tag]
@@ -740,7 +726,7 @@ class PropertyPanel(QScrollArea):
         self.model_changed.emit()
 
     def _apply_section(self) -> None:
-        """Applique les modifications de la section courante."""
+        """Apply section."""
         if self._project is None or self._current_tag not in self._project.sections:
             return
         sec = self._project.sections[self._current_tag]
@@ -811,7 +797,7 @@ class PropertyPanel(QScrollArea):
         self.model_changed.emit()
 
     def _on_section_type_changed(self) -> None:
-        """Adapte l'édition selon qu'il s'agit d'une barre ou d'une surface."""
+        """Handle section type changed."""
         is_surface = self._combo_sec_type.currentData() == "surface"
         if hasattr(self, "_spin_sec_thickness"):
             self._spin_sec_thickness.setEnabled(is_surface)
@@ -822,7 +808,7 @@ class PropertyPanel(QScrollArea):
                 getattr(self, attr).setEnabled(not is_surface)
 
     def _update_surface_section_summary(self) -> None:
-        """Met à jour le récapitulatif de la section plaque affectée à la surface."""
+        """Update surface section summary."""
         if self._project is None or not hasattr(self, "_combo_surface_section"):
             return
         section_tag = self._combo_surface_section.currentData()
@@ -844,7 +830,7 @@ class PropertyPanel(QScrollArea):
         )
 
     def _surface_area(self, surface: "SurfaceElementData") -> float:
-        """Calcule l'aire d'une surface à partir de ses nœuds."""
+        """Handle surface area."""
         if self._project is None:
             return 0.0
         points = []
@@ -872,20 +858,20 @@ class PropertyPanel(QScrollArea):
         return area
 
     def _on_mat_type_changed(self) -> None:
-        """Met à jour la liste des nuances selon le type de matériau."""
+        """Handle mat type changed."""
         if getattr(self, "_material_form_syncing", False):
             return
         self._update_material_grade_choices()
         self._apply_material_defaults_from_grade()
 
     def _on_mat_grade_changed(self) -> None:
-        """Recharge les propriétés isotropes par défaut selon la nuance."""
+        """Handle mat grade changed."""
         if getattr(self, "_material_form_syncing", False):
             return
         self._apply_material_defaults_from_grade()
 
     def _update_material_grade_choices(self, preferred_grade: str = "") -> None:
-        """Recharge la liste des nuances disponibles selon le type courant."""
+        """Update material grade choices."""
         mat_type = self._combo_mat_type.currentData()
         grades = _GRADES_BY_TYPE.get(mat_type, [])
         target_grade = preferred_grade if preferred_grade in grades else (grades[0] if grades else "")
@@ -898,7 +884,7 @@ class PropertyPanel(QScrollArea):
         self._combo_mat_grade.blockSignals(False)
 
     def _apply_material_defaults_from_grade(self) -> None:
-        """Applique le preset isotrope du type / nuance courants."""
+        """Apply the isotropic preset for the current material type and grade."""
         props = isotropic_material_properties(
             self._combo_mat_type.currentData(),
             self._combo_mat_grade.currentText(),
@@ -911,14 +897,14 @@ class PropertyPanel(QScrollArea):
         self._update_material_derived_fields()
 
     def _update_material_info(self) -> None:
-        """Met à jour le texte d'aide du matériau."""
+        """Update material info."""
         if hasattr(self, "_lbl_mat_info"):
             self._lbl_mat_info.setText(
                 _MATERIAL_INFOS.get(self._combo_mat_type.currentData(), "")
             )
 
     def _update_material_derived_fields(self) -> None:
-        """Met à jour masse volumique et module de cisaillement affichés."""
+        """Update material derived fields."""
         if not hasattr(self, "_edit_mat_mass_density"):
             return
         density = unit_weight_to_density_kg_m3(self._spin_mat_unit_weight.value())
@@ -930,7 +916,7 @@ class PropertyPanel(QScrollArea):
         self._edit_mat_shear.setText(f"{shear:.0f} kPa")
 
     def _apply_load(self) -> None:
-        """Applique les modifications du cas de charge courant."""
+        """Apply load."""
         if self._project is None or self._current_tag not in self._project.loads:
             return
         lc = self._project.loads[self._current_tag]
@@ -940,13 +926,13 @@ class PropertyPanel(QScrollArea):
         self.model_changed.emit()
 
     def _apply_combination(self) -> None:
-        """Applique les modifications de la combinaison courante."""
+        """Apply combination."""
         if self._project is None or self._current_tag not in self._project.combinations:
             return
         combo = self._project.combinations[self._current_tag]
         combo.name = self._edit_combo_name.text().strip() or combo.name
         combo.combo_type = self._combo_combo_type.currentData() or combo.combo_type
-        # Mettre à jour les facteurs
+        # Update factors
         combo.factors.clear()
         for ltag, spin in self._combo_factor_spins.items():
             val = spin.value()
@@ -957,7 +943,7 @@ class PropertyPanel(QScrollArea):
     # ── Helpers ───────────────────────────────────────────────────────────
 
     def _update_plate_mesh_edit_state(self) -> None:
-        """Active les divisions utilisateur uniquement en mode utilisateur."""
+        """Update plate mesh edit state."""
         if not hasattr(self, "_combo_plate_mesh_mode"):
             return
         is_user = (
@@ -968,7 +954,7 @@ class PropertyPanel(QScrollArea):
         self._spin_plate_mesh_ny.setEnabled(is_user and self._plate_editing_enabled)
 
     def _make_buttons(self, apply_slot, *, enabled: bool = True) -> QWidget:
-        """Crée une ligne avec les boutons Appliquer et Fermer."""
+        """Create buttons."""
         container = QWidget()
         h = QHBoxLayout(container)
         h.setContentsMargins(0, 0, 0, 0)
@@ -982,7 +968,7 @@ class PropertyPanel(QScrollArea):
         return container
 
     def _clear_form(self) -> None:
-        """Supprime tous les widgets du formulaire."""
+        """Clear form."""
         self._placeholder.setVisible(False)
         while self._layout.count() > 1:
             child = self._layout.takeAt(1)
@@ -994,7 +980,7 @@ class PropertyPanel(QScrollArea):
 
     def _make_spin(self, value: float, vmin: float, vmax: float,
                    suffix: str = "") -> QDoubleSpinBox:
-        """Crée un QDoubleSpinBox configuré."""
+        """Create spin."""
         spin = QDoubleSpinBox()
         spin.setRange(vmin, vmax)
         spin.setDecimals(3)

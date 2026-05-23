@@ -1,9 +1,4 @@
-"""
-Dialogue de conditions aux limites (appuis).
-
-Permet de sélectionner un type d'appui prédéfini ou de personnaliser
-les 6 DDL individuellement. Affiche un résumé des DDL bloqués.
-"""
+"""Boundary condition dialog."""
 
 from __future__ import annotations
 
@@ -23,7 +18,7 @@ from gui.dialogs import load_dialog_ui
 
 
 class BoundaryDialog(QDialog):
-    """Dialogue de sélection des conditions aux limites."""
+    """Boundary condition dialog."""
 
     # Mapping DOF enum -> .ui checkbox objectName
     _DOF_WIDGET_NAMES: dict[DOF, str] = {
@@ -84,7 +79,7 @@ class BoundaryDialog(QDialog):
     # ------------------------------------------------------------------
 
     def _on_type_changed(self, index: int) -> None:
-        """Met à jour les cases DDL selon le type sélectionné."""
+        """Handle type changed."""
         bc_type = self.ui.comboType.currentData()
         if bc_type == BoundaryType.CUSTOM:
             for cb in self._dof_checks.values():
@@ -102,7 +97,7 @@ class BoundaryDialog(QDialog):
         self._update_summary()
 
     def _on_dof_changed(self) -> None:
-        """Met à jour le résumé quand un DDL change."""
+        """Handle DOF changed."""
         bc_type = self.ui.comboType.currentData()
         if bc_type != BoundaryType.CUSTOM:
             current_fix = tuple(
@@ -120,7 +115,7 @@ class BoundaryDialog(QDialog):
         self._update_summary()
 
     def _update_summary(self) -> None:
-        """Met à jour le texte de résumé."""
+        """Update summary."""
         blocked = []
         for dof in DOF:
             if self._dof_checks[dof].isChecked():
@@ -142,7 +137,7 @@ class BoundaryDialog(QDialog):
     # ------------------------------------------------------------------
 
     def _load_from(self, bc: BoundaryCondition) -> None:
-        """Charge les valeurs depuis une BoundaryCondition existante."""
+        """Load from."""
         idx = self.ui.comboType.findData(bc.bc_type)
         if idx >= 0:
             self.ui.comboType.setCurrentIndex(idx)
@@ -164,7 +159,7 @@ class BoundaryDialog(QDialog):
         self._update_summary()
 
     def result(self) -> BoundaryCondition:
-        """Retourne la condition aux limites configurée."""
+        """Handle result."""
         bc_type = self.ui.comboType.currentData()
         fixities = tuple(
             int(self._dof_checks[dof].isChecked()) for dof in DOF

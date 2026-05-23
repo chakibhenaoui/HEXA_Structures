@@ -1,4 +1,4 @@
-"""Tests unitaires pour le traducteur OpenSees et les modules matériaux/sections."""
+"""Helpers for test OpenSees builder."""
 
 import pytest
 
@@ -20,17 +20,17 @@ from utils.units import convert, CM2, M2, CM4, M4
 class TestMaterials:
     def test_concrete_c30_params(self):
         p = concrete_params(tag=1, grade="C30/37")
-        # fpc doit être négatif (compression)
+        # fpc must be negative (compression)
         assert p.fpc < 0
         # fcd = 30000/1.5 = 20000 → fpc ≈ -20000
         assert abs(p.fpc + 20_000) < 1
-        # Déformation au pic négative
+        # Negative strain at peak stress
         assert p.epsc0 < 0
 
     def test_concrete_confined(self):
         p_unconf = concrete_params(tag=1, grade="C30/37", confined=False)
         p_conf = concrete_params(tag=2, grade="C30/37", confined=True)
-        # Le béton confiné est plus résistant (en valeur absolue)
+        # Confined concrete is stronger (in absolute value)
         assert abs(p_conf.fpc) > abs(p_unconf.fpc)
 
     def test_rebar_b500b(self):
@@ -43,7 +43,7 @@ class TestMaterials:
         p = steel_params(tag=1, grade="S355")
         assert p.fy == 355_000  # γM0 = 1.0
         assert p.es == 210_000_000
-        assert p.b == 0.01  # défaut
+        assert p.b == 0.01  # default
 
     def test_densities(self):
         assert DENSITIES["concrete"] == 2500.0
@@ -77,7 +77,7 @@ class TestTSection:
         assert abs(t.h - 0.55) < 1e-10
 
     def test_centroid_above_mid(self):
-        """Le CDG d'un T doit être au-dessus de la mi-hauteur totale."""
+        """Test centroid above mid."""
         t = TSection(bw=0.20, hw=0.40, bf=0.80, hf=0.15)
         assert t.centroid_y > t.h / 2
 
@@ -107,13 +107,13 @@ class TestProfileCatalog:
             get_profile("XXX 999")
 
     def test_ipe300_area_reasonable(self):
-        """L'aire d'un IPE 300 doit être ~53.8 cm²."""
+        """Test ipe300 area reasonable."""
         p = get_profile("IPE 300")
         area_cm2 = convert(p.area, M2, CM2)
         assert abs(area_cm2 - 53.8) < 0.5
 
     def test_ipe300_inertia_reasonable(self):
-        """L'inertie d'un IPE 300 doit être ~8360 cm⁴."""
+        """Test ipe300 inertia reasonable."""
         p = get_profile("IPE 300")
         iy_cm4 = convert(p.inertia_y, M4, CM4)
         assert abs(iy_cm4 - 8360) < 10

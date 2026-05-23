@@ -1,4 +1,4 @@
-"""Dialogue de création ou remplacement d'un nœud."""
+"""Node creation and editing dialog."""
 
 from __future__ import annotations
 
@@ -15,7 +15,7 @@ from PySide6.QtWidgets import (
 
 
 class NodeDialog(QDialog):
-    """Dialogue simple pour saisir le tag et les coordonnées d'un nœud."""
+    """Node dialog."""
 
     def __init__(
         self,
@@ -97,7 +97,7 @@ class NodeDialog(QDialog):
         self.accept()
 
     def result(self) -> dict[str, float | int]:
-        """Retourne les valeurs saisies."""
+        """Handle result."""
         return {
             "tag": int(self._spn_tag.value()),
             "x": float(self._spn_x.value()),

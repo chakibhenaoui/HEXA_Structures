@@ -1,9 +1,4 @@
-"""
-Tableaux éditables : nœuds et combinaisons.
-
-Affichage tabulaire synchronisé avec le modèle.
-Édition directe des coordonnées, fixités et facteurs de combinaison.
-"""
+"""Editable node and combination tables."""
 
 from __future__ import annotations
 
@@ -30,16 +25,12 @@ if TYPE_CHECKING:
 
 
 # ═══════════════════════════════════════════════════════════════════════════
-#  Tableau des nœuds
+#  Node table
 # ═══════════════════════════════════════════════════════════════════════════
 
 
 class NodeTableWidget(QWidget):
-    """Tableau éditable des nœuds (coordonnées + fixités 6 DDL).
-
-    Signaux :
-        model_changed() : émis après modification d'un nœud.
-    """
+    """Editable node table widget."""
 
     model_changed = Signal()
 
@@ -64,10 +55,10 @@ class NodeTableWidget(QWidget):
         self._table.setAlternatingRowColors(True)
         layout.addWidget(self._table)
 
-    # ── Rafraîchissement ──────────────────────────────────────────────
+    # -- Refresh -------------------------------------------------------------
 
     def refresh(self, project: ProjectModel) -> None:
-        """Reconstruit le tableau à partir du modèle."""
+        """Handle refresh."""
         self._project = project
         self._refreshing = True
         self._table.setRowCount(0)
@@ -84,7 +75,7 @@ class NodeTableWidget(QWidget):
             item_tag.setData(Qt.UserRole, tag)
             self._table.setItem(row, 0, item_tag)
 
-            # Coordonnées X, Y, Z
+            # X, Y, Z coordinates
             for col, val in enumerate((node.x, node.y, node.z), start=1):
                 spin = QDoubleSpinBox()
                 spin.setRange(-1e6, 1e6)
@@ -96,7 +87,7 @@ class NodeTableWidget(QWidget):
                 spin.valueChanged.connect(partial(self._on_coord_changed, tag, axis))
                 self._table.setCellWidget(row, col, spin)
 
-            # Fixités Ux…Rz (checkboxes centrées)
+            # Ux...Rz fixities (centered checkboxes)
             for dof_idx in range(6):
                 cb = QCheckBox()
                 cb.setChecked(bool(node.fixities[dof_idx]))
@@ -111,7 +102,7 @@ class NodeTableWidget(QWidget):
 
         self._refreshing = False
 
-    # ── Callbacks d'édition ───────────────────────────────────────────
+    # -- Editing callbacks --------------------------------------------------
 
     def _on_coord_changed(self, tag: int, axis: int, value: float) -> None:
         if self._refreshing or self._project is None:
@@ -145,11 +136,7 @@ class NodeTableWidget(QWidget):
 
 
 class CombinationTableWidget(QWidget):
-    """Tableau des combinaisons EC0 (facteurs par cas de charge).
-
-    Signaux :
-        model_changed() : émis après modification d'une combinaison.
-    """
+    """Combination table widget."""
 
     model_changed = Signal()
 
@@ -179,15 +166,15 @@ class CombinationTableWidget(QWidget):
         self._table.itemSelectionChanged.connect(self._on_selection_changed)
         layout.addWidget(self._table)
 
-    # ── Rafraîchissement ──────────────────────────────────────────────
+    # -- Refresh -------------------------------------------------------------
 
     def refresh(self, project: ProjectModel) -> None:
-        """Reconstruit le tableau à partir du modèle."""
+        """Handle refresh."""
         self._project = project
         self._refreshing = True
         self._table.blockSignals(True)
 
-        # Colonnes dynamiques selon les cas de charge
+        # Dynamic columns by load case
         self._load_tags = sorted(project.loads.keys())
         fixed_cols = ["Tag", "Nom", "Type"]
         load_headers = [
@@ -211,7 +198,7 @@ class CombinationTableWidget(QWidget):
             item_tag.setData(Qt.UserRole, ctag)
             self._table.setItem(row, 0, item_tag)
 
-            # Nom (éditable)
+            # Name (editable)
             item_name = QTableWidgetItem(combo.name)
             item_name.setData(Qt.UserRole, ctag)
             self._table.setItem(row, 1, item_name)
@@ -221,7 +208,7 @@ class CombinationTableWidget(QWidget):
             item_type.setFlags(Qt.ItemIsSelectable | Qt.ItemIsEnabled)
             self._table.setItem(row, 2, item_type)
 
-            # Facteurs par cas de charge
+            # Factors by load case
             for col_offset, lt in enumerate(self._load_tags):
                 factor = combo.factors.get(lt, 0.0)
                 spin = QDoubleSpinBox()
@@ -234,7 +221,7 @@ class CombinationTableWidget(QWidget):
                 )
                 self._table.setCellWidget(row, 3 + col_offset, spin)
 
-        # Ajuster les colonnes
+        # Adjust columns
         self._table.horizontalHeader().setSectionResizeMode(
             QHeaderView.ResizeToContents,
         )
@@ -242,7 +229,7 @@ class CombinationTableWidget(QWidget):
         self._table.blockSignals(False)
         self._refreshing = False
 
-    # ── Callbacks d'édition ───────────────────────────────────────────
+    # -- Editing callbacks --------------------------------------------------
 
     def _on_factor_changed(self, combo_tag: int, load_tag: int, value: float) -> None:
         if self._refreshing or self._project is None:
@@ -257,7 +244,7 @@ class CombinationTableWidget(QWidget):
         self.model_changed.emit()
 
     def _on_cell_changed(self, row: int, col: int) -> None:
-        """Gère l'édition du nom (colonne 1)."""
+        """Handle cell changed."""
         if self._refreshing or self._project is None:
             return
         if col != 1:
@@ -278,15 +265,15 @@ class CombinationTableWidget(QWidget):
             self.model_changed.emit()
 
     def _on_selection_changed(self) -> None:
-        """Active/desactive le bouton supprimer selon la sélection."""
+        """Handle selection changed."""
         self._btn_delete.setEnabled(len(self._table.selectedItems()) > 0)
 
     def _delete_selected(self) -> None:
-        """Supprime les combinaisons sélectionnées."""
+        """Delete selected."""
         if self._project is None:
             return
 
-        # Recuperer les tags des lignes sélectionnées
+        # Retrieve tags from selected rows
         selected_rows = sorted(
             {idx.row() for idx in self._table.selectedIndexes()},
             reverse=True,

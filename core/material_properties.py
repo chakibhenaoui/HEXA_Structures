@@ -1,4 +1,4 @@
-"""Helpers partages pour les propriétés isotropes des matériaux."""
+"""Shared helpers for isotropic material properties."""
 
 from __future__ import annotations
 
@@ -22,7 +22,7 @@ _DEFAULT_UNIT_WEIGHTS: dict[str, float] = {
 
 
 def density_kg_m3_to_unit_weight(density_kg_m3: float) -> float:
-    """Convertit une masse volumique (kg/m3) en poids volumique (kN/m3)."""
+    """Handle density kg m3 to unit weight."""
     return float(density_kg_m3) * GRAVITY_ACCELERATION / 1000.0
 
 
@@ -32,12 +32,12 @@ def unit_weight_to_density_kg_m3(unit_weight: float) -> float:
 
 
 def default_material_unit_weight(material_type: str) -> float:
-    """Retourne le poids volumique par défaut pour le type de matériau."""
+    """Return the default material unit weight."""
     return _DEFAULT_UNIT_WEIGHTS.get(material_type, 78.5)
 
 
 def default_material_young_modulus(material_type: str, grade: str) -> float:
-    """Retourne le module d'Young par défaut à partir de la nuance."""
+    """Return the default material young modulus."""
     if material_type == "concrete" and grade in CONCRETE_GRADES:
         return CONCRETE_GRADES[grade].ecm
     if material_type == "rebar" and grade in REBAR_GRADES:
@@ -48,12 +48,12 @@ def default_material_young_modulus(material_type: str, grade: str) -> float:
 
 
 def default_material_poisson_ratio(material_type: str) -> float:
-    """Retourne le coefficient de Poisson par défaut."""
+    """Return the default material poisson ratio."""
     return _DEFAULT_POISSON_RATIOS.get(material_type, 0.30)
 
 
 def compute_shear_modulus(young_modulus: float, poisson_ratio: float) -> float:
-    """Calcule le module de cisaillement isotrope G."""
+    """Compute shear modulus."""
     denominator = 2.0 * (1.0 + float(poisson_ratio))
     if denominator <= 1e-12:
         return 0.0
@@ -61,7 +61,7 @@ def compute_shear_modulus(young_modulus: float, poisson_ratio: float) -> float:
 
 
 def _normalize_density_kg_m3(raw_density: Any) -> float | None:
-    """Normalise une masse volumique legacy en kg/m3."""
+    """Normalize density kg m3."""
     if raw_density is None:
         return None
     density = float(raw_density)
@@ -75,7 +75,7 @@ def isotropic_material_properties(
     grade: str,
     properties: Mapping[str, Any] | None = None,
 ) -> dict[str, float]:
-    """Retourne les propriétés isotropes normalisees d'un matériau."""
+    """Handle isotropic material properties."""
     props = dict(properties or {})
 
     unit_weight = props.get("unit_weight")
@@ -112,7 +112,7 @@ def build_material_properties(
     poisson_ratio: float,
     base_properties: Mapping[str, Any] | None = None,
 ) -> dict[str, Any]:
-    """Construit le dictionnaire de propriétés isotropes a sauvegarder."""
+    """Build material properties."""
     props = dict(base_properties or {})
     props.pop("rho", None)
     props.pop("E", None)
@@ -124,7 +124,7 @@ def build_material_properties(
 
 
 def material_mass_density_kg_m3(material) -> float:
-    """Retourne la masse volumique d'un objet matériau en kg/m3."""
+    """Handle material mass density kg m3."""
     if material is None:
         return 0.0
     props = isotropic_material_properties(
@@ -136,7 +136,7 @@ def material_mass_density_kg_m3(material) -> float:
 
 
 def material_elastic_modulus(material) -> float:
-    """Retourne le module d'Young d'un objet matériau en kPa."""
+    """Handle material elastic modulus."""
     if material is None:
         return default_material_young_modulus("steel", "")
     return isotropic_material_properties(
@@ -147,7 +147,7 @@ def material_elastic_modulus(material) -> float:
 
 
 def material_poisson_ratio(material) -> float:
-    """Retourne le coefficient de Poisson d'un objet matériau."""
+    """Handle material poisson ratio."""
     if material is None:
         return default_material_poisson_ratio("steel")
     return isotropic_material_properties(
@@ -158,7 +158,7 @@ def material_poisson_ratio(material) -> float:
 
 
 def material_shear_modulus(material) -> float:
-    """Retourne le module de cisaillement d'un objet matériau en kPa."""
+    """Handle material shear modulus."""
     young_modulus = material_elastic_modulus(material)
     poisson_ratio = material_poisson_ratio(material)
     return compute_shear_modulus(young_modulus, poisson_ratio)

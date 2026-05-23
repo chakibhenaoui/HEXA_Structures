@@ -1,29 +1,11 @@
-"""
-Test de vérification des signes des efforts internes.
-
-Compare les sorties d'OpenSeesPy (eleForce, eleResponse localForce)
-avec les solutions analytiques pour une console et un portique simple.
-"""
+"""Helpers for test signs."""
 import pytest
 
 ops = pytest.importorskip("openseespy.opensees")
 
 
 def test_cantilever():
-    """Console encastrée en I, charge ponctuelle P en J (vers le bas).
-
-    Portée L=3m, P=10 kN vers le bas (-Z global).
-
-    Solution analytique :
-        N = 0 partout
-        Vz = +10 kN (constant, positif = vers le haut)
-        My(0) = -30 kN·m (encastrement, hogging)
-        My(L) = 0 kN·m (extrémité libre)
-
-    Convention attendue pour le diagramme :
-        N négatif = compression, positif = traction
-        My positif = sagging, négatif = hogging
-    """
+    """Test cantilever."""
     print("=" * 60)
     print("TEST 1 : Console encastrée, charge ponctuelle P = 10 kN ↓")
     print("=" * 60)
@@ -31,13 +13,13 @@ def test_cantilever():
     ops.wipe()
     ops.model('basic', '-ndm', 3, '-ndf', 6)
 
-    # Nœuds : console horizontale le long de X, Z = vertical
+    # Nodes: horizontal cantilever along X, Z = vertical
     ops.node(1, 0.0, 0.0, 0.0)  # encastrement
-    ops.node(2, 3.0, 0.0, 0.0)  # extrémité libre
+    ops.node(2, 3.0, 0.0, 0.0)  # free end
 
     ops.fix(1, 1, 1, 1, 1, 1, 1)
 
-    # Matériau et section
+    # Material and section
     E = 210e6  # kN/m²
     A = 0.01   # m²
     Iz = 1e-4  # m⁴
@@ -48,7 +30,7 @@ def test_cantilever():
     ops.geomTransf('Linear', 1, 0.0, 0.0, 1.0)  # vecxz = Z
     ops.element('elasticBeamColumn', 1, 1, 2, A, E, G, J, Iy, Iz, 1)
 
-    # Charge : P = 10 kN vers le bas au nœud 2
+    # Load: P = 10 kN downward at node 2
     ops.timeSeries('Linear', 1)
     ops.pattern('Plain', 1, 1)
     ops.load(2, 0.0, 0.0, -10.0, 0.0, 0.0, 0.0)
@@ -61,7 +43,7 @@ def test_cantilever():
     ops.analysis('Static')
     ops.analyze(1)
 
-    # --- Résultats ---
+    # --- Results ---
     print("\n--- eleForce (GLOBAL) ---")
     ef = ops.eleForce(1)
     print(f"  Node I (6 val) : {[f'{v:+.4f}' for v in ef[:6]]}")
@@ -107,12 +89,7 @@ def test_cantilever():
 
 
 def test_portal_frame():
-    """Portique plan 3m x 3m, encastré, charge répartie 10 kN/m sur poutre.
-
-    Solution analytique (méthode des déplacements) :
-        Réactions verticales : 15 kN chacune
-        Moments d'encastrement : ~2.5 kN·m aux pieds, ~5.0 kN·m aux nœuds
-    """
+    """Test portal frame."""
     print("\n" + "=" * 60)
     print("TEST 2 : Portique plan 3x3m, encastré, w=10 kN/m sur poutre")
     print("=" * 60)
@@ -120,10 +97,10 @@ def test_portal_frame():
     ops.wipe()
     ops.model('basic', '-ndm', 3, '-ndf', 6)
 
-    # Nœuds
+    # Nodes
     ops.node(1, 0.0, 0.0, 0.0)  # pied gauche
-    ops.node(2, 0.0, 0.0, 3.0)  # tête gauche
-    ops.node(3, 3.0, 0.0, 3.0)  # tête droite
+    ops.node(2, 0.0, 0.0, 3.0)  # left top node
+    ops.node(3, 3.0, 0.0, 3.0)  # right top node
     ops.node(4, 3.0, 0.0, 0.0)  # pied droit
 
     ops.fix(1, 1, 1, 1, 1, 1, 1)
@@ -136,20 +113,20 @@ def test_portal_frame():
     G = 80e6
     J = 2e-4
 
-    # GeomTransf : colonnes (verticales, vecxz=X), poutre (horizontale, vecxz=Z)
-    ops.geomTransf('Linear', 1, 1.0, 0.0, 0.0)  # colonnes
-    ops.geomTransf('Linear', 2, 0.0, 0.0, 1.0)  # poutre
+    # GeomTransf: columns (vertical, vecxz=X), beam (horizontal, vecxz=Z)
+    ops.geomTransf('Linear', 1, 1.0, 0.0, 0.0)  # columns
+    ops.geomTransf('Linear', 2, 0.0, 0.0, 1.0)  # beam
 
-    ops.element('elasticBeamColumn', 1, 1, 2, A, E, G, J, Iy, Iz, 1)  # col gauche
-    ops.element('elasticBeamColumn', 2, 2, 3, A, E, G, J, Iy, Iz, 2)  # poutre
-    ops.element('elasticBeamColumn', 3, 4, 3, A, E, G, J, Iy, Iz, 1)  # col droite
+    ops.element('elasticBeamColumn', 1, 1, 2, A, E, G, J, Iy, Iz, 1)  # left column
+    ops.element('elasticBeamColumn', 2, 2, 3, A, E, G, J, Iy, Iz, 2)  # beam
+    ops.element('elasticBeamColumn', 3, 4, 3, A, E, G, J, Iy, Iz, 1)  # right column
 
-    # Charge répartie 10 kN/m vers le bas sur poutre E2
+    # Distributed load 10 kN/m downward on beam E2
     ops.timeSeries('Linear', 1)
     ops.pattern('Plain', 1, 1)
     ops.eleLoad('-ele', 2, '-type', '-beamUniform', 0.0, -10.0)
-    # beamUniform: wy, wz en coordonnées locales
-    # Pour poutre horizontale : local z ~ global Z, wz = -10 = vers le bas
+    # beamUniform: wy, wz in local coordinates
+    # For a horizontal beam: local z ~ global Z, wz = -10 = downward
 
     ops.system('BandGeneral')
     ops.numberer('RCM')
@@ -159,7 +136,7 @@ def test_portal_frame():
     ops.analysis('Static')
     ops.analyze(1)
 
-    # --- Résultats ---
+    # --- Results ---
     print("\n--- Réactions ---")
     ops.reactions()
     r1 = ops.nodeReaction(1)

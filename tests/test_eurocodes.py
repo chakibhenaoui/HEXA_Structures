@@ -1,4 +1,4 @@
-"""Tests unitaires pour les constantes Eurocodes et spectres sismiques."""
+"""Helpers for test eurocodes."""
 
 
 
@@ -40,11 +40,11 @@ class TestEC1:
 
     def test_snow_load_low_altitude(self):
         sk = snow_load_sk("A1", 100)
-        assert sk == 0.45  # pas de majoration sous 200 m
+        assert sk == 0.45  # no increase below 200 m
 
     def test_snow_load_high_altitude(self):
         sk = snow_load_sk("A1", 700)
-        assert sk > 0.45  # majoré
+        assert sk > 0.45  # increased
 
     def test_wind_qb_zone1(self):
         qb = wind_qb(1)
@@ -103,16 +103,16 @@ class TestEC8:
         assert abs(eta - 1.0) < 1e-6
 
     def test_damping_correction_minimum(self):
-        # Très fort amortissement → η minimum 0.55
+        # Very high damping -> eta minimum 0.55
         eta = damping_correction(100.0)
         assert eta >= 0.55
 
     def test_elastic_spectrum_plateau(self):
-        """Sur le plateau (TB < T < TC), Se = ag * S * η * 2.5."""
-        # Zone 3, importance II, sol A, T = 0.1s (entre TB=0.03 et TC=0.20)
+        """Check the elastic spectrum plateau ordinate."""
+        # Zone 3, importance II, soil A, T = 0.1s (between TB=0.03 and TC=0.20)
         se = elastic_spectrum(0.1, zone=3, importance=2, soil="A")
         ag = 1.1 * 1.0  # agR * γI
-        expected = ag * 1.0 * 1.0 * 2.5  # S=1, η=1 pour 5%
+        expected = ag * 1.0 * 1.0 * 2.5  # S=1, eta=1 for 5%
         assert abs(se - expected) < 0.01
 
     def test_elastic_spectrum_negative_T(self):
@@ -120,7 +120,7 @@ class TestEC8:
         assert se == 0.0
 
     def test_design_spectrum_with_q(self):
-        """Le spectre de calcul divise par q."""
+        """Check that the design spectrum is reduced by q."""
         sd = design_spectrum(0.1, zone=3, importance=2, soil="A", q=2.0)
         ag = 1.1
         expected = ag * 1.0 * 2.5 / 2.0

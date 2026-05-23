@@ -1,4 +1,4 @@
-"""Maillage quadrangulaire regulier des plaques utilisateur."""
+"""Structured quadrilateral meshing for user plates."""
 
 from __future__ import annotations
 
@@ -16,7 +16,7 @@ from core.plate_mesh_settings import effective_plate_mesh_divisions
 
 @dataclass(frozen=True)
 class GeneratedPlateMesh:
-    """Correspondance entre une plaque macro et son maillage de calcul."""
+    """Generated plate mesh."""
 
     plate_tag: int
     node_tags: dict[tuple[int, int], int]
@@ -30,11 +30,7 @@ def generate_plate_region_mesh(
     target_project: ProjectModel,
     plate: PlateRegionData,
 ) -> GeneratedPlateMesh:
-    """Genere le maillage de calcul d'une plaque dans un modele temporaire.
-
-    Le modele source reste intact. Le modele cible doit contenir les noeuds de
-    coin utilisateur, ce qui permet de les reutiliser comme coins du maillage.
-    """
+    """Handle generate plate region mesh."""
     _validate_plate(source_project, target_project, plate)
     corners = [_node_xyz(source_project, tag) for tag in plate.corner_node_tags]
     nx, ny = effective_plate_mesh_divisions(source_project, plate)

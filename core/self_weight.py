@@ -1,4 +1,4 @@
-"""Calcul du poids propre automatique des éléments linéaires et surfaciques."""
+"""Automatic self-weight calculations for members and surfaces."""
 
 from __future__ import annotations
 
@@ -15,19 +15,19 @@ GRAVITY = 9.81
 
 
 def is_self_weight_load(load) -> bool:
-    """Indique si un cas de charge correspond au poids propre automatique."""
+    """Return whether self-weight load."""
     load_type = str(getattr(load, "load_type", "")).strip().lower()
     name = str(getattr(load, "name", "")).strip().lower()
     return load_type == SELF_WEIGHT_LOAD_TYPE or name == SELF_WEIGHT_LOAD_NAME.lower()
 
 
 def material_density_kg_m3(material) -> float:
-    """Retourne la masse volumique d'un matériau en kg/m3."""
+    """Handle material density kg m3."""
     return material_mass_density_kg_m3(material)
 
 
 def element_local_axes(project, element) -> tuple[np.ndarray, np.ndarray, np.ndarray]:
-    """Reconstruit les axes locaux utilisés pour projeter les charges."""
+    """Handle element local axes."""
     node_i = project.nodes[element.node_i]
     node_j = project.nodes[element.node_j]
     pi = (node_i.x, node_i.y, node_i.z)
@@ -59,7 +59,7 @@ def element_global_to_local_components(
     gy: float,
     gz: float,
 ) -> tuple[float, float, float]:
-    """Projette un vecteur global dans les axes locaux de l'élément."""
+    """Handle element global to local components."""
     local_x, local_y, local_z = element_local_axes(project, element)
     global_load = np.array([gx, gy, gz], dtype=float)
     wx = float(np.dot(global_load, local_x))
@@ -69,7 +69,7 @@ def element_global_to_local_components(
 
 
 def element_load_local_components(project, element, load) -> tuple[float, float, float]:
-    """Retourne une charge répartie dans les axes locaux courants."""
+    """Handle element load local components."""
     values = (
         float(getattr(load, "wx", 0.0)),
         float(getattr(load, "wy", 0.0)),
@@ -84,7 +84,7 @@ def element_load_local_components(project, element, load) -> tuple[float, float,
 
 
 def element_self_weight_kn_m(project, element) -> float:
-    """Retourne l'intensite du poids propre en kN/m."""
+    """Handle element self-weight kN m."""
     section = project.sections.get(element.section_tag)
     if section is None or section.area <= 0.0:
         return 0.0
@@ -95,7 +95,7 @@ def element_self_weight_kn_m(project, element) -> float:
 
 
 def element_self_weight_local_components(project, element) -> tuple[float, float, float]:
-    """Projette le poids propre global -Z dans les axes locaux de l'élément."""
+    """Handle element self-weight local components."""
     weight = element_self_weight_kn_m(project, element)
     if abs(weight) <= 1e-12:
         return 0.0, 0.0, 0.0
@@ -104,7 +104,7 @@ def element_self_weight_local_components(project, element) -> tuple[float, float
 
 
 def surface_area_m2(project, surface) -> float:
-    """Retourne l'aire d'une surface plane triangulaire ou quadrangulaire."""
+    """Handle surface area m2."""
     points = []
     for node_tag in surface.node_tags:
         node = project.nodes.get(int(node_tag))
@@ -125,7 +125,7 @@ def surface_area_m2(project, surface) -> float:
 
 
 def surface_self_weight_kn_m2(project, surface) -> float:
-    """Retourne l'intensite du poids propre surfacique en kN/m2."""
+    """Handle surface self-weight kN m2."""
     section = project.sections.get(surface.section_tag)
     if section is None or not section.is_surface or section.thickness <= 0.0:
         return 0.0
@@ -136,7 +136,7 @@ def surface_self_weight_kn_m2(project, surface) -> float:
 
 
 def surface_self_weight_global_components(project, surface) -> tuple[float, float, float]:
-    """Retourne le poids propre surfacique global d'une plaque."""
+    """Handle surface self-weight global components."""
     weight = surface_self_weight_kn_m2(project, surface)
     if abs(weight) <= 1e-12:
         return 0.0, 0.0, 0.0
@@ -144,7 +144,7 @@ def surface_self_weight_global_components(project, surface) -> tuple[float, floa
 
 
 def total_self_weight_kn(project) -> float:
-    """Poids propre total du modèle en kN."""
+    """Handle total self-weight kN."""
     total = 0.0
     for element in project.elements.values():
         node_i = project.nodes[element.node_i]

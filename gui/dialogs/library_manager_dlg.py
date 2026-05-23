@@ -1,4 +1,4 @@
-"""Gestionnaires de bibliothèques Matériaux / Sections."""
+"""Material and section library manager dialogs."""
 
 from __future__ import annotations
 
@@ -25,7 +25,7 @@ from gui.dialogs.section_dlg import SectionDialog
 
 
 class MaterialManagerDialog(QDialog):
-    """Fenêtre de gestion des matériaux."""
+    """Material manager dialog."""
 
     def __init__(
         self,
@@ -45,7 +45,7 @@ class MaterialManagerDialog(QDialog):
         self._refresh_list()
 
     def _build_ui(self) -> None:
-        """Construit l'interface de gestion."""
+        """Build UI."""
         root = QVBoxLayout(self)
 
         content = QHBoxLayout()
@@ -101,7 +101,7 @@ class MaterialManagerDialog(QDialog):
         root.addWidget(buttons)
 
     def _refresh_list(self) -> None:
-        """Met à jour la liste des matériaux."""
+        """Refresh list."""
         current_tag = self.current_tag()
 
         self.list_items.clear()
@@ -130,18 +130,18 @@ class MaterialManagerDialog(QDialog):
         self.btn_delete.setEnabled(has_items)
 
     def current_tag(self) -> int | None:
-        """Retourne le tag actuellement sélectionné."""
+        """Return tag."""
         item = self.list_items.currentItem()
         if item is None:
             return None
         return item.data(Qt.UserRole)
 
     def _next_tag(self) -> int:
-        """Retourne le prochain tag disponible."""
+        """Return the next tag."""
         return max(self._materials.keys(), default=0) + 1
 
     def _add_material_quick(self) -> None:
-        """Ajoute rapidement un matériau béton par défaut."""
+        """Add material quick."""
         tag = self._next_tag()
         self._materials[tag] = MaterialData(
             tag=tag,
@@ -155,7 +155,7 @@ class MaterialManagerDialog(QDialog):
         self._refresh_list()
 
     def _add_material(self) -> None:
-        """Ajoute un matériau via le dialogue détaillé."""
+        """Add material."""
         dlg = MaterialDialog(self)
         if dlg.exec() != MaterialDialog.Accepted:
             return
@@ -172,7 +172,7 @@ class MaterialManagerDialog(QDialog):
         self._refresh_list()
 
     def _copy_material(self) -> None:
-        """Duplique le matériau sélectionné."""
+        """Copy material."""
         tag = self.current_tag()
         if tag is None:
             return
@@ -200,7 +200,7 @@ class MaterialManagerDialog(QDialog):
         self._refresh_list()
 
     def _modify_material(self) -> None:
-        """Edite le matériau sélectionné."""
+        """Handle modify material."""
         tag = self.current_tag()
         if tag is None:
             return
@@ -224,7 +224,7 @@ class MaterialManagerDialog(QDialog):
         self._refresh_list()
 
     def _delete_material(self) -> None:
-        """Supprime le matériau sélectionné si possible."""
+        """Delete material."""
         tag = self.current_tag()
         if tag is None:
             return
@@ -256,12 +256,12 @@ class MaterialManagerDialog(QDialog):
         self._refresh_list()
 
     def result_materials(self) -> dict[int, MaterialData]:
-        """Retourne la bibliothèque de matériaux editee."""
+        """Return materials."""
         return deepcopy(self._materials)
 
 
 class SectionManagerDialog(QDialog):
-    """Fenêtre de gestion des sections."""
+    """Section manager dialog."""
 
     def __init__(
         self,
@@ -287,7 +287,7 @@ class SectionManagerDialog(QDialog):
         self._refresh_list()
 
     def _build_ui(self) -> None:
-        """Construit l'interface de gestion."""
+        """Build UI."""
         root = QVBoxLayout(self)
 
         content = QHBoxLayout()
@@ -339,7 +339,7 @@ class SectionManagerDialog(QDialog):
         root.addWidget(buttons)
 
     def _refresh_list(self) -> None:
-        """Met à jour la liste des sections."""
+        """Refresh list."""
         current_tag = self.current_tag()
 
         self.list_items.clear()
@@ -365,7 +365,7 @@ class SectionManagerDialog(QDialog):
         self.btn_delete.setEnabled(has_items)
 
     def _section_summary(self, sec: SectionData) -> str:
-        """Construit le résumé affiché dans la liste des sections."""
+        """Handle section summary."""
         material = self._materials.get(sec.material_tag)
         material_name = material.name if material is not None else f"Mat T{sec.material_tag}"
         if sec.is_surface:
@@ -376,18 +376,18 @@ class SectionManagerDialog(QDialog):
         return f"{sec.name}\n{sec.section_type} - {material_name}"
 
     def current_tag(self) -> int | None:
-        """Retourne le tag de la section sélectionnée."""
+        """Return tag."""
         item = self.list_items.currentItem()
         if item is None:
             return None
         return item.data(Qt.UserRole)
 
     def _next_tag(self) -> int:
-        """Retourne le prochain tag disponible."""
+        """Return the next tag."""
         return max(self._sections.keys(), default=0) + 1
 
     def _add_section(self) -> None:
-        """Ajoute une section via le dialogue détaillé."""
+        """Add section."""
         dlg = SectionDialog(
             self,
             materials=self._materials,
@@ -411,7 +411,7 @@ class SectionManagerDialog(QDialog):
         self._refresh_list()
 
     def _copy_section(self) -> None:
-        """Duplique la section sélectionnée."""
+        """Copy section."""
         tag = self.current_tag()
         if tag is None:
             return
@@ -444,7 +444,7 @@ class SectionManagerDialog(QDialog):
         self._refresh_list()
 
     def _modify_section(self) -> None:
-        """Edite la section sélectionnée."""
+        """Handle modify section."""
         tag = self.current_tag()
         if tag is None:
             return
@@ -473,7 +473,7 @@ class SectionManagerDialog(QDialog):
         self._refresh_list()
 
     def _delete_section(self) -> None:
-        """Supprime la section sélectionnée si possible."""
+        """Delete section."""
         tag = self.current_tag()
         if tag is None:
             return
@@ -501,5 +501,5 @@ class SectionManagerDialog(QDialog):
         self._refresh_list()
 
     def result_sections(self) -> dict[int, SectionData]:
-        """Retourne la bibliothèque de sections editee."""
+        """Return sections."""
         return deepcopy(self._sections)

@@ -1,8 +1,4 @@
-"""
-Dialogue de création et édition des sections.
-
-Sections rectangulaires, en T, profilés du catalogue européen.
-"""
+"""Section creation and editing dialog."""
 
 from __future__ import annotations
 
@@ -28,13 +24,7 @@ _PROFILE_FAMILIES = ["IPE", "HEA", "HEB"]
 
 
 class SectionDialog(QDialog):
-    """Dialogue pour créer ou éditer une section.
-
-    Usage :
-        dlg = SectionDialog(parent, materials={1: mat1, 2: mat2})
-        if dlg.exec() == QDialog.Accepted:
-            data = dlg.result()
-    """
+    """Section dialog."""
 
     def __init__(self, parent=None, *, materials: dict | None = None,
                  name: str = "", section_type: str = "",
@@ -110,7 +100,7 @@ class SectionDialog(QDialog):
         self.ui.buttonBox.rejected.connect(self.reject)
 
     def _apply_initial_values(self) -> None:
-        """Charge l'état initial pour l'édition d'une section existante."""
+        """Apply initial values."""
         if self._init_material_tag is not None:
             idx = self._combo_material.findData(self._init_material_tag)
             if idx >= 0:
@@ -147,7 +137,7 @@ class SectionDialog(QDialog):
     # ── Slots ──────────────────────────────────────────────────────
 
     def _on_type_changed(self) -> None:
-        """Change la page de paramètres selon le type de section."""
+        """Handle type changed."""
         sec_type = self._combo_type.currentData()
         page_map = {"rectangular": 0, "T": 1, "I_profile": 2, "surface": 3}
         self._stack.setCurrentIndex(page_map.get(sec_type, 0))
@@ -158,7 +148,7 @@ class SectionDialog(QDialog):
         self._update_summary()
 
     def _on_family_changed(self) -> None:
-        """Met à jour la liste des profilés de la famille sélectionnée."""
+        """Handle family changed."""
         self._combo_profile.clear()
         family = self._combo_family.currentText()
         profiles = list_profiles(family)
@@ -166,7 +156,7 @@ class SectionDialog(QDialog):
         self._on_profile_changed()
 
     def _on_profile_changed(self) -> None:
-        """Affiche les infos du profilé sélectionné."""
+        """Handle profile changed."""
         name = self._combo_profile.currentText()
         if not name:
             self._lbl_profile_info.setText("")
@@ -190,7 +180,7 @@ class SectionDialog(QDialog):
         self._update_summary()
 
     def _update_summary(self) -> None:
-        """Met à jour le résumé des propriétés calculées."""
+        """Update summary."""
         sec_type = self._combo_type.currentData()
 
         if sec_type == "rectangular":
@@ -231,7 +221,7 @@ class SectionDialog(QDialog):
             )
 
     def _validate(self) -> None:
-        """Valide et ferme le dialogue."""
+        """Handle validate."""
         name = self._edit_name.text().strip()
         if not name:
             self._edit_name.setFocus()
@@ -239,12 +229,7 @@ class SectionDialog(QDialog):
         self.accept()
 
     def result(self) -> dict:
-        """Retourne les données de la section créée.
-
-        Returns:
-            Dictionnaire avec les clés : name, section_type, material_tag,
-            area, inertia_y, et les propriétés spécifiques au type.
-        """
+        """Handle result."""
         sec_type = self._combo_type.currentData()
         mat_tag = self._combo_material.currentData() or 0
         name = self._edit_name.text().strip()

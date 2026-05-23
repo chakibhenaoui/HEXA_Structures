@@ -1,10 +1,4 @@
-"""
-Bibliothèque de matériaux pour le calcul de structures.
-
-Béton (EC2 : C25/30 → C90/105), Acier (EC3 : S235 → S460).
-Fournit les paramètres OpenSees pour Concrete02 et Steel02.
-Toutes les valeurs en unités internes : kPa, m.
-"""
+"""Structural material library and OpenSees material parameters."""
 
 from __future__ import annotations
 
@@ -18,78 +12,61 @@ from config.eurocodes import (
 
 
 # ═══════════════════════════════════════════════════════════════════════════
-#  Paramètres OpenSees pour les matériaux
+#  OpenSees material parameters
 # ═══════════════════════════════════════════════════════════════════════════
 
 @dataclass
 class Concrete02Params:
-    """Paramètres pour le matériau uniaxialMaterial Concrete02.
-
-    Modèle béton avec branche de traction linéaire.
-    Toutes les contraintes en kPa, déformations sans unité.
-    """
+    """Concrete02 params."""
 
     tag: int
-    fpc: float      # résistance en compression pic (kPa, négatif)
-    epsc0: float    # déformation au pic (négatif)
-    fpcu: float     # résistance résiduelle ultime (kPa, négatif)
-    epscu: float    # déformation ultime (négatif)
+    fpc: float      # peak compressive strength (kPa, negative)
+    epsc0: float    # strain at peak stress (negative)
+    fpcu: float     # ultimate residual strength (kPa, negative)
+    epscu: float    # ultimate strain (negative)
     # Branche de traction
-    ft: float       # résistance en traction (kPa, positif)
-    ets: float      # pente de déchargement en traction (kPa)
-    # Paramètre de confinement
-    lam: float = 0.1  # rapport fpcu/fpc
+    ft: float       # tensile strength (kPa, positive)
+    ets: float      # tension unloading slope (kPa)
+    # Confinement parameter
+    lam: float = 0.1  # fpcu/fpc ratio
 
 
 @dataclass
 class Steel02Params:
-    """Paramètres pour le matériau uniaxialMaterial Steel02.
-
-    Modèle Giuffré-Menegotto-Pinto avec écrouissage isotrope.
-    Toutes les contraintes en kPa.
-    """
+    """Steel02 params."""
 
     tag: int
-    fy: float       # limite élastique (kPa)
-    es: float       # module d'Young (kPa)
-    b: float        # rapport d'écrouissage (pente post-élastique / Es)
-    r0: float = 18.0  # paramètre de transition
+    fy: float       # yield strength (kPa)
+    es: float       # Young's modulus (kPa)
+    b: float        # hardening ratio (post-elastic slope / Es)
+    r0: float = 18.0  # transition parameter
     cr1: float = 0.925
     cr2: float = 0.15
 
 
 # ═══════════════════════════════════════════════════════════════════════════
-#  Fonctions de création de matériaux
+#  Material creation functions
 # ═══════════════════════════════════════════════════════════════════════════
 
 def concrete_params(tag: int, grade: str, confined: bool = False) -> Concrete02Params:
-    """Crée les paramètres Concrete02 à partir d'une classe de béton EC2.
-
-    Args:
-        tag: Tag OpenSees du matériau.
-        grade: Classe de béton (ex. "C30/37").
-        confined: Si True, majore les propriétés pour le béton confiné.
-
-    Returns:
-        Paramètres Concrete02 prêts pour OpenSees.
-    """
+    """Handle concrete params."""
     cg = CONCRETE_GRADES[grade]
 
-    # Résistance de calcul en compression
-    fpc = -cg.fcd  # négatif pour OpenSees
-    epsc0 = -cg.eps_c1 / 1000  # ‰ → sans unité, négatif
+    # Design compressive strength
+    fpc = -cg.fcd  # negative for OpenSees
+    epsc0 = -cg.eps_c1 / 1000  # per mille -> dimensionless, negative
 
-    # Résistance résiduelle (20% de fpc pour béton non confiné)
+    # Residual strength (20% of fpc for unconfined concrete)
     ratio = 0.4 if confined else 0.2
     fpcu = fpc * ratio
-    epscu = -cg.eps_cu1 / 1000  # négatif
+    epscu = -cg.eps_cu1 / 1000  # negative
 
     # Traction
     ft = cg.fctd  # positif
-    ets = cg.ecm / 10  # pente de déchargement arbitraire
+    ets = cg.ecm / 10  # arbitrary unloading slope
 
     if confined:
-        # Majoration simplifiée pour confinement (facteur 1.3)
+        # Simplified confinement increase (factor 1.3)
         fpc *= 1.3
         epsc0 *= 1.5
         fpcu *= 1.3
@@ -107,16 +84,7 @@ def concrete_params(tag: int, grade: str, confined: bool = False) -> Concrete02P
 
 
 def rebar_params(tag: int, grade: str, b: float = 0.01) -> Steel02Params:
-    """Crée les paramètres Steel02 pour un acier d'armature EC2.
-
-    Args:
-        tag: Tag OpenSees du matériau.
-        grade: Classe d'acier (ex. "B500B").
-        b: Rapport d'écrouissage.
-
-    Returns:
-        Paramètres Steel02 prêts pour OpenSees.
-    """
+    """Handle rebar params."""
     rg = REBAR_GRADES[grade]
     return Steel02Params(
         tag=tag,
@@ -127,16 +95,7 @@ def rebar_params(tag: int, grade: str, b: float = 0.01) -> Steel02Params:
 
 
 def steel_params(tag: int, grade: str, b: float = 0.01) -> Steel02Params:
-    """Crée les paramètres Steel02 pour un acier de construction EC3.
-
-    Args:
-        tag: Tag OpenSees du matériau.
-        grade: Classe d'acier (ex. "S355").
-        b: Rapport d'écrouissage.
-
-    Returns:
-        Paramètres Steel02 prêts pour OpenSees.
-    """
+    """Handle steel params."""
     sg = STEEL_GRADES[grade]
     return Steel02Params(
         tag=tag,
@@ -147,12 +106,12 @@ def steel_params(tag: int, grade: str, b: float = 0.01) -> Steel02Params:
 
 
 # ═══════════════════════════════════════════════════════════════════════════
-#  Masses volumiques (kg/m³) pour le poids propre
+#  Mass densities (kg/m3) for self-weight
 # ═══════════════════════════════════════════════════════════════════════════
 
 DENSITIES: dict[str, float] = {
-    "concrete": 2500.0,         # béton armé
+    "concrete": 2500.0,         # reinforced concrete
     "concrete_lightweight": 1800.0,
     "steel": 7850.0,            # acier de construction
-    "timber_C24": 420.0,        # bois résineux C24
+    "timber_C24": 420.0,        # C24 softwood
 }

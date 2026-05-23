@@ -1,4 +1,4 @@
-"""Construction robuste des axes locaux 3D des elements lineaires."""
+"""Robust local axis construction for 3D frame elements."""
 
 from __future__ import annotations
 
@@ -14,12 +14,7 @@ _PARALLEL_LIMIT = 0.95
 
 @dataclass(frozen=True)
 class LocalAxes3D:
-    """Repere local orthonorme d'une barre 3D.
-
-    Les axes sont exprimes dans le repere global. La matrice de rotation expose
-    les axes locaux en colonnes et transforme donc un vecteur local vers le
-    repere global.
-    """
+    """Local axes3 d."""
 
     x: Vector3
     y: Vector3
@@ -27,7 +22,7 @@ class LocalAxes3D:
 
     @property
     def rotation_matrix(self) -> tuple[Vector3, Vector3, Vector3]:
-        """Retourne la matrice local -> global avec les axes locaux en colonnes."""
+        """Handle rotation matrix."""
         return (
             (self.x[0], self.y[0], self.z[0]),
             (self.x[1], self.y[1], self.z[1]),
@@ -41,24 +36,7 @@ def local_axes_from_nodes(
     reference_vector: Vector3 | None = None,
     roll_angle_deg: float = 0.0,
 ) -> LocalAxes3D:
-    """Construit le repere local 3D d'une barre entre deux noeuds.
-
-    Convention HEXA :
-    - x local va du noeud i vers le noeud j ;
-    - z local est la projection du vecteur de reference dans le plan normal a x ;
-    - y local vaut z x x ;
-    - un roulis positif tourne la section autour de x selon la regle de la main
-      droite.
-
-    Args:
-        pi: Coordonnees globales du noeud i.
-        pj: Coordonnees globales du noeud j.
-        reference_vector: Vecteur de reference global optionnel.
-        roll_angle_deg: Rotation de section positive autour de x local, en degres.
-
-    Raises:
-        ValueError: Si les noeuds sont confondus ou si le vecteur utilisateur est nul.
-    """
+    """Handle local axes from nodes."""
     x_axis = _normalize(_sub(pj, pi), "Les deux noeuds de la barre sont confondus.")
 
     user_reference = reference_vector is not None
@@ -96,7 +74,7 @@ def local_axes_from_nodes(
 
 
 def opensees_vecxz_from_axes(axes: LocalAxes3D) -> Vector3:
-    """Retourne le vecxz OpenSees coherent avec le repere HEXA."""
+    """Handle OpenSees vecxz from axes."""
     return axes.z
 
 

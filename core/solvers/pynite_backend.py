@@ -1,6 +1,4 @@
-"""
-Backend PyNiteFEA pour analyses linéaires bâtiment.
-"""
+"""PyNite solver backend."""
 
 from __future__ import annotations
 
@@ -26,7 +24,7 @@ from core.solvers.base import (
 def _require_pynite():
     try:
         from Pynite import FEModel3D
-    except ImportError as exc:  # pragma: no cover - dépend de l'environnement
+    except ImportError as exc:  # pragma: no cover - environment-dependent
         raise ImportError(
             "PyNiteFEA n'est pas installé. "
             "Installez-le avec 'pip install PyNiteFEA'."
@@ -35,7 +33,7 @@ def _require_pynite():
 
 
 class PyNiteBackend:
-    """Backend PyNite pour analyses statiques et modales usuelles."""
+    """PyNite backend for common static and modal analyses."""
 
     engine_name = "pynite"
     supports_diagrams = True
@@ -90,7 +88,7 @@ class PyNiteBackend:
         max_iter: int = 100,
         tol: float = 1e-6,
     ) -> tuple[bool, dict]:
-        del max_iter, tol  # Non utilisés par l'analyse linéaire PyNite pour l'instant.
+        del max_iter, tol  # Not used by PyNite linear analysis for now.
 
         if combo_tag is None and load_tag is None:
             return False, {"error": "Aucun cas de charge spécifié."}
@@ -147,7 +145,7 @@ class PyNiteBackend:
         }
 
     def _ensure_modal_mass_combo(self) -> str:
-        """Crée une combinaison de masse automatique basée sur le poids propre."""
+        """Ensure modal mass combination."""
         assert self.model is not None
         combo_name = "MASS_AUTO"
         case_name = "MASS_AUTO"
@@ -310,7 +308,7 @@ class PyNiteBackend:
                     )
 
     def _add_self_weight_loads(self, case_name: str, factor: float) -> None:
-        """Ajoute le poids propre automatique dans un cas PyNite."""
+        """Add self-weight loads."""
         assert self.model is not None
         for element in self.project.elements.values():
             member_name = self._member_names.get(element.tag)
@@ -412,7 +410,7 @@ class PyNiteBackend:
         component: str,
         nep: int = 17,
     ) -> tuple[np.ndarray, np.ndarray] | None:
-        """Échantillonne une composante interne directement depuis PyNite."""
+        """Handle sample diagram component."""
         if self.model is None or not self._active_combo_name:
             return None
 
@@ -458,20 +456,14 @@ class PyNiteBackend:
         return x, values
 
     def _diagram_sampling_sign(self, element_tag: int, component: str) -> float:
-        """Ajuste les sondages PyNite pour coller au rendu interne de reference."""
+        """Handle diagram sampling sign."""
         del element_tag
         if component == "Mz":
             return -1.0
         return 1.0
 
     def _moment_sign_map(self, element_tag: int) -> tuple[float, float]:
-        """Ajuste les signes des moments pour la convention interne.
-
-        Les conventions locales du backend ne coincident pas exactement avec
-        celles utilisées par le logiciel pour les éléments de type poutre 3D.
-        Apres alignement des axes locaux, `My` reste oppose a la convention
-        interne tandis que `Mz` est déjà dans le bon sens.
-        """
+        """Handle moment sign map."""
         element = self.project.elements[element_tag]
         node_i = self.project.nodes[element.node_i]
         node_j = self.project.nodes[element.node_j]
@@ -486,7 +478,7 @@ class PyNiteBackend:
         return -1.0, 1.0
 
     def _member_rotation_degrees(self, element) -> float:
-        """Aligne les axes locaux PyNite sur la convention interne du projet."""
+        """Handle member rotation degrees."""
         node_i = self.project.nodes[element.node_i]
         node_j = self.project.nodes[element.node_j]
         ecrd_3d = np.array(
@@ -522,7 +514,7 @@ class PyNiteBackend:
     def _pynite_default_local_axes(
         ecrd_3d: np.ndarray,
     ) -> tuple[np.ndarray, np.ndarray, np.ndarray] | None:
-        """Reproduit les axes locaux PyNite avant rotation de section."""
+        """Handle PyNite default local axes."""
         p_i = ecrd_3d[0]
         p_j = ecrd_3d[1]
         x_vec = p_j - p_i

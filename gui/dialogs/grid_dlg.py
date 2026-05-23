@@ -1,4 +1,4 @@
-"""Dialogue de définition de la grille 3D."""
+"""Grid definition dialog."""
 
 from __future__ import annotations
 
@@ -27,7 +27,7 @@ from core.model_data import Grid3DData, GridAxisEntry
 
 
 class CoordinateItemDelegate(QStyledItemDelegate):
-    """Delegate qui limite la saisie des coordonnées a des valeurs numériques."""
+    """Coordinate item delegate."""
 
     def __init__(self, parent=None):
         super().__init__(parent)
@@ -67,7 +67,7 @@ class CoordinateItemDelegate(QStyledItemDelegate):
 
 
 class AxisGridTable(QTableWidget):
-    """Tableau editable pour les lignes d'un axe de grille."""
+    """Axis grid table."""
 
     _MIN_ROWS = 5
     table_changed = Signal()
@@ -114,7 +114,7 @@ class AxisGridTable(QTableWidget):
 
     @classmethod
     def _format_coordinate(cls, value: float) -> str:
-        """Formate une coordonnée en notation française a 2 décimales."""
+        """Format coordinate."""
         return cls._LOCALE.toString(float(value), "f", 2)
 
     def _set_row(self, row: int, marker: str, coordinate_text: str) -> None:
@@ -131,7 +131,7 @@ class AxisGridTable(QTableWidget):
         coordinate_item.setText(coordinate_text)
 
     def add_empty_row(self) -> int:
-        """Ajoute une ligne vide en fin de tableau."""
+        """Add empty row."""
         new_row = self.rowCount()
         self.insertRow(new_row)
         self._set_row(new_row, f"{self._axis_name}{new_row + 1}", "")
@@ -139,7 +139,7 @@ class AxisGridTable(QTableWidget):
         return new_row
 
     def remove_current_or_selected_row(self) -> bool:
-        """Supprime integralement la ligne courante."""
+        """Remove current or selected row."""
         row = self.currentRow()
         if row < 0:
             selected = self.selectedIndexes()
@@ -155,7 +155,7 @@ class AxisGridTable(QTableWidget):
         return True
 
     def _open_context_menu(self, position) -> None:
-        """Ouvre le menu contextuel du tableau."""
+        """Open context menu."""
         row = self.rowAt(position.y())
         if row >= 0:
             self.setCurrentCell(row, 0)
@@ -174,11 +174,11 @@ class AxisGridTable(QTableWidget):
             self.remove_current_or_selected_row()
 
     def mousePressEvent(self, event) -> None:  # noqa: N802 - Qt API
-        """Conserve le comportement standard de sélection/édition."""
+        """Handle mouse press events."""
         super().mousePressEvent(event)
 
     def axis_entries(self) -> list[GridAxisEntry]:
-        """Retourne les lignes valides du tableau."""
+        """Handle axis entries."""
         entries: list[GridAxisEntry] = []
         for row in range(self.rowCount()):
             marker_item = self.item(row, 0)
@@ -204,7 +204,7 @@ class AxisGridTable(QTableWidget):
         return entries
 
     def valid_coordinate_count(self) -> int:
-        """Compte les lignes dont la coordonnée est numérique."""
+        """Handle valid coordinate count."""
         count = 0
         for row in range(self.rowCount()):
             coordinate_item = self.item(row, 1)
@@ -221,7 +221,7 @@ class AxisGridTable(QTableWidget):
 
 
 class GridDialog(QDialog):
-    """Paramétrage d'une grille 3D à partir de coordonnées explicites."""
+    """Grid definition dialog."""
 
     def __init__(
         self,
@@ -325,7 +325,7 @@ class GridDialog(QDialog):
 
     @staticmethod
     def _add_row_to_table(table: AxisGridTable) -> None:
-        """Ajoute une ligne et place le curseur sur la coordonnée."""
+        """Add row to table."""
         new_row = table.add_empty_row()
         table.setCurrentCell(new_row, 1)
         table.editItem(table.item(new_row, 1))
@@ -334,7 +334,7 @@ class GridDialog(QDialog):
         return table.valid_coordinate_count()
 
     def _grid_mode_text(self) -> str:
-        """Retourne une description du mode 2D/3D courant."""
+        """Handle grid mode text."""
         axis_counts = {
             "X": self._axis_line_count(self.table_x),
             "Y": self._axis_line_count(self.table_y),
@@ -358,7 +358,7 @@ class GridDialog(QDialog):
         return "Mode ponctuel détecté : une seule intersection de grille."
 
     def _update_summary(self) -> None:
-        """Met à jour le résumé du contenu des tableaux."""
+        """Update summary."""
         axis_counts = {
             "X": self._axis_line_count(self.table_x),
             "Y": self._axis_line_count(self.table_y),
@@ -383,7 +383,7 @@ class GridDialog(QDialog):
         )
 
     def _accept(self) -> None:
-        """Valide les tableaux avant fermeture."""
+        """Handle accept."""
         try:
             self._result_grid = self._collect_result()
         except ValueError as exc:
@@ -392,5 +392,5 @@ class GridDialog(QDialog):
         self.accept()
 
     def result(self) -> Grid3DData:
-        """Retourne la grille configuree."""
+        """Handle result."""
         return self._result_grid

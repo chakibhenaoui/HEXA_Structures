@@ -1,9 +1,4 @@
-"""
-Éditeur visuel de charges.
-
-Création et gestion des cas de charges, charges nodales et réparties.
-Interface en panneau avec liste des cas de charge et détail des charges.
-"""
+"""Load editor widgets."""
 
 from __future__ import annotations
 
@@ -25,7 +20,7 @@ from core.model_data import (
 from gui.resources import app_resource_path
 
 
-# Types de charges avec labels français
+# Load types with French labels
 LOAD_TYPES = {
     "dead": "Permanente (G)",
     "live": "Exploitation (Q)",
@@ -35,7 +30,7 @@ LOAD_TYPES = {
     "temperature": "Température (T)",
 }
 
-# Catégories EC1 pour charges d'exploitation
+# EC1 categories for imposed loads
 LIVE_CATEGORIES = {
     "A": "A — Habitation, résidentiel",
     "B": "B — Bureaux",
@@ -49,9 +44,9 @@ LIVE_CATEGORIES = {
 
 
 class LoadEditor(QWidget):
-    """Widget éditeur de charges."""
+    """Load editor."""
 
-    # Signal émis quand le modèle est modifié
+    # Signal emitted when the model changes
     model_changed = Signal()
 
     def __init__(self, parent: QWidget | None = None):
@@ -62,7 +57,7 @@ class LoadEditor(QWidget):
         self._connect_signals()
 
     def _load_ui(self) -> None:
-        """Charge le fichier .ui via QUiLoader."""
+        """Load UI."""
         ui_path = app_resource_path("gui", "ui", "load_editor.ui")
         loader = QUiLoader()
         file = QFile(ui_path)
@@ -75,14 +70,14 @@ class LoadEditor(QWidget):
         layout.addWidget(self.ui)
 
     def _populate_combos(self) -> None:
-        """Remplit les combo boxes avec les données dynamiques."""
+        """Handle populate combinations."""
         for key, label in LOAD_TYPES.items():
             self.ui.cmb_type.addItem(label, key)
         for key, label in LIVE_CATEGORIES.items():
             self.ui.cmb_category.addItem(label, key)
 
     def _connect_signals(self) -> None:
-        """Connecte les signaux des widgets."""
+        """Handle connect signals."""
         self.ui.lst_loads.currentRowChanged.connect(self._on_load_selected)
         self.ui.btn_add_load.clicked.connect(self._add_load_case)
         self.ui.btn_del_load.clicked.connect(self._del_load_case)
@@ -92,12 +87,12 @@ class LoadEditor(QWidget):
         self.ui.btn_add_elem.clicked.connect(self._add_element_load)
 
     def set_project(self, project: ProjectModel) -> None:
-        """Définit le projet courant et rafraîchit l'affichage."""
+        """Set project."""
         self._project = project
         self._refresh_load_list()
 
     def _refresh_load_list(self) -> None:
-        """Rafraîchit la liste des cas de charge."""
+        """Refresh load list."""
         self.ui.lst_loads.clear()
         if not self._project:
             return
@@ -108,7 +103,7 @@ class LoadEditor(QWidget):
             self.ui.lst_loads.addItem(item)
 
     def _on_load_selected(self, row: int) -> None:
-        """Un cas de charge est sélectionné dans la liste."""
+        """Handle load selected."""
         if row < 0 or not self._project:
             return
         item = self.ui.lst_loads.item(row)
@@ -136,12 +131,12 @@ class LoadEditor(QWidget):
         self._on_type_changed()
 
     def _on_type_changed(self) -> None:
-        """Affiche/masque la catégorie selon le type."""
+        """Handle type changed."""
         load_type = self.ui.cmb_type.currentData()
         self.ui.cmb_category.setVisible(load_type == "live")
 
     def _on_info_changed(self) -> None:
-        """Met à jour le nom du cas de charge sélectionné."""
+        """Handle info changed."""
         if not self._project:
             return
         item = self.ui.lst_loads.currentItem()
@@ -155,7 +150,7 @@ class LoadEditor(QWidget):
             self.model_changed.emit()
 
     def _add_load_case(self) -> None:
-        """Ajoute un nouveau cas de charge."""
+        """Add load case."""
         if not self._project:
             return
 
@@ -174,7 +169,7 @@ class LoadEditor(QWidget):
         self.model_changed.emit()
 
     def _del_load_case(self) -> None:
-        """Supprime le cas de charge sélectionné."""
+        """Delete load case."""
         if not self._project:
             return
         item = self.ui.lst_loads.currentItem()
@@ -182,7 +177,7 @@ class LoadEditor(QWidget):
             return
         tag = item.data(Qt.UserRole)
 
-        # Supprimer le cas et ses charges associées
+        # Delete the case and its associated loads
         self._project.loads.pop(tag, None)
         self._project.nodal_loads = [
             nl for nl in self._project.nodal_loads if nl.load_tag != tag
@@ -195,14 +190,14 @@ class LoadEditor(QWidget):
         self.model_changed.emit()
 
     def _get_current_load_tag(self) -> int | None:
-        """Retourne le tag du cas de charge sélectionné."""
+        """Return current load tag."""
         item = self.ui.lst_loads.currentItem()
         if not item:
             return None
         return item.data(Qt.UserRole)
 
     def _add_nodal_load(self) -> None:
-        """Ajoute une charge nodale au cas sélectionné."""
+        """Add nodal load."""
         if not self._project:
             return
         load_tag = self._get_current_load_tag()
@@ -223,7 +218,7 @@ class LoadEditor(QWidget):
         self.model_changed.emit()
 
     def _add_element_load(self) -> None:
-        """Ajoute une charge répartie au cas sélectionné."""
+        """Add element load."""
         if not self._project:
             return
         load_tag = self._get_current_load_tag()

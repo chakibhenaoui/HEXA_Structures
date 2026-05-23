@@ -1,4 +1,4 @@
-"""Internal section-force display convention for frame diagrams."""
+"""Helpers for section force convention."""
 
 from __future__ import annotations
 

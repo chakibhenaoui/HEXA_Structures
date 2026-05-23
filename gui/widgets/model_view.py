@@ -1,10 +1,4 @@
-"""
-Vue graphique 3D du modèle structurel via PyVista.
-
-Utilise pyvistaqt.QtInteractor pour l'integration PySide6.
-Affichage du maillage, déformée, symboles d'appui, charges.
-Sélection interactive des nœuds et éléments au clic.
-"""
+"""PyVista-based 3D structural model view."""
 
 from __future__ import annotations
 
@@ -78,7 +72,7 @@ class _NodeScreenHit:
 
 
 class ModelView(QWidget):
-    """Widget de visualisation 3D du modèle structurel."""
+    """3D structural model view."""
 
     _NODE_GLYPH_LIMIT = 1200
     _CAMERA_PADDING = 1.18
@@ -127,7 +121,7 @@ class ModelView(QWidget):
         self._setup_ui()
 
     def _setup_ui(self) -> None:
-        """Construit le widget PyVista embarque dans Qt."""
+        """Set up UI."""
         layout = QVBoxLayout(self)
         layout.setContentsMargins(0, 0, 0, 0)
 
@@ -151,14 +145,14 @@ class ModelView(QWidget):
         )
 
     def _clear_scene(self) -> None:
-        """Efface les acteurs sans forcer de rendu intermediaire."""
+        """Clear scene."""
         try:
             self.plotter.clear(render=False)
         except TypeError:
             self.plotter.clear()
 
     def _apply_background(self) -> None:
-        """Réapplique le fond dégradé après les clear() PyVista."""
+        """Apply background."""
         self.plotter.set_background(
             _COLORS["background_bottom"],
             top=_COLORS["background_top"],
@@ -175,7 +169,7 @@ class ModelView(QWidget):
             pass
 
     def display_model(self, project: ProjectModel, preserve_camera: bool = False) -> None:
-        """Affiche le modèle structurel (grille + nœuds + éléments + appuis)."""
+        """Display model."""
         self._clear_scene()
         self._apply_background()
         self._project = project
@@ -293,7 +287,7 @@ class ModelView(QWidget):
         *,
         render: bool = True,
     ) -> None:
-        """Termine la scène avec une caméra stable avant le premier rendu."""
+        """Finalize scene view."""
         if preserve_camera:
             self._reset_clipping_range()
             if render:
@@ -303,18 +297,18 @@ class ModelView(QWidget):
         self._apply_active_view_camera(render=render)
 
     def _restore_camera(self, *, render: bool = True) -> None:
-        """Restaure une caméra lisible pour les structures."""
+        """Restore camera."""
         self._apply_3d_camera(render=render)
 
     def _reset_clipping_range(self) -> None:
-        """Recalcule le clipping sans toucher au cadrage."""
+        """Recompute clipping without changing the framing."""
         try:
             self.plotter.renderer.ResetCameraClippingRange()
         except Exception:
             pass
 
     def _apply_active_view_camera(self, *, render: bool = True) -> None:
-        """Applique le preset caméra courant sans état transitoire visible."""
+        """Apply active view camera."""
         if self._active_plane is not None and self._active_plane_value is not None:
             position, focal_point, up, parallel_scale = self._plane_camera_state(
                 self._active_plane,
@@ -334,11 +328,11 @@ class ModelView(QWidget):
         self._apply_3d_camera(render=render)
 
     def _apply_3d_camera(self, *, render: bool = True) -> None:
-        """Cadre le modèle avec un preset isométrique déterministe."""
+        """Apply 3D camera."""
         self._apply_camera_state(self._isometric_camera_state(), render=render)
 
     def _apply_camera_state(self, state: _CameraState, *, render: bool = True) -> None:
-        """Applique un état caméra atomique."""
+        """Apply camera state."""
         camera = self.plotter.camera
         camera.position = state.position
         camera.focal_point = state.focal_point
@@ -360,7 +354,7 @@ class ModelView(QWidget):
             self._refresh_section_label_overlay()
 
     def _visible_scene_points(self) -> np.ndarray:
-        """Retourne les points utiles au cadrage courant."""
+        """Handle visible scene points."""
         points: list[list[float]] = []
         if self._project is not None:
             for node in self._project.nodes.values():
@@ -375,7 +369,7 @@ class ModelView(QWidget):
         return np.array(points, dtype=float)
 
     def _grid_camera_points(self, grid: Grid3DData) -> list[list[float]]:
-        """Construit les coins de grille nécessaires au cadrage."""
+        """Handle grid camera points."""
         xs = grid.axis_values("X") or [0.0]
         ys = grid.axis_values("Y") or [0.0]
         zs = grid.axis_values("Z") or [0.0]
@@ -406,7 +400,7 @@ class ModelView(QWidget):
 
     @staticmethod
     def _scene_bounds(points: np.ndarray) -> tuple[np.ndarray, np.ndarray, float]:
-        """Retourne centre, dimensions protegees et rayon de cadrage."""
+        """Handle scene bounds."""
         if points.size == 0:
             points = np.array([[0.0, 0.0, 0.0]], dtype=float)
         mins = points.min(axis=0)
@@ -419,7 +413,7 @@ class ModelView(QWidget):
         return center, spans, radius
 
     def _isometric_camera_state(self) -> _CameraState:
-        """Calcule la caméra 3D standard à partir des limites réelles."""
+        """Handle isometric camera state."""
         center, _spans, radius = self._scene_bounds(self._visible_scene_points())
         direction = np.array([1.35, -1.65, 1.15], dtype=float)
         direction /= float(np.linalg.norm(direction))
@@ -435,7 +429,7 @@ class ModelView(QWidget):
         )
 
     def _model_scale(self, points: np.ndarray) -> float:
-        """Retourne une taille de reference proportionnelle au modèle."""
+        """Handle model scale."""
         if len(points) < 2:
             if self._project is not None and self._project.grid.enabled:
                 return max(
@@ -449,7 +443,7 @@ class ModelView(QWidget):
         return max(bbox.max() * 0.03, 0.1)
 
     def _draw_section_labels(self, project: ProjectModel, points: np.ndarray) -> None:
-        """Dessine les noms de sections au milieu des éléments."""
+        """Draw section labels."""
         sec_midpoints: list[list[float]] = []
         sec_labels: list[str] = []
 
@@ -481,7 +475,7 @@ class ModelView(QWidget):
             )
 
     def _draw_surface_elements(self, project: ProjectModel, points: np.ndarray) -> None:
-        """Dessine les éléments surfaciques sous forme de plaques translucides."""
+        """Draw surface elements."""
         surface_mesh = self._build_surface_elements_mesh(project)
         if surface_mesh is not None and surface_mesh.n_cells > 0:
             self.plotter.add_mesh(
@@ -502,7 +496,7 @@ class ModelView(QWidget):
             )
 
     def _refresh_section_label_overlay(self) -> None:
-        """Met à jour la visibilité et le contenu du calque des noms de sections."""
+        """Refresh section label overlay."""
         overlay = getattr(self, "_section_label_overlay", None)
         if overlay is None:
             return
@@ -519,14 +513,14 @@ class ModelView(QWidget):
 
     @staticmethod
     def _section_label_font() -> QFont:
-        """Police utilisée pour les noms de sections en surimpression."""
+        """Handle section label font."""
         font = QFont()
         font.setPointSize(8)
         font.setBold(True)
         return font
 
     def _iter_section_label_screen_data(self) -> list[tuple[str, QPointF, float]]:
-        """Retourne les libellés de sections projetés à l'écran avec leur angle."""
+        """Handle iter section label screen data."""
         if self._project is None or not self.show_section_names or self.show_extruded_sections:
             return []
 
@@ -572,7 +566,7 @@ class ModelView(QWidget):
         return labels
 
     def _paint_section_label_overlay(self, event) -> None:
-        """Dessine les noms de sections comme un overlay parallèle aux éléments."""
+        """Handle paint section label overlay."""
         _ = event
         overlay = getattr(self, "_section_label_overlay", None)
         if overlay is None:
@@ -616,7 +610,7 @@ class ModelView(QWidget):
         radius: float,
         node_tags: np.ndarray | None = None,
     ) -> pv.PolyData:
-        """Construit un maillage de sphères pour des nœuds bien visibles."""
+        """Build node spheres."""
         if len(points) == 0:
             return pv.PolyData()
         glyph = pv.Sphere(
@@ -656,7 +650,7 @@ class ModelView(QWidget):
         mesh: pv.PolyData,
         node_tags: np.ndarray | None,
     ) -> None:
-        """Propage les tags de noeuds sur un maillage de glyphes fusionnes."""
+        """Handle assign repeated node tags."""
         if node_tags is None:
             return
         tags = np.asarray(node_tags, dtype=np.int32)
@@ -674,7 +668,7 @@ class ModelView(QWidget):
         end: np.ndarray,
         size: float,
     ) -> pv.PolyData | None:
-        """Construit un texte vectoriel orienté selon l'axe de l'élément."""
+        """Build section text mesh."""
         frame = self._local_frame_from_points(start, end)
         if frame is None:
             return None
@@ -711,7 +705,7 @@ class ModelView(QWidget):
 
     @staticmethod
     def _create_text_mesh(text: str) -> pv.PolyData | None:
-        """Construit un maillage de texte avec fallback selon la version de PyVista."""
+        """Create text mesh."""
         text3d = getattr(pv, "Text3D", None)
         if text3d is not None:
             try:
@@ -738,13 +732,13 @@ class ModelView(QWidget):
         return None
 
     def _use_extruded_sections(self) -> bool:
-        """Retourne vrai si l'affichage extrudé est demandé en vraie vue 3D."""
+        """Handle use extruded sections."""
         return self.show_extruded_sections and (
             self._active_plane is None or self._active_plane == "3D"
         )
 
     def _draw_extruded_elements(self, project: ProjectModel) -> None:
-        """Dessine les elements extrudes avec un nombre reduit d'acteurs VTK."""
+        """Draw extruded elements."""
         self._elem_tags.clear()
 
         mesh = self._build_extruded_elements_mesh(project)
@@ -786,7 +780,7 @@ class ModelView(QWidget):
         extra_mesh: pv.PolyData | None = None,
         render: bool = False,
     ) -> None:
-        """Dessine uniquement les arêtes géométriques utiles d'un maillage extrudé."""
+        """Add extruded feature edges."""
         try:
             edge_mesh = mesh.extract_feature_edges(
                 boundary_edges=True,
@@ -824,7 +818,7 @@ class ModelView(QWidget):
         project: ProjectModel,
         points: np.ndarray,
     ) -> pv.PolyData | None:
-        """Construit le maillage d'affichage des éléments."""
+        """Build element display mesh."""
         if self._use_extruded_sections():
             mesh = self._build_extruded_elements_mesh(project)
             if mesh is not None and mesh.n_cells > 0:
@@ -833,7 +827,7 @@ class ModelView(QWidget):
 
     @staticmethod
     def _section_palette() -> list[str]:
-        """Palette discrète pour distinguer visuellement les sections assignées."""
+        """Handle section palette."""
         return [
             "#2E86AB",
             "#E07A5F",
@@ -849,13 +843,13 @@ class ModelView(QWidget):
 
     @classmethod
     def _section_color_for_tag(cls, section_tag: int) -> str:
-        """Retourne une couleur stable à partir du tag de section."""
+        """Handle section color for tag."""
         palette = cls._section_palette()
         return palette[(max(section_tag, 1) - 1) % len(palette)]
 
     @staticmethod
     def _hex_to_uint8_rgb(color: str) -> np.ndarray:
-        """Convertit une couleur hexadécimale '#RRGGBB' en RGB uint8."""
+        """Handle hex to uint8 RGB."""
         value = color.strip().lstrip("#")
         if len(value) != 6:
             raise ValueError(f"Couleur hexadécimale invalide: {color}")
@@ -866,7 +860,7 @@ class ModelView(QWidget):
 
     @staticmethod
     def _signature_value(value):
-        """Transforme une valeur projet mutable en tuple stable pour les caches."""
+        """Handle signature value."""
         if isinstance(value, dict):
             return tuple(
                 (key, ModelView._signature_value(item_value))
@@ -890,7 +884,7 @@ class ModelView(QWidget):
         project: ProjectModel,
         only_tags: set[int] | None = None,
     ) -> tuple:
-        """Cle de cache des maillages extrudes, independante des charges."""
+        """Handle extruded cache key."""
         requested_tags = None if only_tags is None else tuple(sorted(only_tags))
         node_tags: set[int] = set()
         element_parts: list[tuple] = []
@@ -943,14 +937,14 @@ class ModelView(QWidget):
         )
 
     def _remember_extruded_cache(self, cache: dict, key: tuple, value) -> None:
-        """Stocke une entree en gardant un cache borne."""
+        """Handle remember extruded cache."""
         cache[key] = value
         while len(cache) > self._extruded_cache_max_entries:
             cache.pop(next(iter(cache)))
 
     @staticmethod
     def _ensure_section_rgb_scalars(mesh: pv.PolyData, cell_colors: list[np.ndarray]) -> None:
-        """Garantit un tableau RGB compatible avec le nombre de cellules fusionnees."""
+        """Ensure section RGB scalars."""
         if mesh.n_cells <= 0:
             return
 
@@ -979,7 +973,7 @@ class ModelView(QWidget):
         project: ProjectModel,
         points: np.ndarray,
     ) -> pv.PolyData | None:
-        """Construit l'affichage filaire des axes d'éléments."""
+        """Build line elements mesh."""
         lines: list[int] = []
         self._elem_tags.clear()
         for elem in project.elements.values():
@@ -999,7 +993,7 @@ class ModelView(QWidget):
         project: ProjectModel,
         only_tags: set[int] | None = None,
     ) -> pv.PolyData | None:
-        """Construit un maillage léger de faces pour les surfaces visibles."""
+        """Build surface elements mesh."""
         meshes: list[pv.PolyData] = []
 
         for tag, surface in self._visible_surface_items(project):
@@ -1035,7 +1029,7 @@ class ModelView(QWidget):
         self,
         surface: "SurfaceElementData",
     ) -> np.ndarray | None:
-        """Retourne les sommets monde d'une surface visible."""
+        """Handle surface polygon world points."""
         if self._project is None:
             return None
 
@@ -1057,7 +1051,7 @@ class ModelView(QWidget):
 
     @staticmethod
     def _surface_normal(points: np.ndarray) -> np.ndarray | None:
-        """Calcule une normale unitaire à partir d'un polygone 3D."""
+        """Handle surface normal."""
         if len(points) < 3:
             return None
 
@@ -1075,7 +1069,7 @@ class ModelView(QWidget):
         polygon_points: np.ndarray,
         thickness: float,
     ) -> pv.PolyData | None:
-        """Extrude légèrement un polygone de plaque autour de son plan moyen."""
+        """Build surface solid mesh."""
         normal = cls._surface_normal(polygon_points)
         if normal is None:
             return None
@@ -1100,7 +1094,7 @@ class ModelView(QWidget):
         self,
         project: ProjectModel,
     ) -> pv.PolyData | None:
-        """Construit les contours visibles des surfaces pour clarifier la lecture."""
+        """Build surface outline mesh."""
         points: list[list[float]] = []
         lines: list[int] = []
 
@@ -1135,7 +1129,7 @@ class ModelView(QWidget):
         project: ProjectModel,
         only_tags: set[int] | None = None,
     ) -> pv.PolyData | None:
-        """Construit un maillage extrudé à partir des vraies sections."""
+        """Build extruded elements mesh."""
         cache_key = self._extruded_cache_key(project, only_tags)
         cached = self._extruded_mesh_cache.get(cache_key)
         if cached is not None:
@@ -1194,7 +1188,7 @@ class ModelView(QWidget):
         project: ProjectModel,
         only_tags: set[int] | None = None,
     ) -> pv.PolyData | None:
-        """Assemble les lignes-guide légères des sections extrudées visibles."""
+        """Build extruded section guides mesh."""
         cache_key = self._extruded_cache_key(project, only_tags)
         if cache_key in self._extruded_guides_cache:
             return self._extruded_guides_cache[cache_key]
@@ -1230,7 +1224,7 @@ class ModelView(QWidget):
         return merged
 
     def _build_single_element_extrusion(self, section, node_i, node_j) -> pv.PolyData | None:
-        """Extrude une section locale le long d'un élément."""
+        """Build single element extrusion."""
         frame = self._local_frame_from_points(
             np.array([node_i.x, node_i.y, node_i.z], dtype=float),
             np.array([node_j.x, node_j.y, node_j.z], dtype=float),
@@ -1264,7 +1258,7 @@ class ModelView(QWidget):
         return extruded.clean()
 
     def _build_extruded_section_guides(self, section, node_i, node_j) -> pv.PolyData | None:
-        """Construit des lignes-guide légères pour les sections ouvertes type I."""
+        """Build extruded section guides."""
         frame = self._local_frame_from_points(
             np.array([node_i.x, node_i.y, node_i.z], dtype=float),
             np.array([node_j.x, node_j.y, node_j.z], dtype=float),
@@ -1318,7 +1312,7 @@ class ModelView(QWidget):
         start: np.ndarray,
         end: np.ndarray,
     ) -> tuple[np.ndarray, np.ndarray, np.ndarray, float] | None:
-        """Construit le repère local d'un élément 3D."""
+        """Handle local frame from points."""
         delta = end - start
         length = float(np.linalg.norm(delta))
         if length < 1e-12:
@@ -1347,7 +1341,7 @@ class ModelView(QWidget):
         section_type: str,
         properties: dict,
     ) -> np.ndarray | None:
-        """Retourne le contour 2D local (y, z) d'une section réelle."""
+        """Handle section polygon points."""
         if section_type == "rectangular":
             b = float(properties.get("b", 0.0))
             h = float(properties.get("h", 0.0))
@@ -1426,7 +1420,7 @@ class ModelView(QWidget):
         section_type: str,
         properties: dict,
     ) -> np.ndarray:
-        """Retourne des points de repère leger pour rendre lisibles les profils ouverts."""
+        """Handle section guide points."""
         if section_type != "I_profile":
             return np.empty((0, 2), dtype=float)
 
@@ -1458,7 +1452,7 @@ class ModelView(QWidget):
         section_type: str,
         properties: dict,
     ) -> np.ndarray:
-        """Retourne des points de repère indicatifs pour suggerer les conges des profils I."""
+        """Handle section fillet guide points."""
         if section_type != "I_profile":
             return np.empty((0, 2), dtype=float)
 
@@ -1492,7 +1486,7 @@ class ModelView(QWidget):
         )
 
     def _draw_supports(self, project: ProjectModel, points: np.ndarray) -> None:
-        """Dessine les symboles d'appui en glyphes 3D."""
+        """Draw supports."""
         scale = self._model_scale(points)
 
         for tag, node in project.nodes.items():
@@ -1532,7 +1526,7 @@ class ModelView(QWidget):
             )
 
     def _draw_grid(self, grid: Grid3DData) -> None:
-        """Dessine la grille 3D et les points d'accrochage."""
+        """Draw grid."""
         if not self.show_grid or not grid.enabled:
             return
 
@@ -1608,7 +1602,7 @@ class ModelView(QWidget):
 
     @staticmethod
     def _build_grid_geometry(grid: Grid3DData) -> tuple[np.ndarray, list[int]]:
-        """Construit les intersections et segments de la grille."""
+        """Build grid geometry."""
         xs = grid.axis_values("X")
         ys = grid.axis_values("Y")
         zs = grid.axis_values("Z")
@@ -1649,7 +1643,7 @@ class ModelView(QWidget):
         plane: str,
         value: float,
     ) -> tuple[np.ndarray, list[int]]:
-        """Construit uniquement la file active pour une vue 2D de dessin."""
+        """Build plane geometry."""
         xs = grid.axis_values("X")
         ys = grid.axis_values("Y")
         zs = grid.axis_values("Z")
@@ -1706,7 +1700,7 @@ class ModelView(QWidget):
 
     @staticmethod
     def _grid_annotation_offset(span: float, step: float) -> float:
-        """Retourne un decalage lisible pour les lignes d'extension."""
+        """Handle grid annotation offset."""
         if step > 0.0:
             return max(step * 0.32, span * 0.04, 0.3)
         if span > 0.0:
@@ -1721,7 +1715,7 @@ class ModelView(QWidget):
         plane: str | None,
         value: float | None,
     ) -> tuple[np.ndarray, list[int], np.ndarray, list[str]]:
-        """Construit les lignes d'extension et bulles de repère de grille."""
+        """Build grid annotations."""
         x_entries = grid.axis_entries("X")
         y_entries = grid.axis_entries("Y")
         z_entries = grid.axis_entries("Z")
@@ -1823,7 +1817,7 @@ class ModelView(QWidget):
         )
 
     def _on_point_picked(self, point: np.ndarray) -> None:
-        """Callback quand un point est clique dans la vue."""
+        """Handle point picked."""
         if self._project is None:
             return
 
@@ -1840,14 +1834,14 @@ class ModelView(QWidget):
         return
 
     def _nearest_grid_point(self, point: np.ndarray) -> np.ndarray | None:
-        """Retourne le point de grille le plus proche."""
+        """Handle nearest grid point."""
         if len(self._grid_points) == 0:
             return None
         distances = np.linalg.norm(self._grid_points - point, axis=1)
         return self._grid_points[int(np.argmin(distances))]
 
     def eventFilter(self, watched, event) -> bool:
-        """Met à jour le point de survol pendant le dessin."""
+        """Handle filtered Qt events."""
         if watched is self.plotter.interactor:
             if event.type() == QEvent.MouseMove:
                 if self._cursor_pick_enabled:
@@ -1937,14 +1931,14 @@ class ModelView(QWidget):
         return super().eventFilter(watched, event)
 
     def _vtk_event_modifiers(self, event) -> tuple[int, int]:
-        """Convertit les modificateurs Qt en drapeaux attendus par VTK."""
+        """Handle VTK event modifiers."""
         modifiers = event.modifiers()
         ctrl = int(bool(modifiers & Qt.ControlModifier))
         shift = int(bool(modifiers & Qt.ShiftModifier))
         return ctrl, shift
 
     def _set_vtk_mouse_event(self, event) -> None:
-        """Publie la position souris courante dans l'interacteur VTK."""
+        """Set VTK mouse event."""
         pos = event.position()
         scale = self._display_scale()
         x = int(round(pos.x() * scale))
@@ -1961,7 +1955,7 @@ class ModelView(QWidget):
         )
 
     def _start_camera_drag(self, event) -> None:
-        """Demarre une navigation 3D fluide sur le bouton du milieu."""
+        """Handle start camera drag."""
         self._camera_drag_mode = "pan" if bool(event.modifiers() & Qt.ShiftModifier) else "rotate"
         self._set_vtk_mouse_event(event)
         if self._camera_drag_mode == "rotate":
@@ -1970,12 +1964,12 @@ class ModelView(QWidget):
             self.plotter.interactor.MiddleButtonPressEvent()
 
     def _forward_camera_drag(self, event) -> None:
-        """Propage le déplacement souris à l'interacteur VTK."""
+        """Handle forward camera drag."""
         self._set_vtk_mouse_event(event)
         self.plotter.interactor.MouseMoveEvent()
 
     def _stop_camera_drag(self, event) -> None:
-        """Termine la navigation 3D sur bouton du milieu."""
+        """Finish middle-button 3D navigation."""
         self._set_vtk_mouse_event(event)
         if self._camera_drag_mode == "rotate":
             self.plotter.interactor.LeftButtonReleaseEvent()
@@ -1984,7 +1978,7 @@ class ModelView(QWidget):
         self._camera_drag_mode = None
 
     def _handle_selection_release(self, event) -> bool:
-        """Termine une sélection simple au clic."""
+        """Handle selection release."""
         release_pos = event.position().toPoint()
         drag_origin = self._drag_origin
         self._rubber_band.hide()
@@ -2000,7 +1994,7 @@ class ModelView(QWidget):
         return True
 
     def _handle_selection_drag(self, event) -> bool:
-        """Met à jour le rectangle de sélection pendant le glisser."""
+        """Handle selection drag."""
         if self._drag_origin is None:
             return False
         current_pos = event.position().toPoint()
@@ -2013,7 +2007,7 @@ class ModelView(QWidget):
         return True
 
     def _handle_draw_click(self, event) -> bool:
-        """Traite un clic gauche en mode dessin à partir du point survolé."""
+        """Handle draw click."""
         if self._project is None or not self._project.grid.enabled:
             return True
 
@@ -2037,7 +2031,7 @@ class ModelView(QWidget):
         return True
 
     def _handle_cursor_pick_click(self, event) -> bool:
-        """Recupere un point monde ou un point de grille pour un outil externe."""
+        """Handle cursor pick click."""
         picked = self._pick_position_from_event(event)
         if picked is None:
             return True
@@ -2061,7 +2055,7 @@ class ModelView(QWidget):
         return True
 
     def _pick_position_from_event(self, event) -> np.ndarray | None:
-        """Projette la position écran du clic dans la scène 3D."""
+        """Handle pick position from event."""
         try:
             pos = event.position()
             renderer = self.plotter.iren.get_poked_renderer()
@@ -2075,7 +2069,7 @@ class ModelView(QWidget):
         return picked
 
     def _pick_position_from_screen(self, pos: QPoint) -> np.ndarray | None:
-        """Projette une position écran Qt dans la scène 3D."""
+        """Handle pick position from screen."""
         try:
             renderer = self.plotter.iren.get_poked_renderer()
             x, y = self._qt_to_vtk_display(pos.x(), pos.y())
@@ -2088,7 +2082,7 @@ class ModelView(QWidget):
         return picked
 
     def _update_hover_preview(self) -> None:
-        """Affiche un point jaune sur l'intersection de grille visée."""
+        """Update hover preview."""
         if not self._draw_mode_enabled or self._project is None or not self._project.grid.enabled:
             self._clear_hover_preview()
             return
@@ -2116,7 +2110,7 @@ class ModelView(QWidget):
         self._show_temp_point(np.array(hover), "draw_hover", _COLORS["draw_hover"])
 
     def _update_cursor_pick_preview(self) -> None:
-        """Affiche un apercu du point vise pendant un choix d'origine."""
+        """Update cursor pick preview."""
         if not self._cursor_pick_enabled:
             self._clear_hover_preview()
             return
@@ -2147,7 +2141,7 @@ class ModelView(QWidget):
         self._show_temp_point(np.array(hover), "draw_hover", _COLORS["draw_hover"])
 
     def _clear_hover_preview(self) -> None:
-        """Efface le point de survol."""
+        """Clear hover preview."""
         if self._hover_point is None:
             return
         self._hover_point = None
@@ -2155,7 +2149,7 @@ class ModelView(QWidget):
         self.plotter.render()
 
     def set_drawing_mode(self, enabled: bool) -> None:
-        """Active ou desactive le mode dessin."""
+        """Enable or disable drawing mode."""
         self._draw_mode_enabled = enabled
         if not enabled:
             self.clear_drawing_state()
@@ -2163,7 +2157,7 @@ class ModelView(QWidget):
             self._update_hover_preview()
 
     def set_cursor_pick_mode(self, enabled: bool, *, snap_to_grid: bool = False) -> None:
-        """Active un mode temporaire de choix de point dans la vue."""
+        """Set cursor pick mode."""
         self._cursor_pick_enabled = enabled
         self._cursor_pick_snap_to_grid = snap_to_grid
         if not enabled:
@@ -2174,14 +2168,14 @@ class ModelView(QWidget):
         self._update_cursor_pick_preview()
 
     def set_selection_mode(self, enabled: bool) -> None:
-        """Active l'outil de sélection."""
+        """Set selection mode."""
         self._selection_mode_enabled = enabled
         if not enabled and self._drag_origin is not None:
             self._drag_origin = None
             self._rubber_band.hide()
 
     def _node_on_active_plane(self, x: float, y: float, z: float, tol: float = 1e-9) -> bool:
-        """Indique si un nœud appartient a la file actuellement active."""
+        """Handle node on active plane."""
         if self._active_plane is None or self._active_plane_value is None:
             return True
         if self._active_plane == "XY":
@@ -2194,7 +2188,7 @@ class ModelView(QWidget):
 
     @staticmethod
     def plane_axis_label(plane: str) -> str:
-        """Retourne l'axe fixe associé à un plan de vue."""
+        """Handle plane axis label."""
         return {
             "XY": "Z",
             "XZ": "Y",
@@ -2203,7 +2197,7 @@ class ModelView(QWidget):
 
     @staticmethod
     def plane_values(grid: Grid3DData, plane: str) -> list[float]:
-        """Retourne les valeurs de files disponibles pour un plan."""
+        """Handle plane values."""
         if plane == "XY":
             return grid.axis_values("Z")
         if plane == "XZ":
@@ -2217,7 +2211,7 @@ class ModelView(QWidget):
         plane: str,
         value: float,
     ) -> tuple[tuple[float, float, float], tuple[float, float, float], tuple[float, float, float], float]:
-        """Calcule une vraie vue orthographique de plan/coupe."""
+        """Handle plane camera state."""
         center, spans, radius = self._scene_bounds(self._visible_scene_points())
         span_x, span_y, span_z = (float(v) for v in spans)
         cx, cy, cz = (float(v) for v in center)
@@ -2253,7 +2247,7 @@ class ModelView(QWidget):
         )
 
     def _view_plane_value(self, plane: str) -> float:
-        """Retourne une valeur de plan adaptée à un simple preset caméra."""
+        """Handle view plane value."""
         if self._active_plane == plane and self._active_plane_value is not None:
             return float(self._active_plane_value)
         center, _spans, _radius = self._scene_bounds(self._visible_scene_points())
@@ -2271,7 +2265,7 @@ class ModelView(QWidget):
         value: float | None = None,
         refresh_scene: bool = True,
     ) -> None:
-        """Place la caméra en projection parallèle propre sur une file/plan."""
+        """Set parallel plane."""
         self._active_plane = plane
         self._active_plane_value = value
 
@@ -2285,7 +2279,7 @@ class ModelView(QWidget):
         self._apply_active_view_camera(render=True)
 
     def set_preview_start(self, point: tuple[float, float, float] | None) -> None:
-        """Affiche le point de depart du dessin courant."""
+        """Set preview start."""
         self._draw_start_point = point
         self.plotter.remove_actor("draw_start", render=False)
         if point is not None:
@@ -2294,7 +2288,7 @@ class ModelView(QWidget):
             self.plotter.render()
 
     def clear_drawing_state(self) -> None:
-        """Efface les repères temporaires de dessin."""
+        """Clear drawing state."""
         self._draw_start_point = None
         self._hover_point = None
         self.plotter.remove_actor("draw_start", render=False)
@@ -2303,7 +2297,7 @@ class ModelView(QWidget):
         self.plotter.render()
 
     def clear_selection(self) -> None:
-        """Efface la sélection courante."""
+        """Clear selection."""
         self._selected_nodes.clear()
         self._selected_elements.clear()
         self._selected_surfaces.clear()
@@ -2313,7 +2307,7 @@ class ModelView(QWidget):
         self._update_selection_actors()
 
     def _clear_selection_and_emit(self) -> None:
-        """Efface la sélection courante et notifie l'interface."""
+        """Clear selection and emit."""
         self._selected_node = None
         self._selected_element = None
         self._selected_surface = None
@@ -2326,7 +2320,7 @@ class ModelView(QWidget):
         surface_tags: list[int] | set[int] | tuple[int, ...] | None = None,
         emit_signal: bool = False,
     ) -> None:
-        """Définit la sélection courante dans la vue."""
+        """Set selected objects."""
         self._selected_nodes = set(node_tags)
         self._selected_elements = set(element_tags)
         self._selected_surfaces = set(surface_tags or [])
@@ -2350,7 +2344,7 @@ class ModelView(QWidget):
             )
 
     def _show_temp_point(self, point: np.ndarray, name: str, color: str) -> None:
-        """Dessine un point temporaire dans la vue."""
+        """Show temp point."""
         mesh = pv.PolyData([point.tolist()])
         self.plotter.remove_actor(name, render=False)
         self.plotter.add_mesh(
@@ -2363,7 +2357,7 @@ class ModelView(QWidget):
         self.plotter.render()
 
     def capture_view_state(self) -> dict | None:
-        """Capture l'état courant de caméra pour le restaurer après refresh."""
+        """Handle capture view state."""
         try:
             camera = self.plotter.camera
             return {
@@ -2376,7 +2370,7 @@ class ModelView(QWidget):
             return None
 
     def restore_view_state(self, state: dict | None) -> None:
-        """Restaure un état de caméra précédemment capturé."""
+        """Restore view state."""
         if not state:
             return
         try:
@@ -2392,19 +2386,19 @@ class ModelView(QWidget):
             pass
 
     def highlight_node(self, tag: int) -> None:
-        """Met en surbrillance un nœud dans la vue."""
+        """Handle highlight node."""
         if self._project is None or tag not in self._project.nodes:
             return
         self.set_selected_objects([tag], [], emit_signal=False)
 
     def highlight_element(self, tag: int) -> None:
-        """Met en surbrillance un element dans la vue."""
+        """Handle highlight element."""
         if self._project is None or tag not in self._project.elements:
             return
         self.set_selected_objects([], [tag], emit_signal=False)
 
     def highlight_surface(self, tag: int) -> None:
-        """Met en surbrillance une surface dans la vue."""
+        """Handle highlight surface."""
         if self._project is None or (
             tag not in self._project.surface_elements
             and tag not in self._project.plate_regions
@@ -2413,7 +2407,7 @@ class ModelView(QWidget):
         self.set_selected_objects([], [], [tag], emit_signal=False)
 
     def _update_selection_actors(self, render: bool = True) -> None:
-        """Met à jour les acteurs de sélection."""
+        """Update selection actors."""
         self.plotter.remove_actor("highlight_nodes", render=False)
         self.plotter.remove_actor("highlight_elems", render=False)
         self.plotter.remove_actor("highlight_elems_edges", render=False)
@@ -2533,7 +2527,7 @@ class ModelView(QWidget):
             self.plotter.render()
 
     def _select_in_rect(self, rect: QRect) -> None:
-        """Sélectionne les objets visibles dont la projection tombe dans le cadre."""
+        """Handle select in rect."""
         if self._project is None:
             self.set_selected_objects([], [], [], emit_signal=True)
             return
@@ -2583,7 +2577,7 @@ class ModelView(QWidget):
         self.set_selected_objects(node_tags, element_tags, surface_tags, emit_signal=True)
 
     def _select_at_click(self, pos: QPoint) -> None:
-        """Sélection simple additive par clic avec bascule sélection/désélection."""
+        """Handle select at click."""
         picked = self._pick_visible_object(pos)
         if picked is None:
             self._clear_selection_and_emit()
@@ -2651,7 +2645,7 @@ class ModelView(QWidget):
         self.set_selected_objects([], [], [], emit_signal=True)
 
     def _handle_object_context_click(self, event) -> bool:
-        """Selectionne une barre ou une surface et demande son menu contextuel."""
+        """Handle object context click."""
         if self._project is None:
             return True
 
@@ -2676,7 +2670,7 @@ class ModelView(QWidget):
         return True
 
     def _pick_visible_object(self, pos: QPoint) -> tuple[str, int] | None:
-        """Retourne l'objet visible le plus proche du clic en pixels."""
+        """Handle pick visible object."""
         direct_hit = self._pick_object_at_screen(pos)
         node_tag, node_dist = self._closest_node_to_screen(pos)
         elem_tag, elem_dist = self._closest_element_to_screen(pos)
@@ -2714,7 +2708,7 @@ class ModelView(QWidget):
         return None
 
     def _pick_object_at_screen(self, pos: QPoint) -> tuple[str, int] | None:
-        """Retourne l'objet effectivement touché à l'écran."""
+        """Handle pick object at screen."""
         picked = self._pick_position_from_screen(pos)
         if picked is None or self._project is None:
             return None
@@ -2747,7 +2741,7 @@ class ModelView(QWidget):
         return None
 
     def _surface_tag_from_picked_cell(self, actor) -> int | None:
-        """Lit le tag de surface stocke dans la cellule VTK touchee."""
+        """Read the surface tag stored in the picked VTK cell."""
         if self._project is None:
             return None
         try:
@@ -2770,7 +2764,7 @@ class ModelView(QWidget):
         return None
 
     def _node_tag_from_picked_mesh(self, actor) -> int | None:
-        """Lit le tag de noeud stocke dans le maillage VTK touche."""
+        """Handle node tag from picked mesh."""
         if self._project is None:
             return None
 
@@ -2811,7 +2805,7 @@ class ModelView(QWidget):
         return self._node_tag_from_point_data(dataset, point_id)
 
     def _node_tag_from_point_data(self, dataset, point_id: int) -> int | None:
-        """Lit un tag de noeud depuis les donnees de point VTK."""
+        """Handle node tag from point data."""
         if self._project is None or point_id < 0:
             return None
         try:
@@ -2824,7 +2818,7 @@ class ModelView(QWidget):
         return tag if tag in self._project.nodes else None
 
     def _actor_name(self, actor) -> str | None:
-        """Retrouve le nom logique d'un acteur PyVista."""
+        """Handle actor name."""
         if actor is None:
             return None
         try:
@@ -2836,7 +2830,7 @@ class ModelView(QWidget):
         return None
 
     def _closest_node_to_world(self, point: np.ndarray) -> int | None:
-        """Retourne le nœud visible le plus proche d'un point monde."""
+        """Handle closest node to world."""
         if self._project is None:
             return None
         best_tag = None
@@ -2853,7 +2847,7 @@ class ModelView(QWidget):
         return best_tag
 
     def _closest_element_to_world(self, point: np.ndarray) -> int | None:
-        """Retourne l'élément visible le plus proche d'un point monde."""
+        """Handle closest element to world."""
         if self._project is None:
             return None
         best_tag = None
@@ -2876,7 +2870,7 @@ class ModelView(QWidget):
         return best_tag
 
     def _closest_surface_to_world(self, point: np.ndarray) -> int | None:
-        """Retourne la surface visible la plus proche d'un point monde."""
+        """Handle closest surface to world."""
         if self._project is None:
             return None
 
@@ -2898,7 +2892,7 @@ class ModelView(QWidget):
         point: np.ndarray,
         polygon: np.ndarray,
     ) -> float:
-        """Distance d'un point monde au contour surfacique reel."""
+        """Handle point to surface distance world."""
         normal = cls._surface_normal(polygon)
         if normal is None:
             return float("inf")
@@ -2953,7 +2947,7 @@ class ModelView(QWidget):
         return float(np.linalg.norm(point - projection))
 
     def _closest_node_to_screen(self, pos: QPoint) -> tuple[int | None, float]:
-        """Retourne le nœud visible le plus proche en pixels."""
+        """Handle closest node to screen."""
         if self._project is None:
             return None, float("inf")
         hits = self._node_screen_hits(pos)
@@ -2969,7 +2963,7 @@ class ModelView(QWidget):
         return best.tag, best.distance
 
     def _node_screen_hits(self, pos: QPoint) -> list[_NodeScreenHit]:
-        """Retourne les noeuds candidats sous le clic, avec profondeur camera."""
+        """Handle node screen hits."""
         if self._project is None:
             return []
 
@@ -2996,7 +2990,7 @@ class ModelView(QWidget):
         return hits
 
     def _node_distance_to_screen(self, tag: int, pos: QPoint) -> float | None:
-        """Distance ecran entre un clic et le centre projete d'un noeud."""
+        """Handle node distance to screen."""
         if self._project is None:
             return None
         node = self._project.nodes.get(tag)
@@ -3015,7 +3009,7 @@ class ModelView(QWidget):
         )
 
     def _closest_element_to_screen(self, pos: QPoint) -> tuple[int | None, float]:
-        """Retourne l'élément visible le plus proche en pixels."""
+        """Handle closest element to screen."""
         if self._project is None:
             return None, float("inf")
         best_tag = None
@@ -3041,7 +3035,7 @@ class ModelView(QWidget):
         return best_tag, best_dist
 
     def _closest_surface_to_screen(self, pos: QPoint) -> tuple[int | None, float]:
-        """Retourne la surface visible la plus proche en pixels."""
+        """Handle closest surface to screen."""
         if self._project is None:
             return None, float("inf")
 
@@ -3058,7 +3052,7 @@ class ModelView(QWidget):
         return best.tag, best.distance
 
     def _surface_screen_hits(self, pos: QPoint) -> list[_SurfaceScreenHit]:
-        """Retourne les plaques candidates sous le clic, avec profondeur camera."""
+        """Handle surface screen hits."""
         if self._project is None:
             return []
 
@@ -3082,7 +3076,7 @@ class ModelView(QWidget):
         return hits
 
     def _surface_screen_polygon(self, surface: "SurfaceElementData") -> list[QPointF]:
-        """Projette les sommets visibles d'une surface en coordonnées écran."""
+        """Handle surface screen polygon."""
         polygon, _depths = self._surface_screen_polygon_data(surface)
         return polygon
 
@@ -3090,7 +3084,7 @@ class ModelView(QWidget):
         self,
         surface: "SurfaceElementData",
     ) -> tuple[list[QPointF], list[float]]:
-        """Projette une surface en coordonnees ecran et conserve sa profondeur."""
+        """Handle surface screen polygon data."""
         polygon = self._surface_polygon_world_points(surface)
         if polygon is None:
             return [], []
@@ -3114,7 +3108,7 @@ class ModelView(QWidget):
         polygon: list[QPointF],
         depths: list[float],
     ) -> float:
-        """Interpole la profondeur ecran au point clique dans la plaque."""
+        """Handle surface depth at screen point."""
         if len(polygon) < 3 or len(depths) != len(polygon):
             return float("inf")
 
@@ -3140,7 +3134,7 @@ class ModelView(QWidget):
         b: QPointF,
         c: QPointF,
     ) -> tuple[float, float, float] | None:
-        """Coordonnees barycentriques 2D dans un triangle ecran."""
+        """Return 2D barycentric coordinates inside a screen-space triangle."""
         v0x = b.x() - a.x()
         v0y = b.y() - a.y()
         v1x = c.x() - a.x()
@@ -3159,7 +3153,7 @@ class ModelView(QWidget):
         self,
         point: tuple[float, float, float],
     ) -> QPointF | None:
-        """Projette un point monde en coordonnées écran Qt."""
+        """Project world to screen."""
         display_pos = self._project_world_to_display(point)
         if display_pos is None:
             return None
@@ -3169,7 +3163,7 @@ class ModelView(QWidget):
         self,
         point: tuple[float, float, float],
     ) -> tuple[float, float, float] | None:
-        """Projette un point monde en coordonnees d'affichage VTK."""
+        """Project world to display."""
         try:
             renderer = self.plotter.renderer
             renderer.SetWorldPoint(point[0], point[1], point[2], 1.0)
@@ -3182,7 +3176,7 @@ class ModelView(QWidget):
             return None
 
     def _display_scale(self) -> float:
-        """Retourne le facteur HiDPI appliqué par QVTK."""
+        """Display scale."""
         try:
             scale = float(self.plotter.interactor.devicePixelRatioF())
         except Exception:
@@ -3190,20 +3184,20 @@ class ModelView(QWidget):
         return scale if scale > 0.0 else 1.0
 
     def _qt_to_vtk_display(self, x: float, y: float) -> tuple[float, float]:
-        """Convertit une position Qt en coordonnées d'affichage VTK."""
+        """Handle Qt to VTK display."""
         scale = self._display_scale()
         height = float(self.plotter.interactor.height())
         return float(x * scale), float((height - y - 1.0) * scale)
 
     def _vtk_to_qt_display(self, x: float, y: float) -> QPointF:
-        """Convertit une position d'affichage VTK en coordonnées Qt."""
+        """Handle VTK to Qt display."""
         scale = self._display_scale()
         height = float(self.plotter.interactor.height())
         return QPointF(float(x) / scale, height - (float(y) / scale) - 1.0)
 
     @staticmethod
     def _point_to_segment_distance(point: QPointF, start: QPointF, end: QPointF) -> float:
-        """Distance point-segment en coordonnées écran."""
+        """Handle point to segment distance."""
         vx = end.x() - start.x()
         vy = end.y() - start.y()
         wx = point.x() - start.x()
@@ -3222,7 +3216,7 @@ class ModelView(QWidget):
         point: QPointF,
         polygon: list[QPointF],
     ) -> float:
-        """Distance minimale point-polygone en coordonnées écran."""
+        """Handle point to polygon distance."""
         if len(polygon) < 2:
             return float("inf")
 
@@ -3234,7 +3228,7 @@ class ModelView(QWidget):
 
     @staticmethod
     def _point_in_polygon(point: QPointF, polygon: list[QPointF]) -> bool:
-        """Teste si un point est contenu dans un polygone écran par lancer de rayon."""
+        """Handle point in polygon."""
         if len(polygon) < 3:
             return False
 
@@ -3260,7 +3254,7 @@ class ModelView(QWidget):
         polygon: list[QPointF],
         rect: QRectF,
     ) -> bool:
-        """Indique si un polygone projété intersecte un cadre de sélection."""
+        """Handle polygon intersects rect."""
         if len(polygon) < 3:
             return False
         if any(rect.contains(point) for point in polygon):
@@ -3275,7 +3269,7 @@ class ModelView(QWidget):
 
     @staticmethod
     def _segment_intersects_rect(start: QPointF, end: QPointF, rect: QRectF) -> bool:
-        """Indique si un segment coupe ou entre dans un rectangle."""
+        """Return whether a segment crosses or enters a rectangle."""
         if rect.contains(start) or rect.contains(end):
             return True
         line = QLineF(start, end)
@@ -3294,7 +3288,7 @@ class ModelView(QWidget):
         scale: float = 10.0,
         preserve_camera: bool = False,
     ) -> None:
-        """Affiche la déformée superposée au modèle initial."""
+        """Display deformed."""
         self._clear_scene()
         self._apply_background()
         self._project = project
@@ -3353,13 +3347,13 @@ class ModelView(QWidget):
         self._finalize_scene_view(preserve_camera=preserve_camera)
 
     def clear(self) -> None:
-        """Efface la vue."""
+        """Clear the current state."""
         self._clear_scene()
         self._apply_background()
         self._restore_camera()
 
     def set_view_xy(self) -> None:
-        """Vue de dessus (plan XY, regard selon -Z)."""
+        """Set view XY."""
         value = self._view_plane_value("XY")
         state = self._plane_camera_state("XY", value)
         self._apply_camera_state(
@@ -3373,7 +3367,7 @@ class ModelView(QWidget):
         )
 
     def set_view_xz(self) -> None:
-        """Vue de face (plan XZ, Z vertical)."""
+        """Set view XZ."""
         value = self._view_plane_value("XZ")
         state = self._plane_camera_state("XZ", value)
         self._apply_camera_state(
@@ -3387,7 +3381,7 @@ class ModelView(QWidget):
         )
 
     def set_view_yz(self) -> None:
-        """Vue laterale (plan YZ, Z vertical)."""
+        """Set view yz."""
         value = self._view_plane_value("YZ")
         state = self._plane_camera_state("YZ", value)
         self._apply_camera_state(
@@ -3401,13 +3395,13 @@ class ModelView(QWidget):
         )
 
     def set_view_isometric(self) -> None:
-        """Vue isométrique."""
+        """Set view isometric."""
         self._restore_camera()
 
     def screenshot(self, filename: str) -> None:
-        """Sauvegarde une capture d'écran."""
+        """Handle screenshot."""
         self.plotter.screenshot(filename)
 
     def closeEvent(self, event) -> None:
-        """Ferme proprement le widget PyVista."""
+        """Close the PyVista widget cleanly."""
         super().closeEvent(event)

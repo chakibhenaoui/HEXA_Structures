@@ -1,4 +1,4 @@
-"""Dialogue de copie d'une sélection de nœuds / éléments / surfaces."""
+"""Selected geometry copy dialog."""
 
 from __future__ import annotations
 
@@ -20,7 +20,7 @@ from PySide6.QtWidgets import (
 
 
 class CopySelectionDialog(QDialog):
-    """Paramètre la copie d'une sélection géométrique."""
+    """Copy selection dialog."""
 
     PICK_ORIGIN_CODE = 2
 
@@ -164,7 +164,7 @@ class CopySelectionDialog(QDialog):
         self.done(self.PICK_ORIGIN_CODE)
 
     def set_picked_origin(self, point: tuple[float, float, float]) -> None:
-        """Met à jour l'origine cible de la copie après un clic dans la vue."""
+        """Set picked origin."""
         self._set_mode("coordinates")
         self._syncing_fields = True
         try:
@@ -176,7 +176,7 @@ class CopySelectionDialog(QDialog):
         self._sync_delta_from_target()
 
     def _sync_delta_from_target(self) -> None:
-        """Recalcule le delta à partir de la cible absolue."""
+        """Synchronize delta from target."""
         if self._syncing_fields:
             return
         self._syncing_fields = True
@@ -188,7 +188,7 @@ class CopySelectionDialog(QDialog):
             self._syncing_fields = False
 
     def _sync_target_from_delta(self) -> None:
-        """Recalcule la cible absolue à partir du delta."""
+        """Synchronize target from delta."""
         if self._syncing_fields:
             return
         self._syncing_fields = True
@@ -220,7 +220,7 @@ class CopySelectionDialog(QDialog):
         self.accept()
 
     def values(self) -> dict[str, float | int | str]:
-        """Retourne les paramètres de copie saisis."""
+        """Handle values."""
         return {
             "mode": self._mode(),
             "target_x": float(self._spn_target_x.value()),

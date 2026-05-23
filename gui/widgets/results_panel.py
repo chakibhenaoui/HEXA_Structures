@@ -199,7 +199,7 @@ class ResultsPanel(QWidget):
             self.layout().insertWidget(1, self._info_label)
 
     def _configure_tables(self) -> None:
-        """Enable sélection, sorting, and consistent headers on all tables."""
+        """Configure tables."""
         for table in self._table_by_result_type.values():
             table.setSelectionBehavior(QAbstractItemView.SelectRows)
             table.setAlternatingRowColors(True)

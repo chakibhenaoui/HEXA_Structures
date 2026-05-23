@@ -1,4 +1,4 @@
-"""Dialogue de création et d'édition des matériaux isotropes."""
+"""Material creation and editing dialog."""
 
 from __future__ import annotations
 
@@ -44,7 +44,7 @@ _GRADES_BY_TYPE = {
 
 
 class MaterialDialog(QDialog):
-    """Dialogue de propriétés matériau."""
+    """Material dialog."""
 
     _AUTO_PREFIXES = ("Béton", "Armature", "Acier", "Matériau")
 
@@ -158,7 +158,7 @@ class MaterialDialog(QDialog):
             self._auto_name()
 
     def _populate_grades(self, *, preferred_grade: str = "") -> None:
-        """Met à jour la liste des nuances selon le type courant."""
+        """Handle populate grades."""
         grades = _GRADES_BY_TYPE.get(self.material_type(), [])
         self.combo_grade.blockSignals(True)
         self.combo_grade.clear()
@@ -170,20 +170,20 @@ class MaterialDialog(QDialog):
         self.combo_grade.blockSignals(False)
 
     def _on_type_changed(self) -> None:
-        """Recharge les nuances et les valeurs par défaut au changement de type."""
+        """Handle type changed."""
         if self._syncing_identity:
             return
         self._populate_grades()
         self._apply_grade_defaults()
 
     def _on_grade_changed(self) -> None:
-        """Recharge les valeurs par défaut au changement de nuance."""
+        """Handle grade changed."""
         if self._syncing_identity:
             return
         self._apply_grade_defaults()
 
     def _apply_grade_defaults(self) -> None:
-        """Applique les propriétés isotropes par défaut de la nuance courante."""
+        """Apply grade defaults."""
         defaults = isotropic_material_properties(self.material_type(), self.grade(), {})
         self.spin_unit_weight.setValue(defaults["unit_weight"])
         self.spin_young.setValue(defaults["young_modulus"])
@@ -193,11 +193,11 @@ class MaterialDialog(QDialog):
         self._update_derived_fields()
 
     def _update_info(self) -> None:
-        """Met à jour le texte d'information contextuel."""
+        """Update info."""
         self.lbl_info.setText(_MATERIAL_INFOS.get(self.material_type(), ""))
 
     def _auto_name(self) -> None:
-        """Propose un nom automatique base sur le type et la nuance."""
+        """Suggest an automatic name from the material type and grade."""
         grade = self.grade()
         if not grade:
             return
@@ -211,7 +211,7 @@ class MaterialDialog(QDialog):
             self.edit_name.setText(f"{prefix} {grade}")
 
     def _update_derived_fields(self) -> None:
-        """Recalcule les champs derives lecture seule."""
+        """Update derived fields."""
         density = unit_weight_to_density_kg_m3(self.spin_unit_weight.value())
         shear = compute_shear_modulus(
             self.spin_young.value(),
@@ -221,7 +221,7 @@ class MaterialDialog(QDialog):
         self.edit_shear.setText(f"{shear:.0f} kPa")
 
     def _validate(self) -> None:
-        """Valide les données avant fermeture."""
+        """Handle validate."""
         if not self.edit_name.text().strip():
             self.edit_name.setFocus()
             return
@@ -231,15 +231,15 @@ class MaterialDialog(QDialog):
         self.accept()
 
     def material_type(self) -> str:
-        """Retourne le type de matériau courant."""
+        """Handle material type."""
         return str(self.combo_type.currentData() or "")
 
     def grade(self) -> str:
-        """Retourne la nuance courante."""
+        """Handle grade."""
         return self.combo_grade.currentText().strip()
 
     def result(self) -> dict[str, object]:
-        """Retourne les données du matériau edite."""
+        """Handle result."""
         return {
             "name": self.edit_name.text().strip(),
             "material_type": self.material_type(),
@@ -261,7 +261,7 @@ class MaterialDialog(QDialog):
         step: float,
         suffix: str = "",
     ) -> QDoubleSpinBox:
-        """Crée un champ numérique homogène pour le dialogue."""
+        """Create spin."""
         spin = QDoubleSpinBox()
         spin.setRange(vmin, vmax)
         spin.setDecimals(decimals)

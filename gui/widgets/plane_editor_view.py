@@ -1,4 +1,4 @@
-"""Vue 2D de file pour le dessin sur grille."""
+"""2D grid-line drawing view."""
 
 from __future__ import annotations
 
@@ -14,7 +14,7 @@ if TYPE_CHECKING:
 
 
 class PlaneEditorView(QWidget):
-    """Vue 2D d'une file active de la grille."""
+    """2D plane editor view."""
 
     grid_point_picked = Signal(float, float, float)
     draw_finalize_requested = Signal()
@@ -32,36 +32,36 @@ class PlaneEditorView(QWidget):
         self.setAutoFillBackground(True)
 
     def set_project(self, project: ProjectModel) -> None:
-        """Assigne le projet courant."""
+        """Set project."""
         self._project = project
         self.update()
 
     def set_plane_context(self, plane: str, value: float | None) -> None:
-        """Définit le plan actif et la valeur de la file."""
+        """Set plane context."""
         self._plane = plane
         self._value = value
         self.update()
 
     def set_drawing_mode(self, enabled: bool) -> None:
-        """Active ou désactive le mode dessin."""
+        """Set drawing mode."""
         self._draw_mode = enabled
         if not enabled:
             self._hover_point = None
         self.update()
 
     def set_preview_start(self, point: tuple[float, float, float] | None) -> None:
-        """Définit le point de départ de la barre en cours."""
+        """Set preview start."""
         self._draw_start_point = point
         self.update()
 
     def clear_drawing_state(self) -> None:
-        """Efface les repères de dessin."""
+        """Clear drawing state."""
         self._draw_start_point = None
         self._hover_point = None
         self.update()
 
     def mouseMoveEvent(self, event) -> None:
-        """Met à jour la prévisualisation pendant le dessin."""
+        """Handle mouse move events."""
         if not self._draw_mode or self._draw_start_point is None:
             self._hover_point = None
             self.update()
@@ -71,13 +71,13 @@ class PlaneEditorView(QWidget):
         self.update()
 
     def leaveEvent(self, event) -> None:
-        """Efface le point survolé à la sortie."""
+        """Handle mouse leave events."""
         self._hover_point = None
         self.update()
         super().leaveEvent(event)
 
     def mousePressEvent(self, event) -> None:
-        """Envoie le point de grille sélectionné."""
+        """Handle mouse press events."""
         if event.button() == Qt.RightButton and self._draw_mode:
             self.draw_finalize_requested.emit()
             return
@@ -89,7 +89,7 @@ class PlaneEditorView(QWidget):
         self.grid_point_picked.emit(point[0], point[1], point[2])
 
     def paintEvent(self, event) -> None:
-        """Dessine la file active et ses éléments."""
+        """Paint the widget contents."""
         painter = QPainter(self)
         painter.fillRect(self.rect(), QColor("#000000"))
         painter.setRenderHint(QPainter.Antialiasing, True)
@@ -122,7 +122,7 @@ class PlaneEditorView(QWidget):
         bbox: tuple[float, float, float, float],
         draw_rect: QRectF,
     ) -> None:
-        """Dessine la grille 2D de la file."""
+        """Draw grid lines."""
         pen = QPen(QColor("#e6e600"))
         pen.setWidth(1)
         painter.setPen(pen)
@@ -146,7 +146,7 @@ class PlaneEditorView(QWidget):
         bbox: tuple[float, float, float, float],
         draw_rect: QRectF,
     ) -> None:
-        """Dessine les barres appartenant à la file active."""
+        """Draw existing elements."""
         if self._project is None:
             return
         pen = QPen(QColor("#ffff66"))
@@ -173,7 +173,7 @@ class PlaneEditorView(QWidget):
         bbox: tuple[float, float, float, float],
         draw_rect: QRectF,
     ) -> None:
-        """Dessine les surfaces de la file active comme aplats légers."""
+        """Draw existing surfaces."""
         painter.setPen(QPen(QColor("#7fc8f8"), 1))
         painter.setBrush(QColor(127, 200, 248, 45))
 
@@ -190,7 +190,7 @@ class PlaneEditorView(QWidget):
             painter.drawPath(path)
 
     def _surface_polygons_on_plane(self) -> list[list[tuple[float, float]]]:
-        """Retourne les polygones des surfaces entièrement contenues dans la file."""
+        """Handle surface polygons on plane."""
         if self._project is None:
             return []
 
@@ -217,7 +217,7 @@ class PlaneEditorView(QWidget):
         bbox: tuple[float, float, float, float],
         draw_rect: QRectF,
     ) -> None:
-        """Dessine des appuis simplifiés sur la file."""
+        """Draw supports."""
         if self._project is None:
             return
         painter.setPen(QPen(QColor("#00ff00"), 2))
@@ -238,7 +238,7 @@ class PlaneEditorView(QWidget):
         bbox: tuple[float, float, float, float],
         draw_rect: QRectF,
     ) -> None:
-        """Dessine les repères d'axes comme aide de navigation."""
+        """Draw axis labels."""
         painter.setPen(QColor("#00ff00"))
         xs = sorted({self._project_to_plane(point)[0] for point in grid_points})
         ys = sorted({self._project_to_plane(point)[1] for point in grid_points})
@@ -258,7 +258,7 @@ class PlaneEditorView(QWidget):
         bbox: tuple[float, float, float, float],
         draw_rect: QRectF,
     ) -> None:
-        """Dessine le point de départ et la prévisualisation de la barre."""
+        """Draw preview."""
         if self._draw_start_point is None:
             return
 
@@ -285,7 +285,7 @@ class PlaneEditorView(QWidget):
         painter.drawEllipse(hover_2d, 4, 4)
 
     def _nearest_grid_point(self, position: QPointF) -> tuple[float, float, float] | None:
-        """Retourne l'intersection de grille la plus proche du curseur."""
+        """Handle nearest grid point."""
         if self._project is None or self._value is None:
             return None
 
@@ -309,7 +309,7 @@ class PlaneEditorView(QWidget):
         return nearest
 
     def _point_on_plane(self, point: tuple[float, float, float], tol: float = 1e-9) -> bool:
-        """Indique si un point appartient à la file active."""
+        """Handle point on plane."""
         if self._value is None:
             return False
         if self._plane == "XY":
@@ -326,7 +326,7 @@ class PlaneEditorView(QWidget):
         plane: str,
         value: float,
     ) -> list[tuple[float, float, float]]:
-        """Retourne les intersections de la file active."""
+        """Handle plane grid points."""
         xs = grid.axis_values("X")
         ys = grid.axis_values("Y")
         zs = grid.axis_values("Z")
@@ -340,7 +340,7 @@ class PlaneEditorView(QWidget):
         return []
 
     def _project_to_plane(self, point: tuple[float, float, float]) -> tuple[float, float]:
-        """Projette un point 3D dans la vue 2D active."""
+        """Project to plane."""
         x, y, z = point
         if self._plane == "XY":
             return x, y
@@ -352,7 +352,7 @@ class PlaneEditorView(QWidget):
         self,
         points: list[tuple[float, float, float]],
     ) -> tuple[float, float, float, float]:
-        """Calcule la boîte englobante 2D du plan actif."""
+        """Compute bbox."""
         projected = [self._project_to_plane(point) for point in points]
         xs = [point[0] for point in projected]
         ys = [point[1] for point in projected]
@@ -364,7 +364,7 @@ class PlaneEditorView(QWidget):
         bbox: tuple[float, float, float, float],
         draw_rect: QRectF,
     ) -> QPointF:
-        """Convertit un point du plan en coordonnées widget."""
+        """Map to widget."""
         min_x, max_x, min_y, max_y = bbox
         width = max(max_x - min_x, 1e-9)
         height = max(max_y - min_y, 1e-9)

@@ -1,9 +1,4 @@
-"""
-Orchestration des analyses OpenSees.
-
-Statique linéaire, modale. Gestion du QThread pour ne pas bloquer la GUI.
-Pushover et dynamique NL seront ajoutés dans les sprints suivants.
-"""
+"""OpenSees analysis orchestration."""
 
 from __future__ import annotations
 
@@ -17,16 +12,7 @@ if TYPE_CHECKING:
 
 
 class AnalysisRunner:
-    """Lance les analyses via le moteur de calcul configuré.
-
-    Usage :
-        runner = AnalysisRunner(project)
-        success, results = runner.run_static(load_tag=1)
-
-        # Multi-cas :
-        all_results = runner.run_all()
-        # → {"G (cas 1)": (True, {...}), "ELU 1 (combo 1)": (True, {...}), ...}
-    """
+    """Analysis runner."""
 
     def __init__(
         self,
@@ -43,14 +29,7 @@ class AnalysisRunner:
         self,
         callback: callable | None = None,
     ) -> dict[str, tuple[bool, dict]]:
-        """Lance l'analyse statique pour TOUS les cas et combinaisons.
-
-        Args:
-            callback: Fonction(nom_cas, index, total) appelée après chaque cas.
-
-        Returns:
-            Dictionnaire {nom_cas: (succès, résultats)}.
-        """
+        """Run all."""
         return self.services.run_all_static(callback=callback)
 
     def run_static(
@@ -60,17 +39,7 @@ class AnalysisRunner:
         max_iter: int = 100,
         tol: float = 1e-6,
     ) -> tuple[bool, dict]:
-        """Analyse statique linéaire.
-
-        Args:
-            load_tag: Tag du cas de charge simple (exclusif avec combo_tag).
-            combo_tag: Tag de la combinaison (exclusif avec load_tag).
-            max_iter: Nombre max d'itérations Newton.
-            tol: Tolérance de convergence.
-
-        Returns:
-            Tuple (succès, résultats).
-        """
+        """Run static."""
         return self.services.run_static(
             load_tag=load_tag,
             combo_tag=combo_tag,
@@ -79,37 +48,24 @@ class AnalysisRunner:
         )
 
     def run_modal(self, num_modes: int = 10) -> tuple[bool, dict]:
-        """Analyse modale (valeurs propres).
-
-        Args:
-            num_modes: Nombre de modes à calculer.
-
-        Returns:
-            Tuple (succès, résultats).
-        """
+        """Run modal."""
         return self.services.run_modal(num_modes=num_modes)
 
     @property
     def supports_diagrams(self) -> bool:
-        """Indique si le backend courant expose les diagrammes OpenSees."""
+        """Return whether diagrams."""
         return self.services.supports_diagrams
 
 
 # ═══════════════════════════════════════════════════════════════════════════
-#  Worker QThread pour analyses non-bloquantes
+#  Worker QThread for non-blocking analyses
 # ═══════════════════════════════════════════════════════════════════════════
 
 try:
     from PySide6.QtCore import QThread, Signal
 
     class AnalysisWorker(QThread):
-        """Thread dédié pour lancer une analyse sans bloquer la GUI.
-
-        Signaux :
-            finished(bool, dict) : émis en fin d'analyse (succès, résultats).
-            progress(int) : progression 0→100 (pour barre de progression).
-            message(str) : message d'état pour la console.
-        """
+        """Analysis worker."""
 
         finished = Signal(bool, dict)
         progress = Signal(int)
@@ -134,7 +90,7 @@ try:
             self.engine = engine
 
         def run(self) -> None:
-            """Exécution dans le thread séparé."""
+            """Run the worker task."""
             runner = AnalysisRunner(self.project, engine=self.engine)
 
             self.message.emit(f"Analyse {self.analysis_type} en cours...")

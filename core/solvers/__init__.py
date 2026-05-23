@@ -1,6 +1,4 @@
-"""
-API publique du package des solveurs.
-"""
+"""Solver backend package."""
 
 from core.solvers.base import (
     AnalysisCapability,

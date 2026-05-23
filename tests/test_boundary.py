@@ -1,4 +1,4 @@
-"""Tests pour les conditions aux limites et les combinaisons EC0."""
+"""Helpers for test boundary."""
 
 import pytest
 from core.boundary_conditions import (
@@ -35,7 +35,7 @@ from core.loads import (
 
 
 class TestBoundaryCondition:
-    """Tests pour les conditions aux limites."""
+    """Tests for boundary condition."""
 
     def test_encastrement(self):
         bc = create_boundary(BoundaryType.ENCASTREMENT)
@@ -48,7 +48,7 @@ class TestBoundaryCondition:
         bc = create_boundary(BoundaryType.ROTULE)
         assert bc.fixities == (1, 1, 1, 0, 0, 0)
         assert not bc.is_fixed  # pas encastrement total
-        assert not bc.is_free   # pas libre non plus
+        assert not bc.is_free   # not free either
         assert len(bc.blocked_dofs) == 3
         assert len(bc.free_dofs) == 3
 
@@ -100,7 +100,7 @@ class TestBoundaryCondition:
         assert "Uz" in summary
 
     def test_all_predefined_types(self):
-        """Vérifie que tous les types prédéfinis sont cohérents."""
+        """Test all predefined types."""
         for bc_type in BoundaryType:
             fix = PREDEFINED_FIXITIES[bc_type]
             assert len(fix) == 6
@@ -113,7 +113,7 @@ class TestBoundaryCondition:
 
 
 class TestNodeData3D:
-    """Tests pour le modèle de données 3D."""
+    """Tests for node data3 d."""
 
     def test_node_6dof(self):
         node = NodeData(tag=1, x=1.0, y=2.0, z=3.0,
@@ -134,7 +134,7 @@ class TestNodeData3D:
         assert nl.as_tuple() == (10.0, -20.0, 5.0, 1.0, 2.0, 3.0)
 
     def test_save_load_3d(self, tmp_path):
-        """Vérifie la persistance SQLite avec les données 3D."""
+        """Test save load 3D."""
         project = ProjectModel(name="Test 3D")
         project.add_node(1.0, 2.0, 3.0, fixities=(1, 1, 1, 1, 1, 1))
         project.add_node(4.0, 5.0, 6.0)
@@ -156,11 +156,11 @@ class TestNodeData3D:
 
 
 class TestCombinationsEC0:
-    """Tests pour la génération automatique des combinaisons EC0."""
+    """Tests for combinations EC0."""
 
     @pytest.fixture
     def loads(self):
-        """Cas de charge type : G + Q (bureau) + S (neige)."""
+        """Handle loads."""
         return {
             1: LoadData(tag=1, name="G1", load_type="dead", category=""),
             2: LoadData(tag=2, name="Q1", load_type="live", category="B"),
@@ -168,7 +168,7 @@ class TestCombinationsEC0:
         }
 
     def test_psi_coefficients(self):
-        psi0, psi1, psi2 = get_psi("B")  # Bureaux
+        psi0, psi1, psi2 = get_psi("B")  # Offices
         assert psi0 == 0.7
         assert psi1 == 0.5
         assert psi2 == 0.3
@@ -180,7 +180,7 @@ class TestCombinationsEC0:
         assert psi2 == 0.0
 
     def test_uls_fundamental(self, loads):
-        """ELU : 2 combinaisons (Q dominant, S dominant)."""
+        """Test ULS fundamental."""
         perm = [1]
         var = [loads[2], loads[3]]
         combos = generate_uls_fundamental(perm, var)
@@ -215,25 +215,25 @@ class TestCombinationsEC0:
         assert len(combos) == 2
         # G + ψ₁*Q + ψ₂*S
         assert combos[0][1] == 1.0  # G
-        assert combos[0][2] == 0.5  # ψ₁ bureaux
+        assert combos[0][2] == 0.5  # psi1 offices
 
     def test_sls_quasi_permanent(self, loads):
         perm = [1]
         var = [loads[2], loads[3]]
         combos = generate_sls_quasi_permanent(perm, var)
         assert len(combos) == 1
-        # G + ψ₂*Q (neige ψ₂=0 donc pas de S)
+        # G + psi2*Q (snow psi2=0, so no S)
         c = combos[0]
         assert c[1] == 1.0  # G
-        assert c[2] == 0.3  # ψ₂ bureaux
-        assert 3 not in c  # neige ψ₂=0
+        assert c[2] == 0.3  # psi2 offices
+        assert 3 not in c  # snow psi2=0
 
     def test_auto_generate(self, loads):
-        """Génération automatique de toutes les combinaisons."""
+        """Test auto generate."""
         combos = auto_generate_combinations(loads)
-        # 2 ELU + 2 ELS car. + 2 ELS fréq. + 1 ELS QP = 7
+        # 2 ULS + 2 characteristic SLS + 2 frequent SLS + 1 QP SLS = 7
         assert len(combos) == 7
-        # Vérifier les tags uniques
+        # Check unique tags
         tags = [c.tag for c in combos]
         assert len(set(tags)) == len(tags)
 
@@ -248,7 +248,7 @@ class TestCombinationsEC0:
         assert "Q1" in formula
 
     def test_permanent_only(self):
-        """Avec seulement des permanentes."""
+        """Test permanent only."""
         loads = {1: LoadData(tag=1, name="G", load_type="dead")}
         combos = auto_generate_combinations(loads)
         assert len(combos) >= 1

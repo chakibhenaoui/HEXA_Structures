@@ -1,10 +1,4 @@
-"""
-Dialogues de gestion des charges.
-
-Deux dialogues distincts :
-- LoadCaseDialog : création/édition d'un cas de charge (nom, type, catégorie)
-- LoadEntryDialog : saisie des charges nodales et réparties pour un cas donne
-"""
+"""Load case and load entry dialogs."""
 
 from __future__ import annotations
 
@@ -47,7 +41,7 @@ from core.self_weight import is_self_weight_load
 from gui.dialogs import load_dialog_ui
 
 
-# Types de charges
+# Load types
 LOAD_TYPES = {
     "permanent": "Permanente (G)",
     "variable": "Exploitation (Q)",
@@ -56,7 +50,7 @@ LOAD_TYPES = {
     "seismic": "Sismique (E)",
 }
 
-# Catégories d'usage EC1 (NF EN 1991-1-1 Tableau 6.1)
+# EC1 use categories (NF EN 1991-1-1 table 6.1)
 EC1_CATEGORIES = {
     "": "(aucune)",
     "A": "A — Habitation, residentiel",
@@ -75,11 +69,11 @@ EC1_CATEGORIES = {
 
 
 # ═══════════════════════════════════════════════════════════════════════════
-#  Dialogue 1 : Cas de charge (nom, type, catégorie)
+#  Dialog 1: load case (name, type, category)
 # ═══════════════════════════════════════════════════════════════════════════
 
 class LoadCaseManagerDialog(QDialog):
-    """Fenêtre de gestion centralisée des cas de charge."""
+    """Load case manager dialog."""
 
     def __init__(
         self,
@@ -103,7 +97,7 @@ class LoadCaseManagerDialog(QDialog):
         self._refresh_list()
 
     def _build_ui(self) -> None:
-        """Construit l'interface du gestionnaire."""
+        """Build UI."""
         root = QVBoxLayout(self)
 
         content = QHBoxLayout()
@@ -171,7 +165,7 @@ class LoadCaseManagerDialog(QDialog):
         root.addWidget(buttons)
 
     def _refresh_list(self) -> None:
-        """Met à jour la liste et les boutons."""
+        """Refresh list."""
         current_tag = self.current_tag()
 
         self.list_items.clear()
@@ -213,7 +207,7 @@ class LoadCaseManagerDialog(QDialog):
         self._refresh_buttons()
 
     def _refresh_buttons(self) -> None:
-        """Active/desactive les actions selon la sélection."""
+        """Refresh buttons."""
         tag = self.current_tag()
         has_selection = tag is not None
         protected = self._is_protected(tag)
@@ -225,18 +219,18 @@ class LoadCaseManagerDialog(QDialog):
         self.btn_switch_combinations.setEnabled(bool(self._project.loads))
 
     def current_tag(self) -> int | None:
-        """Retourne le tag sélectionné."""
+        """Return tag."""
         item = self.list_items.currentItem()
         if item is None:
             return None
         return item.data(Qt.UserRole)
 
     def _next_tag(self) -> int:
-        """Retourne le prochain tag disponible."""
+        """Return the next tag."""
         return max(self._project.loads.keys(), default=0) + 1
 
     def _is_protected(self, tag: int | None) -> bool:
-        """Indique si le cas est gere automatiquement par le logiciel."""
+        """Return whether protected."""
         if tag is None:
             return False
         load = self._project.loads.get(tag)
@@ -244,20 +238,20 @@ class LoadCaseManagerDialog(QDialog):
 
     @staticmethod
     def _load_type_label(load: LoadData) -> str:
-        """Retourne un libellé lisible pour le type de charge."""
+        """Load type label."""
         if is_self_weight_load(load):
             return "Poids propre"
         return LOAD_TYPES.get(load.load_type, load.load_type)
 
     def _add_load_case(self) -> None:
-        """Ajoute un cas de charge."""
+        """Add load case."""
         dlg = LoadCaseDialog(self, project=self._project)
         if dlg.exec() != LoadCaseDialog.Accepted:
             return
         self._refresh_list()
 
     def _copy_load_case(self) -> None:
-        """Duplique la définition du cas sélectionné."""
+        """Copy load case."""
         tag = self.current_tag()
         if tag is None or self._is_protected(tag):
             return
@@ -273,7 +267,7 @@ class LoadCaseManagerDialog(QDialog):
         self._refresh_list()
 
     def _modify_load_case(self) -> None:
-        """Modifie le cas sélectionné."""
+        """Handle modify load case."""
         tag = self.current_tag()
         if tag is None:
             return
@@ -287,7 +281,7 @@ class LoadCaseManagerDialog(QDialog):
         self._refresh_list()
 
     def _define_loads(self) -> None:
-        """Ouvre la saisie des charges du cas sélectionné."""
+        """Handle define loads."""
         tag = self.current_tag()
         if tag is None:
             return
@@ -316,7 +310,7 @@ class LoadCaseManagerDialog(QDialog):
         self._refresh_list()
 
     def _delete_load_case(self) -> None:
-        """Supprime le cas sélectionné et ses references."""
+        """Delete load case."""
         tag = self.current_tag()
         if tag is None:
             return
@@ -381,7 +375,7 @@ class LoadCaseManagerDialog(QDialog):
         self._refresh_list()
 
     def _show_self_weight_message(self) -> None:
-        """Explique le fonctionnement du cas de poids propre."""
+        """Show self-weight message."""
         QMessageBox.information(
             self,
             "Poids propre automatique",
@@ -391,47 +385,41 @@ class LoadCaseManagerDialog(QDialog):
         )
 
     def _switch_to_combinations(self) -> None:
-        """Demande l'ouverture du gestionnaire de combinaisons."""
+        """Handle switch to combinations."""
         self._switch_to_combinations_requested = True
         self.accept()
 
     def switch_to_combinations_requested(self) -> bool:
-        """Indique si l'utilisateur veut basculer vers les combinaisons."""
+        """Handle switch to combinations requested."""
         return bool(getattr(self, "_switch_to_combinations_requested", False))
 
     def result_loads(self) -> dict[int, LoadData]:
-        """Retourne les cas de charge édités."""
+        """Return loads."""
         return deepcopy(self._project.loads)
 
     def result_nodal_loads(self) -> list[NodalLoad]:
-        """Retourne les charges nodales editees."""
+        """Return nodal loads."""
         return deepcopy(self._project.nodal_loads)
 
     def result_element_loads(self) -> list[ElementLoad]:
-        """Retourne les charges réparties editees."""
+        """Return element loads."""
         return deepcopy(self._project.element_loads)
 
     def result_surface_loads(self) -> list[SurfaceLoad]:
-        """Retourne les charges surfaciques editees."""
+        """Return surface loads."""
         return deepcopy(self._project.surface_loads)
 
     def result_plate_surface_loads(self) -> list[PlateSurfaceLoadData]:
-        """Retourne les charges surfaciques des plaques macro editees."""
+        """Return plate surface loads."""
         return deepcopy(self._project.plate_surface_loads)
 
     def result_combinations(self):
-        """Retourne les combinaisons mises à jour."""
+        """Return combinations."""
         return deepcopy(self._project.combinations)
 
 
 class LoadCaseDialog(QDialog):
-    """Dialogue pour créer ou modifier un cas de charge.
-
-    Usage :
-        dlg = LoadCaseDialog(parent, project=project)
-        if dlg.exec() == QDialog.Accepted:
-            tag = dlg.load_tag()   # tag du cas créé/modifié
-    """
+    """Load case dialog."""
 
     def __init__(self, parent=None, *, project: ProjectModel,
                  load_tag: int | None = None):
@@ -469,7 +457,7 @@ class LoadCaseDialog(QDialog):
             self._load_existing(load_tag)
 
     def _auto_name(self) -> None:
-        """Propose un nom par défaut selon le type."""
+        """Handle auto name."""
         current = self._edit_name.text().strip()
         prefixes = ("Permanente", "Exploitation", "Neige", "Vent", "Sismique", "")
         if not current or any(current.startswith(p) for p in prefixes if p):
@@ -484,7 +472,7 @@ class LoadCaseDialog(QDialog):
             self._edit_name.setText(names.get(load_type, ""))
 
     def _load_existing(self, tag: int) -> None:
-        """Pre-remplit avec les données d'un cas existant."""
+        """Load existing."""
         lc = self._project.loads.get(tag)
         if lc is None:
             return
@@ -497,7 +485,7 @@ class LoadCaseDialog(QDialog):
             self._combo_category.setCurrentIndex(idx)
 
     def _on_accept(self) -> None:
-        """Valide et enregistre le cas de charge."""
+        """Handle accept."""
         name = self._edit_name.text().strip()
         if not name:
             self._edit_name.setFocus()
@@ -517,27 +505,16 @@ class LoadCaseDialog(QDialog):
         self.accept()
 
     def load_tag(self) -> int | None:
-        """Retourne le tag du cas de charge créé ou modifié."""
+        """Load tag."""
         return self._result_tag
 
 
 # ═══════════════════════════════════════════════════════════════════════════
-#  Dialogue 2 : Saisie des charges (nodales + réparties)
+#  Dialog 2: load entry (nodal + distributed)
 # ═══════════════════════════════════════════════════════════════════════════
 
 class LoadEntryDialog(QDialog):
-    """Dialogue pour saisir les charges d'un cas de charge existant.
-
-    Permet de :
-    - Ajouter des charges nodales (Fx, Fy, Fz, Mx, My, Mz)
-    - Ajouter des charges réparties sur éléments (wx, wy, wz)
-    - Voir / supprimer les charges dans des tableaux
-
-    Usage :
-        dlg = LoadEntryDialog(parent, project=project, load_tag=1)
-        if dlg.exec() == QDialog.Accepted:
-            pass  # le projet est déjà modifié
-    """
+    """Load entry dialog."""
 
     def __init__(
         self,
@@ -577,7 +554,7 @@ class LoadEntryDialog(QDialog):
     def _setup_ui(self) -> None:
         layout = QVBoxLayout(self)
 
-        # ── Info résumé ──
+        # -- Summary info --
         lc = self._project.loads.get(self._load_tag)
         if lc:
             type_label = LOAD_TYPES.get(lc.load_type, lc.load_type)
@@ -606,7 +583,7 @@ class LoadEntryDialog(QDialog):
         self._tabs = QTabWidget(self)
         layout.addWidget(self._tabs, 1)
 
-        # ── Charges nodales ──
+        # -- Nodal loads --
         self._tab_nodal = QWidget(self)
         tab_nodal_layout = QVBoxLayout(self._tab_nodal)
         self._grp_nodal = QGroupBox("Charges nodales", self._tab_nodal)
@@ -629,7 +606,7 @@ class LoadEntryDialog(QDialog):
         lbl_moment_help.setStyleSheet("color: #6c757d; font-size: 10px; margin-bottom: 6px;")
         v_nodal.addWidget(lbl_moment_help)
 
-        # Ligne 1 : nœud + forces
+        # Row 1: node + forces
         h_nodal = QHBoxLayout()
         self._cmb_node = QComboBox()
         h_nodal.addWidget(QLabel("Nœud :"))
@@ -658,7 +635,7 @@ class LoadEntryDialog(QDialog):
 
         v_nodal.addLayout(h_nodal)
 
-        # Ligne 2 : moments + bouton ajouter
+        # Row 2: moments + add button
         h_nodal2 = QHBoxLayout()
         h_nodal2.addStretch()
 
@@ -707,7 +684,7 @@ class LoadEntryDialog(QDialog):
         tab_nodal_layout.addWidget(self._grp_nodal)
         self._tabs.addTab(self._tab_nodal, "Nodales")
 
-        # ── Charges réparties ──
+        # -- Distributed loads --
         self._tab_elem = QWidget(self)
         tab_elem_layout = QVBoxLayout(self._tab_elem)
         self._grp_elem = QGroupBox("Charges réparties sur éléments", self._tab_elem)
@@ -788,7 +765,7 @@ class LoadEntryDialog(QDialog):
         tab_elem_layout.addWidget(self._grp_elem)
         self._tabs.addTab(self._tab_elem, "Éléments")
 
-        # ── Charges surfaciques ──
+        # -- Surface loads --
         self._tab_surface = QWidget(self)
         tab_surface_layout = QVBoxLayout(self._tab_surface)
         self._grp_surface = QGroupBox("Charges surfaciques sur plaques", self._tab_surface)
@@ -885,7 +862,7 @@ class LoadEntryDialog(QDialog):
                 return
 
     def _populate_combos(self) -> None:
-        """Remplit les combobox avec les nœuds et éléments du projet."""
+        """Handle populate combinations."""
         self._cmb_node.clear()
         for ntag in sorted(self._project.nodes.keys()):
             self._cmb_node.addItem(f"N{ntag}", ntag)
@@ -917,7 +894,7 @@ class LoadEntryDialog(QDialog):
                 self._cmb_surface.setCurrentIndex(idx)
 
     def _surface_target_from_tag(self, tag: int):
-        """Retourne la cible de charge surfacique pour un tag GUI."""
+        """Handle surface target from tag."""
         tag = int(tag)
         if tag in self._project.plate_regions:
             return ("plate", tag)
@@ -962,7 +939,7 @@ class LoadEntryDialog(QDialog):
         )
 
     def _load_existing(self) -> None:
-        """Charge les charges existantes de ce cas."""
+        """Load existing."""
         tag = self._load_tag
 
         for nl in self._project.nodal_loads:
@@ -980,10 +957,10 @@ class LoadEntryDialog(QDialog):
             if sl.load_tag == tag:
                 self._add_surface_row(sl)
 
-    # ── Charges nodales ──
+    # -- Nodal loads --
 
     def _add_nodal(self) -> None:
-        """Ajoute une charge nodale depuis le formulaire."""
+        """Add nodal."""
         if self._selected_node_tags:
             self._add_nodal_to_selection()
             return
@@ -1009,7 +986,7 @@ class LoadEntryDialog(QDialog):
             spn.setValue(0.0)
 
     def _add_nodal_to_selection(self) -> None:
-        """Ajoute la même charge nodale à tous les nœuds sélectionnés."""
+        """Add nodal to selection."""
         if not self._selected_node_tags:
             return
 
@@ -1035,7 +1012,7 @@ class LoadEntryDialog(QDialog):
             spn.setValue(0.0)
 
     def _add_nodal_row(self, nl: NodalLoad) -> None:
-        """Ajoute une ligne au tableau des charges nodales."""
+        """Add nodal row."""
         row = self._tbl_nodal.rowCount()
         self._tbl_nodal.setRowCount(row + 1)
 
@@ -1055,14 +1032,14 @@ class LoadEntryDialog(QDialog):
         self._tbl_nodal.setCellWidget(row, 7, btn_del)
 
     def _del_nodal_row(self, row: int) -> None:
-        """Supprime une ligne du tableau nodal."""
+        """Delete nodal row."""
         self._tbl_nodal.removeRow(row)
         self._reconnect_delete_buttons()
 
-    # ── Charges réparties ──
+    # -- Distributed loads --
 
     def _on_element_load_frame_changed(self) -> None:
-        """Met à jour les libellés selon le repère de saisie."""
+        """Handle element load frame changed."""
         if self._cmb_elem_frame.currentData() == "global":
             self._lbl_wx.setText("qX global")
             self._lbl_wy.setText("qY global")
@@ -1080,7 +1057,7 @@ class LoadEntryDialog(QDialog):
         self._spn_wz.setToolTip("Charge répartie positive suivant l'axe local +z de l'élément.")
 
     def _element_dist_components(self) -> tuple[float, float, float]:
-        """Retourne les composantes dans le repère choisi par l'utilisateur."""
+        """Handle element dist components."""
         return (
             self._spn_wx.value(),
             self._spn_wy.value(),
@@ -1088,17 +1065,17 @@ class LoadEntryDialog(QDialog):
         )
 
     def _element_dist_coordinate_system(self) -> str:
-        """Retourne le repère de saisie de la charge répartie."""
+        """Handle element dist coordinate system."""
         frame = self._cmb_elem_frame.currentData()
         return "global" if frame == "global" else "local"
 
     def _reset_dist_spins(self) -> None:
-        """Remet les champs de charge répartie à zéro."""
+        """Reset dist spins."""
         for spn in (self._spn_wx, self._spn_wy, self._spn_wz):
             spn.setValue(0.0)
 
     def _add_element_load(self) -> None:
-        """Ajoute une charge répartie depuis le formulaire."""
+        """Add element load."""
         if self._selected_element_tags:
             self._add_element_load_to_selection()
             return
@@ -1120,7 +1097,7 @@ class LoadEntryDialog(QDialog):
         self._reset_dist_spins()
 
     def _add_element_load_to_selection(self) -> None:
-        """Ajoute la même charge répartie à tous les éléments sélectionnés."""
+        """Add element load to selection."""
         if not self._selected_element_tags:
             return
 
@@ -1140,7 +1117,7 @@ class LoadEntryDialog(QDialog):
         self._reset_dist_spins()
 
     def _add_elem_row(self, el: ElementLoad) -> None:
-        """Ajoute une ligne au tableau des charges réparties."""
+        """Add element row."""
         row = self._tbl_elem.rowCount()
         self._tbl_elem.setRowCount(row + 1)
 
@@ -1169,19 +1146,19 @@ class LoadEntryDialog(QDialog):
         self._tbl_elem.setCellWidget(row, 5, btn_del)
 
     def _del_elem_row(self, row: int) -> None:
-        """Supprime une ligne du tableau réparti."""
+        """Delete element row."""
         self._tbl_elem.removeRow(row)
         self._reconnect_delete_buttons()
 
-    # ── Charges surfaciques ──
+    # -- Surface loads --
 
     def _reset_surface_spins(self) -> None:
-        """Remet les champs de charge surfacique à zéro."""
+        """Reset surface spins."""
         for spn in (self._spn_qx, self._spn_qy, self._spn_qz):
             spn.setValue(0.0)
 
     def _add_surface_load(self) -> None:
-        """Ajoute une charge surfacique depuis le formulaire."""
+        """Add surface load."""
         if self._selected_surface_tags:
             self._add_surface_load_to_selection()
             return
@@ -1201,7 +1178,7 @@ class LoadEntryDialog(QDialog):
         self._reset_surface_spins()
 
     def _add_surface_load_to_selection(self) -> None:
-        """Ajoute la même charge surfacique à toutes les surfaces sélectionnées."""
+        """Add surface load to selection."""
         if not self._selected_surface_tags:
             return
 
@@ -1219,7 +1196,7 @@ class LoadEntryDialog(QDialog):
         self._reset_surface_spins()
 
     def _add_surface_row(self, sl: SurfaceLoad | PlateSurfaceLoadData) -> None:
-        """Ajoute une ligne au tableau des charges surfaciques."""
+        """Add surface row."""
         row = self._tbl_surface.rowCount()
         self._tbl_surface.setRowCount(row + 1)
 
@@ -1246,12 +1223,12 @@ class LoadEntryDialog(QDialog):
         self._tbl_surface.setCellWidget(row, 4, btn_del)
 
     def _del_surface_row(self, row: int) -> None:
-        """Supprime une ligne du tableau surfacique."""
+        """Delete surface row."""
         self._tbl_surface.removeRow(row)
         self._reconnect_delete_buttons()
 
     def _reconnect_delete_buttons(self) -> None:
-        """Reconnecté les boutons X après suppression d'une ligne."""
+        """Handle reconnect delete buttons."""
         for row in range(self._tbl_nodal.rowCount()):
             btn = QPushButton("X")
             btn.setMaximumWidth(30)
@@ -1273,10 +1250,10 @@ class LoadEntryDialog(QDialog):
     # ── Validation ──
 
     def _on_accept(self) -> None:
-        """Enregistre les charges dans le projet."""
+        """Handle accept."""
         tag = self._load_tag
 
-        # Supprimer les anciennes charges de ce cas
+        # Remove the old loads for this case
         self._project.nodal_loads = [
             nl for nl in self._project.nodal_loads if nl.load_tag != tag
         ]
@@ -1287,7 +1264,7 @@ class LoadEntryDialog(QDialog):
             sl for sl in self._project.surface_loads if sl.load_tag != tag
         ]
 
-        # Ajouter les charges nodales du tableau
+        # Add nodal loads from the table
         for row in range(self._tbl_nodal.rowCount()):
             node_item = self._tbl_nodal.item(row, 0)
             if node_item is None:
@@ -1305,7 +1282,7 @@ class LoadEntryDialog(QDialog):
             )
             self._project.nodal_loads.append(nl)
 
-        # Ajouter les charges réparties du tableau
+        # Add distributed loads from the table
         for row in range(self._tbl_elem.rowCount()):
             elem_item = self._tbl_elem.item(row, 0)
             if elem_item is None:
@@ -1331,7 +1308,7 @@ class LoadEntryDialog(QDialog):
             )
             self._project.element_loads.append(el)
 
-        # Ajouter les charges surfaciques du tableau
+        # Add surface loads from the table
         for row in range(self._tbl_surface.rowCount()):
             surface_item = self._tbl_surface.item(row, 0)
             if surface_item is None:

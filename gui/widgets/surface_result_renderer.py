@@ -1,4 +1,4 @@
-"""Rendu 2D opsvis-like des résultats de plaques/shells."""
+"""Opsvis-like 2D rendering for plate and shell results."""
 
 from __future__ import annotations
 
@@ -50,7 +50,7 @@ def _normalize(vector: np.ndarray) -> np.ndarray | None:
 def _local_surface_basis(
     coords: np.ndarray,
 ) -> tuple[np.ndarray, np.ndarray, np.ndarray] | None:
-    """Construit un repere local robuste, meme pour un quad legerement gauchi."""
+    """Handle local surface basis."""
     if coords.shape[0] < 3:
         return None
 
@@ -155,7 +155,7 @@ def _plate_region_local_basis(project: ProjectModel, plate) -> tuple[np.ndarray,
 
 
 def detect_plate_result_files(project: ProjectModel) -> list[dict]:
-    """Liste les vues de resultats correspondant aux plaques macro maillees."""
+    """Detect plate result files."""
     meshes = getattr(project, "generated_plate_meshes", {}) or {}
     if not meshes:
         return []
@@ -203,7 +203,7 @@ def detect_surface_result_files(
     project: ProjectModel,
     exclude_surface_tags: set[int] | None = None,
 ) -> list[dict]:
-    """Liste les plans coplanaires disponibles pour les cartes de plaques."""
+    """Detect surface result files."""
     if not project.nodes or not project.surface_elements:
         return []
     excluded = set(exclude_surface_tags or set())
@@ -246,7 +246,7 @@ def detect_surface_result_files(
 
 
 def detect_surface_result_views(project: ProjectModel) -> list[dict]:
-    """Retourne les vues de cartes plaques, macros en premier puis surfaces directes."""
+    """Detect surface result views."""
     plate_files = detect_plate_result_files(project)
     excluded = _generated_plate_surface_tags(project) if plate_files else set()
     return plate_files + detect_surface_result_files(
@@ -259,7 +259,7 @@ def surface_result_file_for_surface(
     project: ProjectModel,
     surface_tag: int,
 ) -> dict | None:
-    """Construit une vue locale pour une plaque precise, meme hors plans globaux."""
+    """Handle surface result file for surface."""
     surface = project.surface_elements.get(int(surface_tag))
     if surface is None:
         return None
@@ -303,7 +303,7 @@ def _surface_results_for_file(results: dict, file_info: dict) -> dict:
 
 
 def _extrapolate_ip_to_node_quad(values_at_ip: np.ndarray) -> np.ndarray:
-    """Extrapole 4 valeurs aux points de Gauss vers les 4 nœuds d'un quad."""
+    """Extrapolate ip to node quad."""
     xep = 0.8660254037844386
     weights = np.array(
         [
@@ -323,7 +323,7 @@ def build_surface_component_field(
     file_info: dict,
     component: str,
 ) -> dict[str, object] | None:
-    """Construit un champ nodal moyen pour une composante plaque."""
+    """Build surface component field."""
     spec = _SURFACE_COMPONENT_SPECS.get(component)
     plane = file_info.get("plane")
     surface_tags = list(file_info.get("surface_tags") or [])
@@ -427,7 +427,7 @@ def _bilinear_quad_point(
     s: float,
     t: float,
 ) -> tuple[np.ndarray, float]:
-    """Interpole un point et une valeur dans un quadrangle."""
+    """Handle bilinear quad point."""
     weights = np.array(
         [
             (1.0 - s) * (1.0 - t),
@@ -446,7 +446,7 @@ def _refined_quads_to_tris(
     nds_val: np.ndarray,
     subdivisions: int = 8,
 ) -> tuple[np.ndarray, np.ndarray, np.ndarray]:
-    """Raffine les quads pour obtenir des iso-valeurs plus continues."""
+    """Handle refined quads to tris."""
     subdivisions = max(1, int(subdivisions))
     point_index: dict[tuple[float, float], int] = {}
     point_coords: list[np.ndarray] = []
@@ -500,7 +500,7 @@ def _refined_quads_to_tris(
 
 
 def _surface_contour_levels(values: np.ndarray, count: int = 15) -> np.ndarray:
-    """Construit des niveaux d'iso-valeurs stables."""
+    """Handle surface contour levels."""
     finite = np.asarray(values[np.isfinite(values)], dtype=float)
     if finite.size == 0:
         return np.array([], dtype=float)
@@ -512,7 +512,7 @@ def _surface_contour_levels(values: np.ndarray, count: int = 15) -> np.ndarray:
 
 
 def _plot_mesh_outline(ax, nds_crd: np.ndarray, quads_conn: np.ndarray) -> None:
-    """Trace le contour du maillage d'origine sans le trianguler visuellement."""
+    """Plot mesh outline."""
     for quad in quads_conn:
         poly = nds_crd[np.r_[quad, quad[0]]]
         ax.plot(
@@ -530,7 +530,7 @@ def build_surface_result_figure(
     project: ProjectModel,
     results: dict,
 ):
-    """Construit une figure matplotlib de contours pour une composante plaque."""
+    """Build surface result figure."""
     if file_info is None:
         files = detect_surface_result_views(project)
         if not files:
@@ -541,7 +541,7 @@ def build_surface_result_figure(
     try:
         from matplotlib.figure import Figure
         import matplotlib.tri as mtri
-    except ImportError as exc:  # pragma: no cover - depend de l'environnement
+    except ImportError as exc:  # pragma: no cover - environment-dependent
         raise ImportError(
             "matplotlib n'est pas installé. Les cartes de résultats plaques ne sont pas disponibles."
         ) from exc

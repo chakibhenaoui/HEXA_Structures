@@ -1,4 +1,4 @@
-"""Fenêtre autonome pour l'affichage des diagrammes 2D."""
+"""Diagram viewer window."""
 
 from __future__ import annotations
 
@@ -19,7 +19,7 @@ from PySide6.QtWidgets import (
 
 
 class DiagramWindow(QMainWindow):
-    """Visionneuse dédiée aux diagrammes de résultats."""
+    """Diagram viewer window."""
 
     file_index_changed = Signal(int)
     component_changed = Signal(str)
@@ -105,7 +105,7 @@ class DiagramWindow(QMainWindow):
         self._setup_toolbar()
 
     def _setup_toolbar(self) -> None:
-        """Ajoute les actions principales du viewer."""
+        """Set up toolbar."""
         toolbar = self.addToolBar(self._window_title)
         toolbar.setMovable(False)
 
@@ -118,7 +118,7 @@ class DiagramWindow(QMainWindow):
         toolbar.addAction(act_export_pdf)
 
     def set_cases(self, cases: list[str], current_case: str | None) -> None:
-        """Met à jour la liste des cas/combinaisons disponibles."""
+        """Set cases."""
         self.case_combo.blockSignals(True)
         self.case_combo.clear()
         for case_name in cases:
@@ -134,7 +134,7 @@ class DiagramWindow(QMainWindow):
         self._update_title()
 
     def set_components(self, components: list[str], current_component: str) -> None:
-        """Met à jour la liste des composantes disponibles."""
+        """Set components."""
         self.component_combo.blockSignals(True)
         self.component_combo.clear()
         for component in components:
@@ -147,7 +147,7 @@ class DiagramWindow(QMainWindow):
         self._update_title()
 
     def set_files(self, files: list[dict], current_idx: int) -> None:
-        """Met à jour la liste des files/plans disponibles."""
+        """Set files."""
         self.file_combo.blockSignals(True)
         self.file_combo.clear()
         for file_info in files:
@@ -169,7 +169,7 @@ class DiagramWindow(QMainWindow):
         case_name: str | None,
         file_label: str | None,
     ) -> None:
-        """Affiche une figure matplotlib dans la fenêtre."""
+        """Set figure."""
         from matplotlib.backends.backend_qtagg import (
             FigureCanvasQTAgg,
             NavigationToolbar2QT,
@@ -196,21 +196,21 @@ class DiagramWindow(QMainWindow):
         self._update_title()
 
     def _on_component_changed(self, component: str) -> None:
-        """Propage le changement de composante au contrôleur principal."""
+        """Handle component changed."""
         self._current_component = component
         self._update_title()
         if component:
             self.component_changed.emit(component)
 
     def _on_case_changed(self, case_name: str) -> None:
-        """Propage le changement de cas au contrôleur principal."""
+        """Handle case changed."""
         self._current_case_name = case_name
         self._update_title()
         if case_name:
             self.case_changed.emit(case_name)
 
     def _default_export_name(self, extension: str) -> str:
-        """Construit un nom de fichier export lisible."""
+        """Return the default export name."""
         parts = [
             self._export_basename,
             self._current_component or "resultat",
@@ -222,7 +222,7 @@ class DiagramWindow(QMainWindow):
         return "_".join(parts) + f".{extension}"
 
     def _export_current_figure(self, extension: str) -> None:
-        """Exporte la figure courante en image ou PDF."""
+        """Export the current figure as an image or PDF."""
         if self._current_figure is None:
             QMessageBox.information(
                 self,
@@ -259,7 +259,7 @@ class DiagramWindow(QMainWindow):
         self.statusBar().showMessage(f"Diagramme exporte : {path}", 5000)
 
     def _update_title(self) -> None:
-        """Met à jour le titre de la fenêtre."""
+        """Update title."""
         case_label = self._current_case_name or "sans cas"
         file_label = self._current_file_label or "sans file"
         self.setWindowTitle(
@@ -268,7 +268,7 @@ class DiagramWindow(QMainWindow):
 
     @staticmethod
     def _sanitize_filename(value: str) -> str:
-        """Nettoie une chaine pour un usage en nom de fichier."""
+        """Handle sanitize filename."""
         cleaned = "".join(
             ch if ch.isalnum() or ch in ("-", "_") else "_"
             for ch in value.strip()

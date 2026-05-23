@@ -1,4 +1,4 @@
-"""Fenetre detaillee des proprietes d'une plaque."""
+"""Surface property dialog."""
 
 from __future__ import annotations
 
@@ -25,7 +25,7 @@ from gui.dialogs.element_properties_dlg import _fmt, _object_items
 
 
 class SurfacePropertiesDialog(QDialog):
-    """Proprietes mono-plaque pour consultation detaillee."""
+    """Surface properties dialog."""
 
     def __init__(
         self,

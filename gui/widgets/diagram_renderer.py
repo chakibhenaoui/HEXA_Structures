@@ -1,18 +1,4 @@
-"""
-Rendu des diagrammes M/V/N en 2D sur une file/plan de la structure.
-
-Stratégie :
-    1. ``detect_files`` inspecte le domaine OpenSees actif et liste les files
-       (plans X=cst, Y=cst, Z=cst) de la structure 3D.
-    2. ``build_figure_2d`` projette les éléments d'une file sur son plan 2D
-       et trace le diagramme comme un graphique matplotlib plan propre.
-    3. Échelle du diagramme : 12 % de la diagonale du modèle 2D
-       (calculée à partir du maximum absolu de la composante).
-
-Le module sait aussi reconstruire les diagrammes directement à partir du
-``ProjectModel`` et des résultats déjà calculés. Cette voie rend
-l'affichage disponible avec plusieurs moteurs de calcul, dont PyNite.
-"""
+"""2D internal force and load diagram rendering helpers."""
 
 from __future__ import annotations
 
@@ -25,7 +11,7 @@ from core import section_force_convention as _force_convention
 from utils.units import INTERNAL_UNITS, Quantity, find_unit
 
 
-try:  # opsvis expose la lecture des charges d'éléments via ce helper
+try:  # opsvis exposes element load reading through this helper
     from opsvis.model import get_Ew_data_from_ops_domain_3d
 except Exception:  # pragma: no cover
     get_Ew_data_from_ops_domain_3d = None  # type: ignore
@@ -48,11 +34,11 @@ except Exception:  # pragma: no cover
 
 
 def _require_opensees():
-    """Import différé d'OpenSeesPy pour garder le module optionnel."""
+    """Handle require OpenSees."""
     try:
         ensure_external_module_search_paths("openseespy", "openseespywin")
         import openseespy.opensees as _ops
-    except ImportError as exc:  # pragma: no cover - dépend de l'environnement
+    except ImportError as exc:  # pragma: no cover - environment-dependent
         raise ImportError(
             "OpenSeesPy n'est pas installé. "
             "Les diagrammes OpenSees ne sont donc pas disponibles."
@@ -69,10 +55,10 @@ ops = _OpenSeesProxy()
 
 
 def _require_opsvis_section_force_distribution_3d():
-    """Import differe d'opsvis pour garder le module optionnel."""
+    """Handle require opsvis section force distribution 3D."""
     try:
         from opsvis.secforces import section_force_distribution_3d
-    except ImportError as exc:  # pragma: no cover - depend de l'environnement
+    except ImportError as exc:  # pragma: no cover - environment-dependent
         raise ImportError(
             "opsvis n'est pas installé. "
             "Les diagrammes OpenSees détaillés ne sont donc pas disponibles."
@@ -132,12 +118,12 @@ _DIAGRAM_CURVE_ALPHA = 0.82
 
 
 def _is_supported_diagram_plane(plane: str | None) -> bool:
-    """Indique si un plan est pris en charge par les diagrammes actuels."""
+    """Return whether supported diagram plane."""
     return plane in {"XZ", "YZ"}
 
 
 def _detect_files_from_project(project: ProjectModel) -> list[dict]:
-    """Détecte les files à partir du modèle projet, sans dépendre d'OpenSees."""
+    """Detect files from project."""
     ele_tags = list(project.elements.keys())
     if not project.nodes or not ele_tags:
         return []
@@ -208,22 +194,11 @@ def _detect_files_from_project(project: ProjectModel) -> list[dict]:
 
     return files
 # ══════════════════════════════════════════════════════════════════════════
-#  Détection des files
+#  Grid line detection
 # ══════════════════════════════════════════════════════════════════════════
 
 def detect_files(project: ProjectModel | None = None) -> list[dict]:
-    """Détecte les files (plans) dans le domaine OpenSees actif.
-
-    Chaque élément de retour est un dict :
-        {
-            'label':   str     — libellé affiché dans la liste,
-            'plane':   str|None — 'XZ' / 'YZ' uniquement pour les diagrammes actuels,
-            'ele_tags': list[int] — éléments à afficher,
-            'axis':    int|None  — indice de l'axe constant (0/1/2),
-            'value':   float|None — valeur de l'axe constant,
-        }
-    Le premier élément correspond à la vue « globale » (tout le modèle).
-    """
+    """Detect files."""
     if project is not None:
         return _detect_files_from_project(project)
 
@@ -238,7 +213,7 @@ def detect_files(project: ProjectModel | None = None) -> list[dict]:
     diag = float(np.linalg.norm(span))
     tol = max(1e-6, diag * 1e-4)
 
-    # Plan global : si la structure est déjà planaire, on le détecte.
+    # Global plane: detect it when the structure is already planar.
     if span[1] < tol:
         global_plane = "XZ"
     elif span[0] < tol:
@@ -261,7 +236,7 @@ def detect_files(project: ProjectModel | None = None) -> list[dict]:
     if global_plane is not None:
         return files
 
-    # Sinon, pour chaque axe, lister uniquement les plans verticaux compatibles.
+    # Otherwise, list only compatible vertical planes for each axis.
     for axis_idx in range(3):
         plane = _PLANE_WHEN_AXIS_CONST[axis_idx]
         if not _is_supported_diagram_plane(plane):
@@ -300,7 +275,7 @@ def detect_files(project: ProjectModel | None = None) -> list[dict]:
 
 
 def detect_load_files(project: ProjectModel) -> list[dict]:
-    """Détecte les vues 2D disponibles pour l'affichage des charges."""
+    """Detect load files."""
     if not project.nodes:
         return []
 
@@ -375,7 +350,7 @@ def detect_load_files(project: ProjectModel) -> list[dict]:
 
 
 # ══════════════════════════════════════════════════════════════════════════
-#  Calcul des efforts internes (échantillonnés)
+#  Sampled internal force calculation
 # ══════════════════════════════════════════════════════════════════════════
 
 def _element_samples(
@@ -384,7 +359,7 @@ def _element_samples(
     nep: int,
     plane: str | None = None,
 ) -> tuple[np.ndarray, np.ndarray, np.ndarray, np.ndarray] | None:
-    """Renvoie (ecrd_3d [2x3], xl, ss, eload) pour un élément."""
+    """Handle element samples."""
     en = ops.eleNodes(ele_tag)
     if len(en) != 2:
         return None
@@ -426,7 +401,7 @@ def _element_coords_from_project(
     project: ProjectModel,
     element: ElementData,
 ) -> np.ndarray | None:
-    """Coordonnées 3D d'un élément à partir du modèle projet."""
+    """Handle element coords from project."""
     node_i = project.nodes.get(element.node_i)
     node_j = project.nodes.get(element.node_j)
     if node_i is None or node_j is None:
@@ -445,7 +420,7 @@ def _case_distributed_loads(
     load_tag: int | None = None,
     combo_tag: int | None = None,
 ) -> dict[int, tuple[float, float, float]]:
-    """Cumule les charges réparties effectives sur chaque élément."""
+    """Handle case distributed loads."""
     factors: dict[int, float] = {}
     if combo_tag is not None:
         combo = project.combinations.get(combo_tag)
@@ -489,7 +464,7 @@ def _element_samples_from_results(
     nep: int,
     plane: str | None = None,
 ) -> tuple[np.ndarray, np.ndarray, np.ndarray, tuple[float, float, float]] | None:
-    """Reconstruit l'échantillonnage d'un élément depuis les résultats stockés."""
+    """Handle element samples from results."""
     element = project.elements.get(ele_tag)
     if element is None:
         return None
@@ -529,7 +504,7 @@ def _element_samples_from_backend(
     nep: int,
     plane: str | None = None,
 ) -> tuple[np.ndarray, np.ndarray, np.ndarray, tuple[float, float, float]] | None:
-    """Échantillonne un élément via le backend actif du moteur de calcul."""
+    """Handle element samples from backend."""
     element = project.elements.get(ele_tag)
     if element is None:
         return None
@@ -558,7 +533,7 @@ def _compute_component_range(
     *,
     plane: str | None = None,
 ) -> tuple[float, float]:
-    """Max/min de la composante pour les éléments donnés."""
+    """Compute component range."""
     min_val, max_val = np.inf, -np.inf
     for et in ele_tags:
         res = _element_samples(et, component, nep, plane=plane)
@@ -584,7 +559,7 @@ def _compute_component_range_from_results(
     *,
     plane: str | None = None,
 ) -> tuple[float, float]:
-    """Max/min de la composante reconstruite depuis les résultats stockés."""
+    """Compute component range from results."""
     min_val, max_val = np.inf, -np.inf
     for ele_tag in ele_tags:
         res = _element_samples_from_results(
@@ -618,7 +593,7 @@ def _compute_component_range_from_backend(
     *,
     plane: str | None = None,
 ) -> tuple[float, float]:
-    """Max/min de la composante échantillonnée directement via le backend."""
+    """Compute component range from backend."""
     min_val, max_val = np.inf, -np.inf
     for ele_tag in ele_tags:
         res = _element_samples_from_backend(
@@ -660,7 +635,7 @@ _sample_component_for_display = _force_convention.sample_component_for_display
 
 
 def _value_color(value: float) -> str:
-    """Choisit une couleur selon le signe affiché."""
+    """Handle value color."""
     if value > _DIAGRAM_ZERO_TOL:
         return _DIAGRAM_POSITIVE_COLOR
     if value < -_DIAGRAM_ZERO_TOL:
@@ -669,14 +644,14 @@ def _value_color(value: float) -> str:
 
 
 def _format_diagram_value(value: float) -> str:
-    """Formate une valeur de diagramme en masquant le bruit numérique."""
+    """Format diagram value."""
     if abs(value) <= _DIAGRAM_ZERO_TOL:
         return "0"
     return f"{value:+.4g}"
 
 
 def _hatch_sample_indices(count: int, max_ribs: int = 7) -> list[int]:
-    """Sous-échantillonné les nervures pour limiter l'effet de peigne."""
+    """Handle hatch sample indices."""
     if count <= 0:
         return []
     if count <= max_ribs:
@@ -690,7 +665,7 @@ def _hatch_sample_indices(count: int, max_ribs: int = 7) -> list[int]:
 
 
 def _label_candidate_indices(values: np.ndarray) -> list[int]:
-    """Retourne quelques indices significatifs a annoter sans surcharger la vue."""
+    """Handle label candidate indices."""
     if values.size == 0:
         return []
 
@@ -731,7 +706,7 @@ def _find_label_position(
     *,
     allow_forced: bool = False,
 ) -> tuple[np.ndarray, bool] | None:
-    """Cherche une position de label sans collision en le poussant vers l'extérieur."""
+    """Find label position."""
     direction_norm = float(np.linalg.norm(diagram_dir))
     if direction_norm < 1e-12:
         direction = np.array([0.0, 1.0], dtype=float)
@@ -771,7 +746,7 @@ def _place_diagram_labels(
     *,
     allow_forced: bool = False,
 ) -> None:
-    """Place quelques etiquettes en evitant les collisions les plus evidentes."""
+    """Handle place diagram labels."""
     if values.size == 0:
         return
 
@@ -836,7 +811,7 @@ def _signed_diagram_segment_polygons(
     value_1: float,
     value_2: float,
 ) -> list[tuple[np.ndarray, float]]:
-    """Construit les polygones de remplissage d'un segment de diagramme signe."""
+    """Handle signed diagram segment polygons."""
     if abs(value_1) <= _DIAGRAM_ZERO_TOL and abs(value_2) <= _DIAGRAM_ZERO_TOL:
         return []
 
@@ -859,7 +834,7 @@ def _fill_signed_diagram_band(
     diag_points: np.ndarray,
     values: np.ndarray,
 ) -> None:
-    """Remplit la bande entre l'axe de l'élément et le diagramme."""
+    """Handle fill signed diagram band."""
     for idx in range(len(values) - 1):
         polygons = _signed_diagram_segment_polygons(
             base_points[idx],
@@ -897,7 +872,7 @@ def _draw_sampled_diagram_element(
     label_offset: float,
     apply_component_axis_sign: bool = True,
 ) -> tuple[float, float] | None:
-    """Dessine le diagramme d'un élément déjà échantillonné."""
+    """Draw sampled diagram element."""
     if ss.size < 2:
         return None
 
@@ -987,7 +962,7 @@ def _draw_sampled_local_diagram_element(
     placed_label_positions: list[np.ndarray],
     label_offset: float,
 ) -> tuple[float, float] | None:
-    """Dessine un diagramme mono-barre dans le repère local de l'élément."""
+    """Draw sampled local diagram element."""
     if ss.size < 2 or xl.size < 2:
         return None
 
@@ -1035,7 +1010,7 @@ def _draw_sampled_local_diagram_element(
 
 
 def _plot_signed_segment(ax, p1: np.ndarray, p2: np.ndarray, v1: float, v2: float) -> None:
-    """Trace un segment en le decoupant si le signe change entre ses extrémités."""
+    """Plot signed segment."""
     if abs(v1) < _DIAGRAM_ZERO_TOL and abs(v2) < _DIAGRAM_ZERO_TOL:
         ax.plot(
             [p1[0], p2[0]], [p1[1], p2[1]],
@@ -1086,7 +1061,7 @@ def _plot_model_2d(
     plane: str,
     project: ProjectModel | None = None,
 ) -> None:
-    """Trace le squelette du modèle (lignes noires) dans le plan 2D."""
+    """Plot model 2D."""
     i1, i2 = _PLANE_INDICES[plane]
     for et in ele_tags:
         if project is not None:
@@ -1117,7 +1092,7 @@ def _plot_supports_2d(
     scale: float,
     node_tags: list[int] | None = None,
 ) -> None:
-    """Dessine des symboles 2D de conditions aux limites."""
+    """Plot supports 2D."""
     if project is None:
         return
 
@@ -1167,7 +1142,7 @@ def _plot_nodes_2d(
     node_tags: list[int],
     plane: str,
 ) -> None:
-    """Dessine les nœuds visibles comme repère de lecture."""
+    """Plot nodes 2D."""
     i1, i2 = _PLANE_INDICES[plane]
     xs: list[float] = []
     ys: list[float] = []
@@ -1186,7 +1161,7 @@ def _aggregate_case_nodal_loads(
     project: ProjectModel,
     load_tag: int,
 ) -> dict[int, tuple[float, float, float, float, float, float]]:
-    """Cumule les charges nodales d'un cas par nœud."""
+    """Aggregate case nodal loads."""
     loads: dict[int, list[float]] = {}
     for load in project.nodal_loads:
         if load.load_tag != load_tag:
@@ -1205,7 +1180,7 @@ def _aggregate_case_element_loads(
     project: ProjectModel,
     load_tag: int,
 ) -> dict[int, tuple[float, float, float]]:
-    """Cumule les charges réparties d'un cas par element."""
+    """Aggregate case element loads."""
     loads: dict[int, list[float]] = {}
     for load in project.element_loads:
         if load.load_tag != load_tag:
@@ -1243,7 +1218,7 @@ def _plane_moment_component(
     values: tuple[float, float, float, float, float, float],
     plane: str,
 ) -> float:
-    """Retourne la composante de moment compatible avec la vue 2D, signe inclus."""
+    """Handle plane moment component."""
     if plane == "XY":
         return float(values[5])
     if plane == "XZ":
@@ -1254,7 +1229,7 @@ def _plane_moment_component(
 
 
 def _opsvis_like_scale(ax) -> float:
-    """Calcule le facteur d'echelle comme `opsvis.plot_loads_2d`."""
+    """Handle opsvis like scale."""
     ratio = 0.1
     min_x, max_x = ax.get_xlim()
     min_y, max_y = ax.get_ylim()
@@ -1265,7 +1240,7 @@ def _opsvis_like_scale(ax) -> float:
 
 
 def _resolved_unit(symbol: str, quantity: Quantity):
-    """Retourne une unité valide pour la grandeur demandée."""
+    """Handle resolved unit."""
     unit = find_unit(symbol)
     if unit is None or unit.quantity != quantity:
         return INTERNAL_UNITS[quantity]
@@ -1273,13 +1248,13 @@ def _resolved_unit(symbol: str, quantity: Quantity):
 
 
 def _convert_force_display(value: float, display_units: DisplayUnits) -> tuple[float, str]:
-    """Convertit une force ponctuelle depuis les unités internes."""
+    """Convert force display."""
     unit = _resolved_unit(display_units.force, Quantity.FORCE)
     return value / unit.to_internal, unit.symbol
 
 
 def _convert_moment_display(value: float, display_units: DisplayUnits) -> tuple[float, str]:
-    """Convertit un moment ponctuel depuis les unités internes."""
+    """Convert moment display."""
     unit = _resolved_unit(display_units.moment, Quantity.MOMENT)
     return value / unit.to_internal, unit.symbol
 
@@ -1288,7 +1263,7 @@ def _convert_line_load_display(
     value: float,
     display_units: DisplayUnits,
 ) -> tuple[float, str]:
-    """Convertit une charge linéique depuis les unités internes."""
+    """Convert line load display."""
     force_unit = _resolved_unit(display_units.force, Quantity.FORCE)
     length_unit = _resolved_unit(display_units.length, Quantity.LENGTH)
     converted = value * length_unit.to_internal / force_unit.to_internal
@@ -1300,7 +1275,7 @@ def _project_element_uniform_load_to_2d(
     values: tuple[float, float, float],
     plane: str,
 ) -> tuple[float, float]:
-    """Projette une charge répartie 3D dans les composantes 2D de type opsvis."""
+    """Project element uniform load to 2D."""
     i1, i2 = _PLANE_INDICES[plane]
     p1 = np.array([coords[0][i1], coords[0][i2]], dtype=float)
     p2 = np.array([coords[1][i1], coords[1][i2]], dtype=float)
@@ -1332,7 +1307,7 @@ def _draw_nodal_loads_2d(
     sfac: float,
     display_units: DisplayUnits,
 ) -> int:
-    """Dessine les charges nodales selon la representation 2D d'opsvis."""
+    """Draw nodal loads 2D."""
     i1, i2 = _PLANE_INDICES[plane]
     count = 0
 
@@ -1424,7 +1399,7 @@ def _draw_element_loads_2d(
     display_units: DisplayUnits,
     nep: int = 11,
 ) -> int:
-    """Dessine les charges réparties selon la representation 2D d'opsvis."""
+    """Draw element loads 2D."""
     count = 0
 
     for ele_tag in ele_tags:
@@ -1534,7 +1509,7 @@ def _draw_2d_diagram(
     label_offset: float,
     nep: int = 17,
 ) -> tuple[float, float]:
-    """Trace le diagramme 2D. Renvoie (min, max) de la composante."""
+    """Draw the 2D diagram and return the component range."""
     min_val, max_val = np.inf, -np.inf
     placed_label_positions: list[np.ndarray] = []
 
@@ -1584,7 +1559,7 @@ def _draw_2d_diagram_from_results(
     label_offset: float,
     nep: int = 17,
 ) -> tuple[float, float]:
-    """Trace le diagramme 2D à partir des résultats stockés du cas courant."""
+    """Draw 2D diagram from results."""
     min_val, max_val = np.inf, -np.inf
     placed_label_positions: list[np.ndarray] = []
 
@@ -1640,7 +1615,7 @@ def _draw_2d_diagram_from_backend(
     label_offset: float,
     nep: int = 17,
 ) -> tuple[float, float]:
-    """Trace le diagramme 2D à partir d'un échantillonnage direct du backend."""
+    """Draw 2D diagram from backend."""
     min_val, max_val = np.inf, -np.inf
     placed_label_positions: list[np.ndarray] = []
 
@@ -1692,7 +1667,7 @@ def _single_local_element_sample(
     element_loads: dict[int, tuple[float, float, float]],
     nep: int = 17,
 ) -> tuple[np.ndarray, np.ndarray, np.ndarray, tuple[float, float, float]] | None:
-    """échantillonné une seule barre sans changer son repère local."""
+    """Handle single local element sample."""
     if (
         project is not None
         and backend is not None
@@ -1718,7 +1693,7 @@ def _single_local_element_sample(
 
 
 def _component_unit_label(component: str) -> str:
-    """Retourne l'unite métier affichee pour une composante de barre."""
+    """Handle component unit label."""
     if component in {"N", "Vy", "Vz"}:
         return "kN"
     if component in {"T", "My", "Mz"}:
@@ -1727,14 +1702,14 @@ def _component_unit_label(component: str) -> str:
 
 
 def _diagram_component_title(component: str, plane: str | None) -> str:
-    """Titre affiche pour une file, en tenant compte des composantes mixtes."""
+    """Handle diagram component title."""
     if component == "My" and plane == "YZ":
         return "Moment de flexion dans le plan (kN.m)"
     return _COMP_TITLES.get(component, component)
 
 
 def _component_local_plane_label(component: str) -> str:
-    """Retourne le plan local naturel de lecture de la composante."""
+    """Handle component local plane label."""
     if component in {"Vz", "My"}:
         return "plan local x-z"
     if component in {"Vy", "Mz"}:
@@ -1748,7 +1723,7 @@ def _plot_local_member_axis(
     project: ProjectModel | None,
     ele_tag: int,
 ) -> None:
-    """Trace l'axe x local de la barre et ses extrémités i/j."""
+    """Plot local member axis."""
     ax.plot([0.0, length], [0.0, 0.0], color="black", linewidth=1.8, zorder=3)
     ax.scatter([0.0, length], [0.0, 0.0], s=26, c="black", zorder=4)
 
@@ -1774,7 +1749,7 @@ def _build_single_element_local_figure(
     combo_tag: int | None = None,
     sfac: float = 0.0,
 ) -> Figure:
-    """Construit une figure mono-barre en abscisse locale x."""
+    """Build single element local figure."""
     ele_tags: list[int] = list(file_info.get("ele_tags") or [])
     if not ele_tags and file_info.get("element_tag") is not None:
         ele_tags = [int(file_info["element_tag"])]
@@ -1873,18 +1848,7 @@ def build_figure_2d(
     combo_tag: int | None = None,
     sfac: float = 0.0,
 ) -> Figure:
-    """Construit une figure matplotlib 2D du diagramme pour une file.
-
-    Args:
-        component: Composante ("N", "Vy", "Vz", "T", "My", "Mz").
-        file_info: Dict retourné par ``detect_files`` (ou None → première
-            file détectée).
-        project: Projet courant pour afficher les appuis sur le diagramme.
-        sfac: Facteur d'échelle (<=0 = auto ~12 % de la taille du plan).
-
-    Returns:
-        Figure matplotlib 2D.
-    """
+    """Build figure 2D."""
     if file_info is None:
         files = detect_files(project=project)
         if not files:
@@ -1941,7 +1905,7 @@ def build_figure_2d(
     ele_tags: list[int] = file_info.get("ele_tags") or []
     file_boundary_sign = _file_boundary_sign()
 
-    # Vrai 3D : pas de vue 2D possible, on renvoie un message.
+    # True 3D: no 2D view is possible, so return a message.
     if plane is None:
         fig = Figure(figsize=(10, 7))
         ax = fig.add_subplot(111)
@@ -1954,7 +1918,7 @@ def build_figure_2d(
         ax.axis("off")
         return fig
 
-    # Calcul de l'échelle
+    # Scale calculation
     use_backend_sampling = (
         project is not None
         and backend is not None
@@ -2090,7 +2054,7 @@ def build_figure_2d(
         title = f"{title} — {label}"
     ax.set_title(title, fontsize=12)
 
-    # Petit padding autour des données pour laisser de la place aux étiquettes
+    # Small padding around the data to leave room for labels
     ax.margins(0.1, 0.15)
 
     fig.tight_layout()
@@ -2103,7 +2067,7 @@ def build_load_figure_2d(
     load_tag: int | None,
     display_units: DisplayUnits | None = None,
 ) -> Figure:
-    """Construit une figure 2D de type diagramme pour un cas de charge."""
+    """Build load figure 2D."""
     display_units = display_units or DisplayUnits()
     if load_tag is None:
         available_tags = sorted(project.loads.keys())
