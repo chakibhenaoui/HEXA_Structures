@@ -19,6 +19,8 @@ class PluginManifest:
     entry_point: str | None = None
     description: str = ""
     capabilities: tuple[str, ...] = field(default_factory=tuple)
+    extension_points: tuple[str, ...] = field(default_factory=tuple)
+    tags: tuple[str, ...] = field(default_factory=tuple)
     path: Path | None = None
 
     @property
@@ -30,6 +32,18 @@ class PluginManifest:
     def name(self) -> str:
         """Human-readable plugin name."""
         return self.descriptor.name
+
+    def has_capability(self, capability: str) -> bool:
+        """Return whether this manifest declares a capability."""
+        return _normalize_token(capability) in self.capabilities
+
+    def provides_extension(self, extension_point: str) -> bool:
+        """Return whether this manifest contributes to an extension point."""
+        return _normalize_token(extension_point) in self.extension_points
+
+    def has_tag(self, tag: str) -> bool:
+        """Return whether this manifest declares a tag."""
+        return _normalize_token(tag) in self.tags
 
     @classmethod
     def from_file(cls, path: str | Path) -> "PluginManifest":
@@ -57,12 +71,6 @@ class PluginManifest:
         if not kind:
             raise ValueError("Plugin manifest kind must not be empty.")
 
-        capabilities = data.get("capabilities", ())
-        if capabilities is None:
-            capabilities = ()
-        if not isinstance(capabilities, (list, tuple)):
-            raise ValueError("Plugin manifest capabilities must be a list.")
-
         return cls(
             descriptor=PluginDescriptor(
                 plugin_id=plugin_id,
@@ -74,7 +82,9 @@ class PluginManifest:
             kind=kind,
             entry_point=_optional_text(data, "entry_point"),
             description=str(data.get("description", "")),
-            capabilities=tuple(str(item) for item in capabilities),
+            capabilities=_optional_token_tuple(data, "capabilities"),
+            extension_points=_optional_token_tuple(data, "extension_points"),
+            tags=_optional_token_tuple(data, "tags"),
             path=Path(path) if path is not None else None,
         )
 
@@ -92,3 +102,21 @@ def _optional_text(data: Mapping[str, Any], key: str) -> str | None:
         return None
     text = str(value).strip()
     return text or None
+
+
+def _optional_token_tuple(data: Mapping[str, Any], key: str) -> tuple[str, ...]:
+    values = data.get(key, ())
+    if values is None:
+        return ()
+    if not isinstance(values, (list, tuple)):
+        raise ValueError(f"Plugin manifest {key} must be a list.")
+    tokens = tuple(
+        token
+        for token in (_normalize_token(item) for item in values)
+        if token
+    )
+    return tokens
+
+
+def _normalize_token(value: object) -> str:
+    return str(value).strip().lower()

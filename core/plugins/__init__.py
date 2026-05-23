@@ -7,7 +7,11 @@ from core.plugins.discovery import (
     build_manifest_registry,
     discover_plugin_manifests,
 )
-from core.plugins.loader import ManifestOnlyPluginLoader, PluginLoadResult
+from core.plugins.loader import (
+    ImportlibPluginLoader,
+    ManifestOnlyPluginLoader,
+    PluginLoadResult,
+)
 from core.plugins.manifest import PluginManifest
 from core.plugins.paths import default_plugin_roots
 from core.plugins.registry import PluginRegistry
@@ -19,6 +23,7 @@ __all__ = [
     "PluginLoadResult",
     "PluginManifest",
     "PluginRegistry",
+    "ImportlibPluginLoader",
     "ManifestOnlyPluginLoader",
     "build_manifest_registry",
     "default_plugin_roots",

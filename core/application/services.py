@@ -8,9 +8,15 @@ from pathlib import Path
 from typing import TYPE_CHECKING
 
 from core.application.ports import PluginLoaderPort, SolverPort
+from core.application.connection_design import (
+    CONNECTION_DESIGN_EXTENSION_POINT,
+    ConnectionDesignRequest,
+    ConnectionDesignResult,
+)
 from core.application.results import AnalysisRunResult
 from core.application.use_cases import (
     RunAllStaticAnalyses,
+    RunConnectionDesign,
     RunModalAnalysis,
     RunStaticAnalysis,
 )
@@ -139,17 +145,23 @@ class ApplicationServices:
         plugin_roots: tuple[str | Path, ...] | list[str | Path] | None = None,
         *,
         kind: str | None = None,
+        extension_point: str | None = None,
+        capability: str | None = None,
+        tag: str | None = None,
         strict: bool = False,
     ) -> tuple[PluginManifest, ...]:
-        """Return discovered plugin manifests, optionally filtered by kind."""
+        """Return discovered plugin manifests filtered by generic metadata."""
         result = self.discover_plugins(plugin_roots, strict=strict)
-        if kind is None:
-            return result.manifests
-        normalized_kind = kind.strip().lower()
         return tuple(
             manifest
             for manifest in result.manifests
-            if manifest.kind == normalized_kind
+            if _matches_plugin_filters(
+                manifest,
+                kind=kind,
+                extension_point=extension_point,
+                capability=capability,
+                tag=tag,
+            )
         )
 
     def get_installed_plugin_registry(
@@ -157,6 +169,9 @@ class ApplicationServices:
         plugin_roots: tuple[str | Path, ...] | list[str | Path] | None = None,
         *,
         kind: str | None = None,
+        extension_point: str | None = None,
+        capability: str | None = None,
+        tag: str | None = None,
         strict: bool = False,
     ) -> PluginRegistry[PluginManifest]:
         """Return discovered plugin manifests indexed by stable plugin id."""
@@ -164,9 +179,38 @@ class ApplicationServices:
             self.get_installed_plugin_manifests(
                 plugin_roots,
                 kind=kind,
+                extension_point=extension_point,
+                capability=capability,
+                tag=tag,
                 strict=strict,
             )
         )
+
+    def get_plugin_display_info(
+        self,
+        plugin_roots: tuple[str | Path, ...] | list[str | Path] | None = None,
+        *,
+        kind: str | None = None,
+        extension_point: str | None = None,
+        capability: str | None = None,
+        tag: str | None = None,
+        strict: bool = False,
+    ) -> list[dict[str, str | bool]]:
+        """Return GUI/API-ready rows for any installed plugin category."""
+        return [
+            _plugin_manifest_display_row(
+                manifest,
+                can_load=self.plugin_loader.can_load(manifest),
+            )
+            for manifest in self.get_installed_plugin_manifests(
+                plugin_roots,
+                kind=kind,
+                extension_point=extension_point,
+                capability=capability,
+                tag=tag,
+                strict=strict,
+            )
+        ]
 
     def get_plugin_discovery_errors(
         self,
@@ -178,6 +222,36 @@ class ApplicationServices:
     def get_plugin_load_status(self, manifest: PluginManifest) -> PluginLoadResult:
         """Return load status for a manifest through the configured loader."""
         return self.plugin_loader.load(manifest)
+
+    def get_connection_design_plugin_manifests(
+        self,
+        plugin_roots: tuple[str | Path, ...] | list[str | Path] | None = None,
+        *,
+        strict: bool = False,
+    ) -> tuple[PluginManifest, ...]:
+        """Return plugins contributing to the connection design extension point."""
+        return self.get_installed_plugin_manifests(
+            plugin_roots,
+            extension_point=CONNECTION_DESIGN_EXTENSION_POINT,
+            strict=strict,
+        )
+
+    def design_connection(
+        self,
+        request: ConnectionDesignRequest,
+        *,
+        plugin_id: str | None = None,
+        plugin_roots: tuple[str | Path, ...] | list[str | Path] | None = None,
+        strict: bool = False,
+    ) -> tuple[ConnectionDesignResult, ...]:
+        """Run connection design through installed plugin modules."""
+        return RunConnectionDesign(
+            self.plugin_loader,
+            self.get_connection_design_plugin_manifests(
+                plugin_roots,
+                strict=strict,
+            ),
+        ).execute(request, plugin_id=plugin_id)
 
     def run_all_static(
         self,
@@ -253,6 +327,49 @@ class ApplicationServices:
         self._solver_id = self.solver_manager.resolve_solver_id(self.solver_request)
 
 
+def _matches_plugin_filters(
+    manifest: PluginManifest,
+    *,
+    kind: str | None = None,
+    extension_point: str | None = None,
+    capability: str | None = None,
+    tag: str | None = None,
+) -> bool:
+    if kind is not None and manifest.kind != kind.strip().lower():
+        return False
+    if extension_point is not None and not manifest.provides_extension(extension_point):
+        return False
+    if capability is not None and not manifest.has_capability(capability):
+        return False
+    if tag is not None and not manifest.has_tag(tag):
+        return False
+    return True
+
+
+def _plugin_manifest_display_row(
+    manifest: PluginManifest,
+    *,
+    can_load: bool = False,
+) -> dict[str, str | bool]:
+    load_state = "loadable" if can_load else "manifest_only"
+    return {
+        "id": manifest.plugin_id,
+        "kind": manifest.kind,
+        "name": manifest.name,
+        "text": manifest.name,
+        "description": manifest.description,
+        "entry_point": manifest.entry_point or "",
+        "version": manifest.descriptor.version,
+        "api_version": manifest.descriptor.api_version,
+        "source": manifest.descriptor.source,
+        "capabilities": ", ".join(manifest.capabilities),
+        "extension_points": ", ".join(manifest.extension_points),
+        "tags": ", ".join(manifest.tags),
+        "load_state": load_state,
+        "loadable": can_load,
+    }
+
+
 def _solver_manifest_display_row(
     manifest: PluginManifest,
     *,
@@ -262,12 +379,12 @@ def _solver_manifest_display_row(
     api_version = manifest.descriptor.api_version
     load_state = "loadable" if can_load else "manifest_only"
     loader_message = (
-        "chargeur externe disponible, activation non connectée"
+        "chargeur externe disponible, activation non connectee"
         if can_load
         else "chargeur externe non disponible pour l'instant"
     )
     tooltip_parts = [
-        f"Plugin installé: {manifest.plugin_id}",
+        f"Plugin installe: {manifest.plugin_id}",
         f"version {version}",
         f"API {api_version}",
         loader_message,
@@ -277,8 +394,8 @@ def _solver_manifest_display_row(
     return {
         "id": manifest.plugin_id,
         "engine": manifest.plugin_id,
-        "text": f"{manifest.name} (installé, non chargé)",
-        "tooltip": " • ".join(tooltip_parts),
+        "text": f"{manifest.name} (installe, non charge)",
+        "tooltip": " | ".join(tooltip_parts),
         "enabled": False,
         "source": manifest.descriptor.source,
         "kind": manifest.kind,

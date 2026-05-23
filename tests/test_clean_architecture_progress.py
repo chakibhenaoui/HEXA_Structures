@@ -8,9 +8,15 @@ from types import SimpleNamespace
 import pytest
 
 from core.application import ApplicationServices
+from core.application.connection_design import (
+    CONNECTION_DESIGN_EXTENSION_POINT,
+    ConnectionDesignRequest,
+    ConnectionDesignResult,
+)
 from core.application.results import AnalysisRunResult
 from core.application.use_cases import (
     BuildAnalysisModel,
+    RunConnectionDesign,
     RunAllStaticAnalyses,
     RunModalAnalysis,
     RunStaticAnalysis,
@@ -28,6 +34,7 @@ from core.model_data import (
 )
 from core.plate_mesher import GeneratedPlateMesh
 from core.plugins import (
+    ImportlibPluginLoader,
     ManifestOnlyPluginLoader,
     PluginDescriptor,
     PluginLoadResult,
@@ -136,6 +143,46 @@ class FakeLoadablePluginLoader:
             load_state="loaded",
             loaded=True,
             plugin={"id": manifest.plugin_id},
+        )
+
+
+class FakeConnectionPlugin:
+    plugin_id = "connections.fake"
+
+    def __init__(self) -> None:
+        self.requests = []
+
+    def can_design_connection(self, request: ConnectionDesignRequest) -> bool:
+        return request.connection_type == "end_plate"
+
+    def design_connection(self, request: ConnectionDesignRequest) -> dict:
+        self.requests.append(request)
+        return {
+            "success": True,
+            "payload": {
+                "connection_id": request.connection_id,
+                "unity_ratio": 0.73,
+            },
+            "warnings": ["demo warning"],
+        }
+
+
+class FakeConnectionPluginLoader:
+    def __init__(self, plugin=None) -> None:
+        self.plugin = plugin or FakeConnectionPlugin()
+
+    def can_load(self, manifest: PluginManifest) -> bool:
+        return manifest.provides_extension(CONNECTION_DESIGN_EXTENSION_POINT)
+
+    def load(self, manifest: PluginManifest) -> PluginLoadResult:
+        if not self.can_load(manifest):
+            return PluginLoadResult.manifest_only(manifest, "not a connection plugin")
+        return PluginLoadResult(
+            plugin_id=manifest.plugin_id,
+            kind=manifest.kind,
+            load_state="loaded",
+            loaded=True,
+            plugin=self.plugin,
         )
 
 
@@ -343,7 +390,7 @@ def test_application_services_appends_unloaded_solver_manifests_to_display(tmp_p
 
     assert rows[0] == {"id": "fake.solver", "engine": "fake", "enabled": True}
     assert rows[1]["id"] == "solver.external"
-    assert rows[1]["text"] == "External Solver (installé, non chargé)"
+    assert rows[1]["text"] == "External Solver (installe, non charge)"
     assert rows[1]["enabled"] is False
     assert rows[1]["load_state"] == "manifest_only"
     assert "chargeur externe non disponible" in rows[1]["tooltip"]
@@ -366,7 +413,7 @@ def test_application_services_marks_manifest_loadable_when_loader_supports_it(tm
     assert rows[1]["id"] == "solver.external"
     assert rows[1]["enabled"] is False
     assert rows[1]["load_state"] == "loadable"
-    assert "activation non connectée" in rows[1]["tooltip"]
+    assert "activation non connectee" in rows[1]["tooltip"]
 
 
 def test_application_services_returns_plugin_load_status_from_loader(tmp_path) -> None:
@@ -398,6 +445,99 @@ def test_manifest_only_plugin_loader_never_loads_external_code() -> None:
     assert result.loaded is False
     assert result.plugin is None
     assert result.load_state == "manifest_only"
+
+
+def test_importlib_plugin_loader_loads_manifest_entry_point_from_plugin_folder(
+    tmp_path,
+) -> None:
+    plugin_dir = tmp_path / "demo_solver"
+    plugin_dir.mkdir()
+    (plugin_dir / "demo_solver_plugin.py").write_text(
+        "\n".join(
+            [
+                "class DemoSolverPlugin:",
+                "    def __init__(self, manifest):",
+                "        self.plugin_id = manifest.plugin_id",
+                "        self.name = manifest.name",
+                "",
+                "def get_plugin(manifest):",
+                "    return DemoSolverPlugin(manifest)",
+            ]
+        ),
+        encoding="utf-8",
+    )
+    manifest_path = plugin_dir / "plugin.json"
+    manifest_path.write_text(
+        json.dumps(
+            {
+                "id": "solver.demo",
+                "name": "Demo Solver",
+                "kind": "solver",
+                "entry_point": "demo_solver_plugin:get_plugin",
+            }
+        ),
+        encoding="utf-8",
+    )
+    manifest = PluginManifest.from_file(manifest_path)
+    loader = ImportlibPluginLoader()
+
+    result = loader.load(manifest)
+
+    assert loader.can_load(manifest) is True
+    assert result.loaded is True
+    assert result.load_state == "loaded"
+    assert result.plugin.plugin_id == "solver.demo"
+    assert result.plugin.name == "Demo Solver"
+
+
+def test_importlib_plugin_loader_reports_factory_errors(tmp_path) -> None:
+    plugin_dir = tmp_path / "bad_solver"
+    plugin_dir.mkdir()
+    (plugin_dir / "bad_solver_plugin.py").write_text(
+        "\n".join(
+            [
+                "class BadSolverPlugin:",
+                "    plugin_id = 'solver.other'",
+                "",
+                "def get_plugin():",
+                "    return BadSolverPlugin()",
+            ]
+        ),
+        encoding="utf-8",
+    )
+    manifest_path = plugin_dir / "plugin.json"
+    manifest_path.write_text(
+        json.dumps(
+            {
+                "id": "solver.bad",
+                "name": "Bad Solver",
+                "kind": "solver",
+                "entry_point": "bad_solver_plugin:get_plugin",
+            }
+        ),
+        encoding="utf-8",
+    )
+    manifest = PluginManifest.from_file(manifest_path)
+
+    result = ImportlibPluginLoader().load(manifest)
+
+    assert result.loaded is False
+    assert result.load_state == "error"
+    assert "Loaded plugin id does not match manifest id" in result.error
+
+
+def test_importlib_plugin_loader_supports_non_solver_kinds_by_default() -> None:
+    manifest = PluginManifest.from_mapping(
+        {
+            "id": "connections.ec3",
+            "name": "Assemblages Eurocode 3",
+            "kind": "design_module",
+            "entry_point": "connections_plugin:get_plugin",
+        }
+    )
+
+    assert ImportlibPluginLoader().can_load(manifest) is True
+    assert ImportlibPluginLoader(allowed_kinds=("solver",)).can_load(manifest) is False
 
 
 def test_application_services_can_hide_unloaded_solver_manifests(tmp_path) -> None:
@@ -499,6 +639,220 @@ def test_application_services_filters_installed_plugins_by_kind(tmp_path) -> Non
 
     assert [manifest.plugin_id for manifest in manifests] == ["solver.external"]
     assert registry.ids() == ("solver.external",)
+
+
+def test_plugin_manifest_supports_generic_extension_metadata() -> None:
+    manifest = PluginManifest.from_mapping(
+        {
+            "id": "connections.ec3",
+            "name": "Assemblages Eurocode 3",
+            "kind": "design_module",
+            "extension_points": ["connections.design", "reports.detailing"],
+            "capabilities": ["steel_connections", "bolted_end_plate"],
+            "tags": ["assemblages", "eurocode3"],
+        }
+    )
+
+    assert manifest.kind == "design_module"
+    assert manifest.extension_points == ("connections.design", "reports.detailing")
+    assert manifest.capabilities == ("steel_connections", "bolted_end_plate")
+    assert manifest.tags == ("assemblages", "eurocode3")
+    assert manifest.provides_extension("CONNECTIONS.DESIGN")
+    assert manifest.has_capability("Steel_Connections")
+    assert manifest.has_tag("assemblages")
+
+
+def test_application_services_filters_plugins_by_extension_capability_and_tag(
+    tmp_path,
+) -> None:
+    connection_dir = tmp_path / "connections"
+    export_dir = tmp_path / "export"
+    connection_dir.mkdir()
+    export_dir.mkdir()
+    (connection_dir / "plugin.json").write_text(
+        json.dumps(
+            {
+                "id": "connections.ec3",
+                "name": "Assemblages Eurocode 3",
+                "kind": "design_module",
+                "extension_points": ["connections.design"],
+                "capabilities": ["steel_connections"],
+                "tags": ["assemblages", "eurocode3"],
+            }
+        ),
+        encoding="utf-8",
+    )
+    (export_dir / "plugin.json").write_text(
+        json.dumps(
+            {
+                "id": "export.ifc",
+                "name": "IFC Export",
+                "kind": "exporter",
+                "extension_points": ["project.export"],
+                "capabilities": ["ifc"],
+                "tags": ["bim"],
+            }
+        ),
+        encoding="utf-8",
+    )
+    services = ApplicationServices(
+        SimpleNamespace(loads={}, combinations={}),
+        solver_manager=FakeSolverManager(),
+        plugin_roots=(tmp_path,),
+    )
+
+    manifests = services.get_installed_plugin_manifests(
+        extension_point="connections.design",
+        capability="steel_connections",
+        tag="assemblages",
+    )
+    rows = services.get_plugin_display_info(extension_point="connections.design")
+    registry = services.get_installed_plugin_registry(
+        extension_point="connections.design"
+    )
+
+    assert [manifest.plugin_id for manifest in manifests] == ["connections.ec3"]
+    assert registry.ids() == ("connections.ec3",)
+    assert rows[0]["id"] == "connections.ec3"
+    assert rows[0]["kind"] == "design_module"
+    assert rows[0]["extension_points"] == "connections.design"
+    assert rows[0]["capabilities"] == "steel_connections"
+
+
+def test_run_connection_design_calls_loaded_connection_plugins() -> None:
+    manifest = PluginManifest.from_mapping(
+        {
+            "id": "connections.fake",
+            "name": "Fake Connections",
+            "kind": "design_module",
+            "extension_points": ["connections.design"],
+        }
+    )
+    loader = FakeConnectionPluginLoader()
+    request = ConnectionDesignRequest(
+        connection_id="J1",
+        connection_type="end_plate",
+        member_tags=[10, 11],
+        design_code="EC3",
+    )
+
+    results = RunConnectionDesign(loader, [manifest]).execute(request)
+
+    assert len(results) == 1
+    assert results[0].plugin_id == "connections.fake"
+    assert results[0].success is True
+    assert results[0].payload["connection_id"] == "J1"
+    assert results[0].payload["unity_ratio"] == 0.73
+    assert results[0].warnings == ("demo warning",)
+    assert loader.plugin.requests == [request]
+    assert request.member_tags == (10, 11)
+
+
+def test_run_connection_design_skips_non_applicable_plugin() -> None:
+    manifest = PluginManifest.from_mapping(
+        {
+            "id": "connections.fake",
+            "name": "Fake Connections",
+            "kind": "design_module",
+            "extension_points": ["connections.design"],
+        }
+    )
+    loader = FakeConnectionPluginLoader()
+
+    results = RunConnectionDesign(loader, [manifest]).execute(
+        ConnectionDesignRequest(
+            connection_id="J2",
+            connection_type="base_plate",
+        )
+    )
+
+    assert results[0].success is False
+    assert results[0].status == "skipped"
+    assert loader.plugin.requests == []
+
+
+def test_application_services_design_connection_uses_installed_plugin(tmp_path) -> None:
+    plugin_dir = tmp_path / "connections_ec3"
+    plugin_dir.mkdir()
+    (plugin_dir / "connections_ec3_plugin.py").write_text(
+        "\n".join(
+            [
+                "class ConnectionsEc3Plugin:",
+                "    plugin_id = 'connections.ec3'",
+                "",
+                "    def can_design_connection(self, request):",
+                "        return request.design_code == 'EC3'",
+                "",
+                "    def design_connection(self, request):",
+                "        return {",
+                "            'success': True,",
+                "            'payload': {",
+                "                'connection_id': request.connection_id,",
+                "                'code': request.design_code,",
+                "                'unity_ratio': 0.81,",
+                "            },",
+                "        }",
+                "",
+                "def get_plugin(manifest):",
+                "    return ConnectionsEc3Plugin()",
+            ]
+        ),
+        encoding="utf-8",
+    )
+    (plugin_dir / "plugin.json").write_text(
+        json.dumps(
+            {
+                "id": "connections.ec3",
+                "name": "Assemblages Eurocode 3",
+                "kind": "design_module",
+                "entry_point": "connections_ec3_plugin:get_plugin",
+                "extension_points": ["connections.design"],
+                "capabilities": ["steel_connections"],
+                "tags": ["assemblages", "eurocode3"],
+            }
+        ),
+        encoding="utf-8",
+    )
+    services = ApplicationServices(
+        SimpleNamespace(loads={}, combinations={}),
+        solver_manager=FakeSolverManager(),
+        plugin_loader=ImportlibPluginLoader(),
+        plugin_roots=(tmp_path,),
+    )
+
+    manifests = services.get_connection_design_plugin_manifests()
+    results = services.design_connection(
+        ConnectionDesignRequest(
+            connection_id="J3",
+            connection_type="end_plate",
+            design_code="EC3",
+        )
+    )
+
+    assert [manifest.plugin_id for manifest in manifests] == ["connections.ec3"]
+    assert len(results) == 1
+    assert results[0].success is True
+    assert results[0].payload == {
+        "connection_id": "J3",
+        "code": "EC3",
+        "unity_ratio": 0.81,
+    }
+
+
+def test_run_connection_design_reports_missing_requested_plugin() -> None:
+    results = RunConnectionDesign(
+        FakeConnectionPluginLoader(),
+        [],
+    ).execute(
+        ConnectionDesignRequest(connection_id="J4"),
+        plugin_id="connections.missing",
+    )
+
+    assert results[0] == ConnectionDesignResult.failed(
+        "connections.missing",
+        "No plugin declares connections.design.",
+        status="not_found",
+    )
 
 
 def test_default_plugin_roots_include_environment_paths(monkeypatch, tmp_path) -> None:
