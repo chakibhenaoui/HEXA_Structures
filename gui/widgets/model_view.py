@@ -1026,9 +1026,9 @@ class ModelView(QWidget):
 
     @staticmethod
     def _visible_surface_items(project: ProjectModel):
-        for tag, plate in project.plate_regions.items():
+        for tag, plate in getattr(project, "plate_regions", {}).items():
             yield int(tag), plate
-        for tag, surface in project.surface_elements.items():
+        for tag, surface in getattr(project, "surface_elements", {}).items():
             yield int(tag), surface
 
     def _surface_polygon_world_points(

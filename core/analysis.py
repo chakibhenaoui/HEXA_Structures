@@ -9,7 +9,8 @@ from __future__ import annotations
 
 from typing import TYPE_CHECKING
 
-from core.solvers import SolverEngine, SolverManager
+from core.application import ApplicationServices
+from core.solvers import SolverEngine
 
 if TYPE_CHECKING:
     from core.model_data import ProjectModel
@@ -33,10 +34,10 @@ class AnalysisRunner:
         engine: SolverEngine | str | None = None,
     ):
         self.project = project
-        self.solver_manager = SolverManager()
-        self.backend, self.engine = self.solver_manager.create_backend(
-            project, engine,
-        )
+        self.services = ApplicationServices(project, solver_request=engine)
+        self.solver_manager = self.services.solver_manager
+        self.backend = self.services.solver
+        self.engine = self.services.engine
 
     def run_all(
         self,
@@ -50,29 +51,7 @@ class AnalysisRunner:
         Returns:
             Dictionnaire {nom_cas: (succès, résultats)}.
         """
-        results: dict[str, tuple[bool, dict]] = {}
-        tasks: list[tuple[str, int | None, int | None]] = []
-
-        # Cas de charge simples
-        for tag, lc in self.project.loads.items():
-            name = f"{lc.name} (cas {tag})"
-            tasks.append((name, tag, None))
-
-        # Combinaisons
-        for tag, combo in self.project.combinations.items():
-            name = f"{combo.name} (combo {tag})"
-            tasks.append((name, None, tag))
-
-        total = len(tasks)
-        for idx, (name, load_tag, combo_tag) in enumerate(tasks):
-            if callback is not None:
-                callback(name, idx, total)
-            success, res = self.run_static(
-                load_tag=load_tag, combo_tag=combo_tag,
-            )
-            results[name] = (success, res)
-
-        return results
+        return self.services.run_all_static(callback=callback)
 
     def run_static(
         self,
@@ -92,7 +71,7 @@ class AnalysisRunner:
         Returns:
             Tuple (succès, résultats).
         """
-        return self.backend.run_static(
+        return self.services.run_static(
             load_tag=load_tag,
             combo_tag=combo_tag,
             max_iter=max_iter,
@@ -108,12 +87,12 @@ class AnalysisRunner:
         Returns:
             Tuple (succès, résultats).
         """
-        return self.backend.run_modal(num_modes=num_modes)
+        return self.services.run_modal(num_modes=num_modes)
 
     @property
     def supports_diagrams(self) -> bool:
         """Indique si le backend courant expose les diagrammes OpenSees."""
-        return bool(getattr(self.backend, "supports_diagrams", False))
+        return self.services.supports_diagrams
 
 
 # ═══════════════════════════════════════════════════════════════════════════

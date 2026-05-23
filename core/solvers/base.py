@@ -54,3 +54,7 @@ class SolverInfo:
     version: str | None = None
     install_hint: str | None = None
     is_default: bool = False
+    solver_id: str | None = None
+    plugin_version: str | None = None
+    api_version: str | None = None
+    source: str = "builtin"

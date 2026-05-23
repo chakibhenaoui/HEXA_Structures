@@ -4,9 +4,13 @@ Gestionnaire central de détection des solveurs.
 
 from __future__ import annotations
 
-from importlib.metadata import PackageNotFoundError, version
-
-from core.optional_imports import ensure_external_module_search_paths
+from core.adapters.solvers.registry import (
+    get_solver_plugin_id_map,
+    get_solver_plugin_map,
+    get_solver_plugins,
+    has_any_module,
+    package_version,
+)
 from core.solvers.base import (
     AnalysisCapability,
     AnalysisFeature,
@@ -14,8 +18,6 @@ from core.solvers.base import (
     SolverEngine,
     SolverInfo,
 )
-from core.solvers.opensees_backend import OpenSeesBackend
-from core.solvers.pynite_backend import PyNiteBackend
 
 
 class SolverManager:
@@ -37,29 +39,12 @@ class SolverManager:
         CapabilityLevel.UNAVAILABLE: "Non prévu",
     }
 
+    _PLUGIN_MAP = get_solver_plugin_map()
+    _PLUGIN_ID_MAP = get_solver_plugin_id_map()
+
     def detect_engines(self) -> list[SolverInfo]:
         """Retourne l'état des solveurs connus."""
-        pynite_available = self._has_any_module("Pynite", "PyniteFEA")
-        opensees_available = self._has_any_module("openseespy")
-
-        return [
-            SolverInfo(
-                engine=SolverEngine.PYNITE,
-                label="PyNite",
-                available=pynite_available,
-                version=self._package_version("PyNiteFEA", "pynitefea"),
-                install_hint="pip install PyNiteFEA",
-                is_default=True,
-            ),
-            SolverInfo(
-                engine=SolverEngine.OPENSEES,
-                label="OpenSeesPy",
-                available=opensees_available,
-                version=self._package_version("openseespy"),
-                install_hint="pip install openseespy",
-                is_default=False,
-            ),
-        ]
+        return [plugin.detect() for plugin in get_solver_plugins()]
 
     def is_available(self, engine: SolverEngine | str) -> bool:
         """Indique si un solveur demande est disponible."""
@@ -74,10 +59,9 @@ class SolverManager:
         preferred = self._normalize_engine(requested)
         if self.is_available(preferred):
             return preferred
-        if self.is_available(SolverEngine.PYNITE):
-            return SolverEngine.PYNITE
-        if self.is_available(SolverEngine.OPENSEES):
-            return SolverEngine.OPENSEES
+        for plugin in get_solver_plugins():
+            if plugin.engine != preferred and plugin.detect().available:
+                return plugin.engine
         return SolverEngine.PYNITE
 
     def get_display_info(self) -> list[dict[str, str | bool]]:
@@ -92,6 +76,7 @@ class SolverManager:
             state = "disponible" if info.available else "non installé"
             rows.append(
                 {
+                    "id": info.solver_id or info.engine.value,
                     "engine": info.engine.value,
                     "text": f"{info.label} ({state})",
                     "tooltip": " • ".join(
@@ -102,22 +87,57 @@ class SolverManager:
             )
         return rows
 
+    def resolve_solver_id(self, requested: SolverEngine | str | None) -> str:
+        """Resolve the effective solver plugin id to use."""
+        preferred = self._plugin_for_request(requested)
+        if preferred is not None and preferred.detect().available:
+            return preferred.plugin_id
+
+        for plugin in get_solver_plugins():
+            if preferred is not None and plugin.plugin_id == preferred.plugin_id:
+                continue
+            if plugin.detect().available:
+                return plugin.plugin_id
+
+        return self._PLUGIN_MAP[SolverEngine.PYNITE].plugin_id
+
+    def create_solver(self, project, requested: SolverEngine | str | None):
+        """Instantiate a solver adapter and return its stable plugin id."""
+        solver_id = self.resolve_solver_id(requested)
+        plugin = self._PLUGIN_ID_MAP.get(
+            solver_id,
+            self._PLUGIN_MAP[SolverEngine.PYNITE],
+        )
+        return plugin.create(project), plugin.plugin_id
+
     def create_backend(self, project, requested: SolverEngine | str | None):
         """Instancie le backend correspondant au moteur resolu."""
-        engine = self.resolve_engine(requested)
-        if engine == SolverEngine.PYNITE:
-            return PyNiteBackend(project), engine
-        return OpenSeesBackend(project), engine
+        solver, solver_id = self.create_solver(project, requested)
+        plugin = self._PLUGIN_ID_MAP.get(
+            solver_id,
+            self._PLUGIN_MAP[SolverEngine.PYNITE],
+        )
+        return solver, plugin.engine
 
     def get_capabilities(
         self,
         engine: SolverEngine | str,
     ) -> dict[AnalysisFeature, AnalysisCapability]:
         """Retourne la table des capacités connues pour un moteur."""
-        normalized = self._normalize_engine(engine)
-        if normalized == SolverEngine.PYNITE:
-            return dict(PyNiteBackend.capabilities)
-        return dict(OpenSeesBackend.capabilities)
+        plugin = self._plugin_for_request(engine)
+        if plugin is None:
+            plugin = self._PLUGIN_MAP[SolverEngine.PYNITE]
+        return plugin.capabilities
+
+    def get_capabilities_for_solver(
+        self,
+        solver_id: str,
+    ) -> dict[AnalysisFeature, AnalysisCapability]:
+        """Return capabilities for a solver plugin id."""
+        plugin = self._PLUGIN_ID_MAP.get(solver_id)
+        if plugin is None:
+            plugin = self._PLUGIN_MAP[SolverEngine.PYNITE]
+        return plugin.capabilities
 
     def get_capability_matrix(self) -> list[dict[str, str]]:
         """Retourne une matrice lisible des capacités par moteur."""
@@ -180,15 +200,27 @@ class SolverManager:
         except ValueError:
             return SolverEngine.PYNITE
 
+    @classmethod
+    def _plugin_for_request(cls, requested: SolverEngine | str | None):
+        if isinstance(requested, SolverEngine):
+            return cls._PLUGIN_MAP.get(requested)
+        if not requested:
+            return cls._PLUGIN_MAP.get(SolverEngine.PYNITE)
+
+        solver_id = str(requested).strip().lower()
+        plugin = cls._PLUGIN_ID_MAP.get(solver_id)
+        if plugin is not None:
+            return plugin
+
+        try:
+            return cls._PLUGIN_MAP.get(SolverEngine(solver_id))
+        except ValueError:
+            return None
+
     @staticmethod
     def _has_any_module(*module_names: str) -> bool:
-        return ensure_external_module_search_paths(*module_names)
+        return has_any_module(*module_names)
 
     @staticmethod
     def _package_version(*package_names: str) -> str | None:
-        for package_name in package_names:
-            try:
-                return version(package_name)
-            except PackageNotFoundError:
-                continue
-        return None
+        return package_version(*package_names)
