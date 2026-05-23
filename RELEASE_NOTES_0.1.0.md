@@ -29,8 +29,24 @@ pytest tests/ -q
 Etat actuel :
 
 ```text
-274 passed, 14 skipped
+460 passed
 ```
+
+## Etat courant du depot apres la release
+
+Depuis la base 0.1.0, le depot a commence une migration progressive vers une
+architecture ports/adaptateurs/plugins :
+
+- couche `core/application` avec ports, DTOs, cas d'usage et facade applicative ;
+- adaptateurs solveurs PyNite/OpenSeesPy dans `core/adapters/solvers` ;
+- decouverte de plugins par manifestes `plugin.json` / `hexa-plugin.json` ;
+- loader externe opt-in via `ImportlibPluginLoader` ;
+- manifestes generiques avec `kind`, `extension_points`, `capabilities` et `tags` ;
+- premier point d'extension metier `connections.design` pour les futurs plugins d'assemblages.
+
+Ces elements sont post-release 0.1.0 : ils documentent l'etat courant du depot,
+mais ne changent pas le perimetre fonctionnel annonce pour la release publique
+initiale.
 
 ## Limites connues
 
@@ -42,3 +58,5 @@ Etat actuel :
   encore une convergence adaptative.
 - Les exports CSV/PDF de resultats restent a finaliser.
 - Les verifications EC2/EC3 automatiques restent hors scope de cette release.
+- Les plugins externes sont prepares cote architecture, mais aucun plugin metier
+  officiel n'est encore livre avec la version 0.1.0.

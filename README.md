@@ -13,12 +13,16 @@ HEXA Structures est un logiciel desktop de modélisation et d'analyse destiné a
 - **PySide6** pour l'interface graphique
 - **PyVista / pyvistaqt** pour la visualisation 3D interactive
 - une intégration native des **Eurocodes (EC0 à EC8)** avec les **annexes nationales françaises**
+- une architecture applicative progressive de type ports/adaptateurs, avec support de plugins installables
 
 ## État du projet
 
 Le projet a dépassé le stade du prototype. Aujourd'hui, la base applicative est en place avec :
 
 - un noyau de calcul multi-solveur
+- une couche `core/application/` avec ports, cas d'usage et façade applicative
+- une couche `core/adapters/` pour les solveurs et le maillage
+- une couche `core/plugins/` pour découvrir des plugins par manifeste sans exécuter de code par défaut
 - une interface PySide6 structurée
 - la gestion des matériaux, sections, conditions aux limites, charges et combinaisons
 - l'extraction de résultats et le rendu des diagrammes 2D pour les cas pris en charge
@@ -30,6 +34,7 @@ Les travaux en cours portent surtout sur :
 - le post-traitement et les tableaux de résultats
 - les enveloppes de résultats et la lecture multi-cas / multi-combinaisons
 - les vérifications normatives et les exports de note de calcul
+- les plugins métier installables, notamment le futur calcul des assemblages
 
 ## Fonctionnalités disponibles
 
@@ -43,6 +48,8 @@ Les travaux en cours portent surtout sur :
 - Dialogues de création : matériaux, sections, charges, combinaisons, réglages Eurocodes
 - Analyses statiques linéaires via PyNite et OpenSeesPy
 - Plaques quadrangulaires experimentales via maillage interne automatique OpenSeesPy
+- Découverte de plugins installés par manifestes `plugin.json` / `hexa-plugin.json`
+- Host applicatif initial pour les plugins d'assemblages exposant `connections.design`
 - Extraction des résultats : déplacements, réactions, efforts internes
 - Diagrammes 2D `N / V / T / M` sur les cas pris en charge
 - Affichage des conditions aux limites sur les diagrammes 2D
@@ -53,6 +60,7 @@ Les travaux en cours portent surtout sur :
 - Vue résultats plus aboutie et tableaux complets de post-traitement
 - Enveloppes de résultats et lecture multi-cas / multi-combinaisons
 - Vérifications automatiques EC2 / EC3 / EC8
+- Plugin externe de calcul des assemblages acier, installé séparément
 - Paramétrage sismique EC8 plus complet
 - Analyses pushover et temporelles
 - Export PDF de note de calcul
@@ -73,13 +81,22 @@ calcul interne, regroupe par plaque macro pour le post-traitement.
 
 ## Architecture
 
-L'application est organisée autour de trois blocs principaux :
+L'application évolue progressivement vers une architecture modulaire hybride :
 
 - `gui/` : interface PySide6, vue 3D PyVista, widgets et dialogues
-- `core/` : modèle de données, charges, matériaux, sections, Eurocodes, calcul et résultats
-- solveurs externes : **PyNite** en standard, **OpenSeesPy** en option
+- `core/model_data.py` : modèle métier utilisateur et persistance historique
+- `core/application/` : ports, DTOs, cas d'usage et façade applicative
+- `core/adapters/` : adaptateurs techniques, notamment solveurs et maillage
+- `core/plugins/` : découverte de plugins installables par manifeste
+- `core/solvers/` : backends historiques et compatibilité multi-solveur
 
-La GUI ne dialogue jamais directement avec OpenSeesPy. Les échanges avec les solveurs sont concentrés dans `core/ops_builder.py`, `core/analysis.py` et `core/results.py`.
+La règle principale est que le domaine et les cas d'usage ne dépendent pas de
+PySide6, OpenSeesPy, PyNite, SQLite ou Matplotlib. La GUI passe progressivement
+par `ApplicationServices`, qui orchestre les ports applicatifs.
+
+Les solveurs PyNite et OpenSeesPy sont exposés comme plugins/adaptateurs internes.
+Le même système prépare aussi des plugins non-solveurs : par exemple un module
+externe d'assemblages acier peut déclarer l'extension `connections.design`.
 
 ## Prérequis
 
@@ -141,10 +158,17 @@ L'exécutable produit n'embarque pas OpenSeesPy. Si l'utilisateur final souhaite
 |   |-- settings.py
 |   `-- eurocodes.py
 |-- core/
+|   |-- application/
+|   |   |-- ports/
+|   |   `-- use_cases/
+|   |-- adapters/
+|   |   |-- meshing/
+|   |   `-- solvers/
+|   |-- plugins/
+|   |-- solvers/
 |   |-- model_data.py
 |   |-- boundary_conditions.py
 |   |-- loads.py
-|   |-- ops_builder.py
 |   |-- materials.py
 |   |-- sections.py
 |   |-- analysis.py
@@ -183,13 +207,14 @@ Le système interne utilise **kN, m, kPa**. Les conversions depuis et vers d'aut
 Exécuter la suite principale :
 
 ```bash
-pytest tests/ -v
+pytest -q
 ```
 
 Notes utiles :
 
 - `requirements.txt` couvre les dépendances de base de l'application et des tests courants
 - certains tests de rendu nécessitent `matplotlib`
+- les tests d'architecture couvrent les ports applicatifs, la découverte de plugins et le host `connections.design`
 - les comparaisons avancées avec `opsvis` demandent une installation complémentaire :
 
 ```bash
@@ -202,7 +227,7 @@ pip install opsvis
 - `PROGRESS.md` : suivi d'avancément
 - `PROJECT_PLAN.md` : plan de projet
 - `RELEASE_NOTES_0.1.0.md` : notes de release de la version 0.1.0
-- `IMPLEMENTATION_MULTI_SOLVEUR.md` : notes sur l'architecture multi-solveur
+- `IMPLEMENTATION_MULTI_SOLVEUR.md` : notes historiques et état actuel de l'architecture multi-solveur/plugin
 
 ## Contribuer
 

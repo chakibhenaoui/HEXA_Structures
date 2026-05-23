@@ -1,7 +1,26 @@
-# HEXA Structures - Guide d'Implementation Multi-Solveur
+# HEXA Structures - Architecture multi-solveur et plugins
 
-> **Document de travail** — Mars 2026
-> Objectif : implémenter l'architecture multi-solveur (PyNite par défaut + OpenSeesPy optionnel)
+> **Document historique mis à jour** — 23 mai 2026
+> Objectif : conserver les décisions multi-solveur et documenter l'évolution
+> vers une architecture ports/adaptateurs/plugins.
+
+---
+
+## 0. Etat courant
+
+La première phase multi-solveur est en place :
+
+- PyNite reste le solveur par défaut.
+- OpenSeesPy reste optionnel et détecté à l'exécution.
+- `core/solvers/solver_manager.py` conserve la compatibilité historique.
+- `core/adapters/solvers/` expose PyNite et OpenSeesPy comme plugins/adaptateurs internes.
+- `core/application/ports/solver_port.py` définit le contrat applicatif utilisé par les cas d'usage.
+- `core/application/services.py` fournit la façade utilisée progressivement par la GUI.
+- `core/plugins/` découvre les plugins installés par manifeste, sans exécuter de code par défaut.
+- `ImportlibPluginLoader` permet le chargement externe uniquement quand il est explicitement injecté.
+- Les plugins ne sont plus limités aux solveurs : le point `connections.design` prépare les modules d'assemblages.
+
+Validation courante : `pytest -q` passe avec 460 tests.
 
 ---
 
@@ -13,7 +32,7 @@ Le logiciel HEXA Structures vise un double public. D'un côté les ingénieurs B
 
 La solution : **PyNite bundlé par défaut** (licence MIT, zéro installation supplémentaire), **OpenSeesPy en option** installé par l'utilisateur via `pip install openseespy`. On ne redistribue pas OpenSeesPy → on contourne proprement la restriction de licence UC Berkeley.
 
-### 1.2 Principe architectural
+### 1.2 Principe architectural cible
 
 ```
 ┌─────────────────────────────────────────────────────────┐
@@ -24,22 +43,19 @@ La solution : **PyNite bundlé par défaut** (licence MIT, zéro installation su
 │   │  ○ OpenSeesPy (optionnel)                │          │
 │   └──────────────────────────────────────────┘          │
 ├─────────────────────────────────────────────────────────┤
-│              core/solvers/solver_manager.py               │
-│   detect() → quels solveurs disponibles ?                │
-│   create_backend(model, engine) → SolverBackend          │
+│           core/application + ApplicationServices           │
+│   ports → use cases → adapters/plugins                    │
 ├────────────────────┬────────────────────────────────────┤
-│  PyNiteBackend     │  OpenSeesBackend                    │
-│  (pynite_backend)  │  (opensees_backend)                 │
+│  PyNite adapter    │  OpenSees adapter                   │
+│  (adapters/)       │  (adapters/)                        │
 │                    │                                     │
-│  Lit ProjectModel  │  Délègue aux plugins existants      │
-│  → API FEModel3D   │  (ops_builder + MaterialPlugin...)  │
-│                    │  → commandes openseespy             │
+│  Lit ProjectModel  │  Lit ProjectModel                   │
+│  → API FEModel3D   │  → backend OpenSeesPy               │
 ├────────────────────┴────────────────────────────────────┤
-│           StaticResult / ModalResult / SpectralResult     │
-│           (format unique, indépendant du solveur)        │
+│        AnalysisRunResult / DTOs applicatifs communs       │
 ├─────────────────────────────────────────────────────────┤
-│  Post-traitement, vérifications EC2/EC3, Vue 3D PyVista  │
-│  → Ne connaissent QUE les types standardisés             │
+│  GUI, post-traitement, vérifications, exports, plugins    │
+│  → ne connaissent que les ports et DTOs applicatifs       │
 └─────────────────────────────────────────────────────────┘
 ```
 
@@ -49,9 +65,17 @@ La solution : **PyNite bundlé par défaut** (licence MIT, zéro installation su
 > Tout le code applicatif (GUI, post-traitement, vérifications, export) travaille
 > exclusivement avec `StaticResult`, `ModalResult` et `SpectralResult`.
 
+Mise à jour : la règle est désormais plus générale. Les nouveaux modules
+applicatifs ne doivent pas dépendre de PySide6, OpenSeesPy, PyNite, SQLite ou
+Matplotlib. Ils passent par `core/application/ports` et les DTOs applicatifs.
+
 ---
 
 ## 2. Arborescence des Fichiers
+
+Les sous-sections suivantes conservent le plan d'implementation initial. Elles
+servent de trace de conception ; l'etat actuel est resume en section 0 et dans
+`README.md`.
 
 ### 2.1 Nouveaux fichiers à créer
 
@@ -694,11 +718,40 @@ Dans la documentation et le dialogue d'installation :
 
 Pour ajouter un solveur (ex: Code_Aster via Salome-Meca) :
 
-1. Créer `core/solvers/codeaster_backend.py`
-2. Implémenter `SolverBackend` (build_model, run_static, run_modal)
-3. Ajouter `CODEASTER = auto()` dans `SolverEngine`
-4. Ajouter la détection dans `SolverManager.detect()`
-5. Aucune modification du reste de l'application
+1. Créer un adaptateur dans `core/adapters/solvers/`.
+2. Implémenter le contrat `SolverPort`.
+3. Déclarer le solveur dans le registry interne ou via un manifeste externe.
+4. Fournir les capacités dans le même format que PyNite/OpenSeesPy.
+5. Éviter toute dépendance GUI dans le plugin.
+
+### 8.1 bis Ajouter un plugin métier
+
+Exemple pour un module d'assemblages :
+
+```json
+{
+  "id": "connections.ec3",
+  "name": "Assemblages Eurocode 3",
+  "kind": "design_module",
+  "entry_point": "connections_ec3:get_plugin",
+  "extension_points": ["connections.design"],
+  "capabilities": ["steel_connections", "bolted_end_plate"],
+  "tags": ["assemblages", "eurocode3"]
+}
+```
+
+Le plugin expose un objet compatible avec `ConnectionDesignPort` :
+
+```python
+class ConnectionsEc3Plugin:
+    plugin_id = "connections.ec3"
+
+    def can_design_connection(self, request):
+        return request.design_code == "EC3"
+
+    def design_connection(self, request):
+        return {"success": True, "payload": {"unity_ratio": 0.82}}
+```
 
 ### 8.2 Solveur Rust/PyO3
 
@@ -731,20 +784,19 @@ Le format de résultats (`StaticResult`, `ModalResult`) étant des dataclasses s
 
 Avant de considérer l'implémentation multi-solveur comme terminée, vérifier :
 
-- [ ] `pip install .` installe PyNite automatiquement
-- [ ] L'application démarre sans OpenSeesPy installé (aucune erreur d'import)
-- [ ] Le ComboBox de sélection affiche les deux solveurs avec le bon état
-- [ ] OpenSees est grisé si non installé, avec un tooltip explicatif
-- [ ] L'analyse statique PyNite donne des résultats corrects sur les 3 cas tests
-- [ ] L'analyse modale PyNite extrait les fréquences correctement
-- [ ] Le fallback PyNite ← OpenSees fonctionne si OpenSees absent
-- [ ] Le backend OpenSees réutilise bien les plugins existants
-- [ ] Les résultats statiques PyNite et OpenSees concordent à <2% sur le cas portique
-- [ ] Le post-traitement (déformée, M/V/N, vérifications) fonctionne identiquement avec les deux solveurs
-- [ ] Le `SpectralResult` se calcule correctement à partir d'un `ModalResult`
-- [ ] Les tests passent dans la CI (avec et sans OpenSees)
-- [ ] La documentation mentionne comment installer OpenSees en option
+- [x] L'application démarre sans import direct obligatoire d'OpenSeesPy.
+- [x] PyNite et OpenSeesPy sont exposés par `SolverManager`.
+- [x] Les solveurs internes sont déclarés dans un registry plugin/adaptateur.
+- [x] Les cas d'usage statique et modal passent par des ports applicatifs.
+- [x] Les manifestes de plugins sont découverts sans exécuter le code externe.
+- [x] Le loader externe est opt-in.
+- [x] Le point `connections.design` est réservé et testé.
+- [x] La documentation mentionne comment installer OpenSees en option.
+- [ ] Ajouter un exemple installable de plugin externe `connections.ec3`.
+- [ ] Ajouter une interface de diagnostic des plugins installés.
+- [ ] Continuer la migration des appels GUI vers `ApplicationServices`.
+- [ ] Conserver la parité PyNite/OpenSeesPy sur les cas de validation.
 
 ---
 
-*Document genere le 22 mars 2026 - HEXA Structures v0.1*
+*Dernière mise à jour : 23 mai 2026 - HEXA Structures v0.1*

@@ -13,7 +13,7 @@
 | Docstrings | **Français** | `"""Vérification béton armé EC2."""` |
 | Interface utilisateur (GUI) | **Français** | Menus, labels, messages |
 | Documentation projet (README, etc.) | **Français** | Destiné aux ingénieurs FR |
-| Noms de fichiers / modules | **Anglais** | `materials.py`, `ops_builder.py` |
+| Noms de fichiers / modules | **Anglais** | `materials.py`, `solver_manager.py` |
 
 ---
 
@@ -24,7 +24,8 @@
 - **Type hints** obligatoires sur toutes les fonctions publiques
 - **Docstrings** au format Google style, en français
 - Longueur de ligne max : **100 caractères**
-- Python minimum : **3.10** (pour `match/case` et `X | Y` unions)
+- Python recommandé : **3.12** pour le développement courant
+- Python minimum visé : **3.10** tant que le code reste compatible
 
 ### 2.2 Nommage
 
@@ -51,7 +52,7 @@ from PySide6.QtWidgets import QMainWindow
 
 # 3. Modules du projet
 from core.model_data import ProjectModel
-from core.ops_builder import OpsBuilder
+from core.application.services import ApplicationServices
 ```
 
 ### 2.4 Exemple de docstring
@@ -126,12 +127,26 @@ OpenSees n'a pas de système d'unités intégré. On lui envoie directement les 
 - **Raison** : copyleft faible, modifications du projet partagees sans fermer l'interoperabilite avec les dependances BSD/LGPL
 - Compatible avec OpenSeesPy (BSD), PySide6 (LGPL), VTK (BSD)
 
-### 4.5 Architecture : séparation GUI / core / OpenSees
-- La GUI ne parle **jamais** directement à OpenSees
-- Seuls 3 modules dépendent d'OpenSees : `ops_builder.py`, `analysis.py`, `results.py`
-- Le modèle de données (`model_data.py`) est 100% indépendant du solveur
+### 4.5 Architecture : ports / adaptateurs / plugins
+- La GUI ne parle **jamais** directement à PyNite, OpenSeesPy, SQLite ou Matplotlib.
+- Les nouveaux flux applicatifs passent par `core/application`.
+- Les dépendances techniques sont placées derrière des ports dans `core/application/ports`.
+- Les implémentations techniques vivent dans `core/adapters`.
+- Les backends historiques restent dans `core/solvers` tant que leur migration progressive n'est pas terminée.
+- Le modèle de données (`model_data.py`) doit rester indépendant des solveurs.
+- Les plugins installables sont découverts par manifestes dans `core/plugins`.
+- La découverte de manifestes ne doit pas importer ni exécuter de code externe.
+- Le chargement de code externe passe uniquement par un loader explicite, par exemple `ImportlibPluginLoader`.
 
-### 4.6 Analyses longues : QThread
+### 4.6 Points d'extension plugins
+- Un plugin déclare un `kind` libre : `solver`, `design_module`, `exporter`, `reporting`, etc.
+- Un plugin déclare ses points d'extension dans `extension_points`.
+- Les capacités fonctionnelles vont dans `capabilities`.
+- Les mots-clés d'aide au filtrage vont dans `tags`.
+- Le point `connections.design` est réservé aux modules de calcul d'assemblages.
+- Un plugin métier ne doit pas dépendre de la GUI HEXA.
+
+### 4.7 Analyses longues : QThread
 - Toute analyse OpenSees s'exécute dans un `QThread` dédié
 - Communication avec la GUI via signaux `progress` et `finished`
 - La GUI reste réactive pendant le calcul
@@ -239,6 +254,13 @@ class MyWidget(QWidget):
 - Ces vues de contours ne rendent pas les nœuds ou surfaces générés permanents
   dans le modèle utilisateur.
 
+### 6.7 Plugins d'assemblages
+- Le contrat applicatif de base est `ConnectionDesignPort`.
+- L'entrée applicative est `RunConnectionDesign`.
+- La façade publique expose `ApplicationServices.design_connection(...)`.
+- Les plugins d'assemblages doivent déclarer `connections.design`.
+- Une réponse plugin doit être normalisable en `ConnectionDesignResult`.
+
 ---
 
 ## 7. Gestion de version
@@ -255,4 +277,4 @@ class MyWidget(QWidget):
 
 ---
 
-*Dernière mise à jour : 15 mars 2026*
+*Dernière mise à jour : 23 mai 2026*

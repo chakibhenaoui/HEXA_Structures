@@ -1,6 +1,6 @@
 # HEXA Structures - Plan de projet
 
-> Application Python / PySide6 de calcul de structures, orientee usage bureau d'etudes, avec PyNite comme moteur par défaut et OpenSeesPy comme moteur optionnel avancé.
+> Application Python / PySide6 de calcul de structures, orientee usage bureau d'etudes, avec PyNite comme moteur par défaut, OpenSeesPy comme moteur optionnel avancé et une architecture plugin progressive.
 
 ---
 
@@ -16,6 +16,7 @@ Construire un logiciel de calcul de structures exploitable progressivement en pr
 - conventions de signe explicites,
 - workflow proche des habitudes métier structure,
 - evolution future vers les vérifications Eurocodes et les exports professionnels.
+- extensibilite par plugins installables pour les solveurs et modules metier.
 
 ### 1.2 Positionnement
 
@@ -48,8 +49,25 @@ Raison :
 - PyNite est plus simple à distribuer et mieux adapté au socle linéaire courant.
 - OpenSeesPy reste tres interessant pour les analyses avancées et la validation.
 - Le logiciel doit garder une architecture multi-solveur propre.
+- Les solveurs sont exposes progressivement comme plugins internes via des adaptateurs.
 
-### 2.2 Strategie de calcul
+### 2.2 Plugins metier
+
+Decision actuelle :
+
+- Les plugins ne sont pas reserves aux solveurs.
+- Un plugin peut declarer un `kind` libre : `solver`, `design_module`, `exporter`, `reporting`, etc.
+- Un plugin declare ses points d'extension avec `extension_points`.
+- Le premier point d'extension metier reserve est `connections.design` pour les futurs calculs d'assemblages.
+- Le chargement de code externe est opt-in : la decouverte lit les manifestes sans importer le plugin.
+
+Raison :
+
+- permettre l'ajout de solveurs sans modifier la GUI ;
+- permettre des modules metier separes, par exemple les assemblages acier ;
+- garder le noyau HEXA agile, testable et stable.
+
+### 2.3 Strategie de calcul
 
 Principe :
 
@@ -75,9 +93,9 @@ Non prioritaire immediat :
 
 ---
 
-## 3. état reel au 9 mai 2026
+## 3. Etat reel au 23 mai 2026
 
-Le projet est au stade prototype avancé fonctionnel.
+Le projet est au stade base applicative fonctionnelle en consolidation.
 
 Fonctions déjà utilisables :
 
@@ -104,6 +122,12 @@ Fonctions déjà utilisables :
 - fenêtre de propriétés détaillée mono-barre orientee vérification métier,
 - organisation plus claire des menus de modélisation et de charges,
 - rendu extrudé plus lisible pour les profilés acier en I.
+- architecture `core/application` avec ports et cas d'usage ;
+- adaptateurs solveurs PyNite/OpenSeesPy dans `core/adapters/solvers` ;
+- decouverte de plugins par manifestes `plugin.json` et `hexa-plugin.json` ;
+- loader `ImportlibPluginLoader` optionnel pour charger explicitement un plugin externe ;
+- host applicatif `connections.design` pour les futurs plugins d'assemblages ;
+- tests d'architecture et de non-regression couvrant ces chemins.
 
 Problemes principaux en cours de consolidation :
 
@@ -121,26 +145,31 @@ Problemes principaux en cours de consolidation :
 ### 4.1 Couches
 
 1. GUI PySide6
-   Interface utilisateur, modélisation, édition, lancement d'analyse, lecture des résultats.
+   Interface utilisateur, modelisation, edition, lancement d'analyse, lecture des resultats.
 
-2. Core métier
-   Données, matériaux, sections, appuis, charges, combinaisons, poids propre, résultats.
+2. Domaine metier
+   Donnees structurelles, materiaux, sections, appuis, charges, combinaisons, plaques utilisateur.
 
-3. Couche solveurs
-   Adaptateurs PyNite et OpenSeesPy.
+3. Application
+   Ports, DTOs, cas d'usage et facade `ApplicationServices`.
 
-4. Post-traitement
-   Tableaux, diagrammes, enveloppes, exports.
+4. Adaptateurs techniques
+   Solveurs, maillage, persistance, exports et futurs connecteurs.
+
+5. Plugins
+   Solveurs installables, modules metier et points d'extension comme `connections.design`.
 
 ### 4.2 Regle de separation
 
-La GUI ne doit pas parler directement a PyNite ou OpenSeesPy.
+La GUI ne doit pas parler directement a PyNite, OpenSeesPy, SQLite ou Matplotlib.
 
-Les solveurs doivent rester derriere une couche commune :
+Les solveurs et modules techniques doivent rester derriere des ports :
 
-- `core/solvers/`
-- `core/ops_builder.py`
-- modules de conversion et extraction associes.
+- `core/application/ports/solver_port.py`
+- `core/application/ports/mesh_generator_port.py`
+- `core/application/ports/plugin_loader_port.py`
+- `core/application/ports/connection_design_port.py`
+- adaptateurs dans `core/adapters/`
 
 But :
 
@@ -148,6 +177,7 @@ But :
 - pouvoir changer de moteur sans casser l'interface,
 - tester PyNite et OpenSeesPy avec les mêmes cas,
 - préparer les exports et checks Eurocodes sur une structure de résultats commune.
+- permettre des plugins installables sans refonte de la GUI.
 
 ---
 
@@ -162,7 +192,10 @@ But :
 - `core/loads.py` : charges et combinaisons.
 - `core/self_weight.py` : poids propre automatique.
 - `core/results.py` : résultats communs.
-- `core/solvers/` : abstraction PyNite / OpenSeesPy.
+- `core/application/` : ports, DTOs, cas d'usage.
+- `core/adapters/` : adaptateurs solveurs et maillage.
+- `core/plugins/` : manifestes, registry, loaders.
+- `core/solvers/` : backends historiques et compatibilite.
 
 ### 5.2 Interface graphique
 
@@ -200,12 +233,13 @@ Résultats a presenter de maniere unifiee :
 | S4 | Charges, appuis, combinaisons | Bien avancé | Gestionnaires GUI, poids propre automatique, édition et affectation a consolider. |
 | S5 | Résultats et post-traitement | En cours avancé | Tableaux, diagrammes, cas/combis, signes, diagrammes locaux mono-barre ; synthèse et export CSV a finir. |
 | S6 | Multi-solveur | En cours | PyNite par défaut, OpenSeesPy optionnel, parite en validation. |
-| S7 | Éléments surfaciques | À faire | Dalles, voiles, coques. |
-| S8 | Vérifications EC2/EC3 | À faire | À lancer après stabilisation des résultats. |
+| S7 | Éléments surfaciques | En cours | Plaques macro quadrangulaires, maillage interne et mapping résultats en place ; limites à documenter. |
+| S8 | Vérifications EC2/EC3 | À faire | À lancer après stabilisation des résultats et des plugins métier. |
 | S9 | Sismique | À faire | Modal spectral plus tard. |
 | S10 | Exports et packaging | À faire | CSV/PDF/DXF, installateur Windows. |
 | S11 | Modèleur graphique | En cours avancé | Grille, dessin, sélection, menu contextuel 3D, double vue, caméra et lisibilité en consolidation. |
 | S12 | Productivite | À faire | Copier, deplacer, undo/redo, import DXF. |
+| S13 | Architecture plugin | En cours | Ports/adaptateurs, manifestes, loader opt-in, host `connections.design`. |
 
 ---
 
@@ -261,6 +295,16 @@ Actions :
 - isoler les conversions specifiques PyNite,
 - isoler les conversions specifiques OpenSeesPy,
 - maintenir une suite de tests de parite.
+
+### 8.1 bis Architecture plugin
+
+Actions :
+
+- garder les manifestes de plugins generiques (`kind`, `extension_points`, `capabilities`, `tags`) ;
+- ne jamais executer de code externe pendant la simple decouverte ;
+- charger les plugins uniquement via un loader explicite ;
+- brancher progressivement les points d'extension applicatifs ;
+- premier point actif : `connections.design` pour les assemblages.
 
 ### 8.2 Poids propre
 
@@ -362,7 +406,7 @@ Avant tag :
 5. Build Windows teste sur une installation propre.
 6. Notes de version avec limites connues et responsabilite utilisateur.
 
-### 9.7 Progress au 10 mai 2026
+### 9.7 Progress au 23 mai 2026
 
 Fait :
 
@@ -386,9 +430,14 @@ Fait :
 8. La version applicative est preparee en `0.1.0`.
 9. Les notes de release `RELEASE_NOTES_0.1.0.md` sont ajoutees.
 10. La détection d'OpenSeesPy externe est corrigee sans embarquer le solveur dans le bundle.
-11. Validation courante : `ruff check core gui tests` OK et `pytest -q` OK avec 279 tests passes.
+11. Validation courante : `pytest -q` OK avec 460 tests passes.
 12. Build Windows relance avec succes et executable teste au démarrage.
 13. Compatibilité Windows clarifiée après test VM : Windows 10/11 cible, Windows 7 hors support.
+14. Architecture applicative progressive ajoutee : ports, use cases, facade `ApplicationServices`.
+15. Registry solveurs de type plugin interne ajoute pour PyNite et OpenSeesPy.
+16. Decouverte de plugins installes par manifeste sans execution de code externe.
+17. Loader `ImportlibPluginLoader` opt-in ajoute pour les plugins explicitement actives.
+18. Port et host `connections.design` ajoutes pour les futurs modules d'assemblages.
 
 Reste à faire avant release :
 
@@ -403,35 +452,42 @@ Reste à faire avant release :
 
 ## 10. Ordre de travail recommande
 
-### Étape 1 - Résultats propres
+### Étape 1 - Architecture plugin utilisable
+
+- Ajouter un exemple minimal de plugin externe `connections.ec3`.
+- Documenter le format de manifeste.
+- Ajouter une petite vue/commande de diagnostic des plugins installes.
+- Garder le chargement externe opt-in.
+
+### Étape 2 - Résultats propres
 
 - Onglet Synthèse.
 - Export CSV.
 - Nettoyage tableaux.
 - Cas/combinaisons partout.
 
-### Étape 2 - Affectation par lot
+### Étape 3 - Affectation par lot
 
 - Sections sur sélection.
 - Appuis sur sélection.
 - Charges sur sélection.
 - Edition multiple.
 
-### Étape 3 - Validation calcul
+### Étape 4 - Validation calcul
 
 - Cas analytiques simples.
 - Comparaison PyNite / OpenSeesPy.
 - Comparaison avec references type OpsVis.
 - Documentation des conventions.
 
-### Étape 4 - Premiers checks métier
+### Étape 5 - Premiers checks métier
 
 - EC2 flexion simple.
 - EC2 effort normal/flexion simplifie.
 - EC3 contraintes simples.
 - Ratios d'utilisation dans l'interface.
 
-### Étape 5 - Exports
+### Étape 6 - Exports
 
 - CSV résultats.
 - PDF rapport simple.
@@ -468,7 +524,7 @@ Le jalon est atteint quand :
 - une synthèse donne les valeurs critiques,
 - un export CSV simple est disponible.
 
-état au 10 mai 2026 :
+Etat au 23 mai 2026 :
 
 - PyNite par défaut : en place,
 - poids propre automatique : en place,
@@ -481,7 +537,9 @@ Le jalon est atteint quand :
 - titre de fenêtre : corrigé après ouverture/enregistrement,
 - version cible : 0.1.0,
 - lint global `ruff` : vert,
-- suite de tests : `pytest -q` vert avec 279 tests passes,
+- suite de tests : `pytest -q` vert avec 460 tests passes,
+- architecture plugin : en place pour les solveurs internes et le point `connections.design`,
+- plugin assemblages : contrat applicatif pret, implementation externe a creer,
 - synthèse résultats : à faire,
 - export CSV simple : à faire.
 
@@ -493,4 +551,4 @@ Projet open source sous licence LGPL-3.0-only.
 
 ---
 
-*Dernière mise à jour : 10 mai 2026*
+*Dernière mise à jour : 23 mai 2026*
