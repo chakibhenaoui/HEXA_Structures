@@ -5,7 +5,10 @@ from __future__ import annotations
 from dataclasses import dataclass
 from typing import TYPE_CHECKING
 
+from core.results import ElementResult
+
 if TYPE_CHECKING:
+    from core.bar_mesher import GeneratedBarMesh
     from core.model_data import ProjectModel
     from core.plate_mesher import GeneratedPlateMesh
 
@@ -65,6 +68,16 @@ def map_analysis_results_to_user_results(
     """Map analysis results to user results."""
     user_node_tags = set(user_project.nodes)
     user_element_tags = set(user_project.elements)
+    generated_bar_meshes: dict[int, "GeneratedBarMesh"] = getattr(
+        analysis_project,
+        "generated_bar_meshes",
+        {},
+    ) or {}
+    generated_bar_segment_tags = {
+        int(segment_tag)
+        for mesh in generated_bar_meshes.values()
+        for segment_tag in mesh.segment_tags
+    }
     generated_surface_tags = {
         int(surface_tag)
         for mesh in generated_plate_meshes.values()
@@ -90,7 +103,18 @@ def map_analysis_results_to_user_results(
         int(tag): result
         for tag, result in raw_results.get("element_forces", {}).items()
         if int(tag) in user_element_tags
+        and int(tag) not in generated_bar_segment_tags
     }
+    for source_tag, mesh in sorted(generated_bar_meshes.items()):
+        if int(source_tag) not in user_element_tags:
+            continue
+        result = _aggregate_generated_bar_result(
+            int(source_tag),
+            mesh,
+            raw_results,
+        )
+        if result is not None:
+            user_element_forces[int(source_tag)] = result
     user_surface_results = {
         int(tag): result
         for tag, result in raw_results.get("surface_results", {}).items()
@@ -143,6 +167,8 @@ def map_analysis_results_to_user_results(
                 )
                 for plate_tag, mesh in generated_plate_meshes.items()
             },
+            "generated_bar_count": len(generated_bar_meshes),
+            "generated_bar_segment_count": len(generated_bar_segment_tags),
             "surface_results_available": bool(user_surface_results or plate_results),
         }
     )
@@ -164,13 +190,47 @@ def map_analysis_results_to_user_results(
                 "reactions": raw_results.get("reactions", {}),
                 "element_forces": raw_results.get("element_forces", {}),
                 "surface_results": raw_results.get("surface_results", {}),
+                "generated_bar_meshes": generated_bar_meshes,
                 "generated_node_count": len(generated_node_tags - user_node_tags),
                 "generated_surface_count": len(generated_surface_tags),
+                "generated_bar_segment_count": len(generated_bar_segment_tags),
             },
             "result_context": context,
         }
     )
     return mapped
+
+
+def _aggregate_generated_bar_result(
+    source_tag: int,
+    mesh: "GeneratedBarMesh",
+    raw_results: dict,
+) -> ElementResult | None:
+    segment_results = [
+        raw_results.get("element_forces", {}).get(int(segment_tag))
+        for segment_tag in mesh.segment_tags
+    ]
+    segment_results = [result for result in segment_results if result is not None]
+    if not segment_results:
+        return None
+
+    result = ElementResult(tag=int(source_tag))
+    for low_attr, high_attr in (
+        ("n_i", "n_j"),
+        ("vy_i", "vy_j"),
+        ("vz_i", "vz_j"),
+        ("t_i", "t_j"),
+        ("my_i", "my_j"),
+        ("mz_i", "mz_j"),
+    ):
+        values = [
+            float(getattr(segment_result, attr, 0.0))
+            for segment_result in segment_results
+            for attr in (low_attr, high_attr)
+        ]
+        setattr(result, low_attr, min(values))
+        setattr(result, high_attr, max(values))
+    return result
 
 
 def _aggregate_plate_result(

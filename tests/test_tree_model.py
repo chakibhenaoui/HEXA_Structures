@@ -5,6 +5,7 @@ os.environ.setdefault("QT_QPA_PLATFORM", "offscreen")
 from PySide6.QtWidgets import QApplication
 
 from core.model_data import CombinationData, LoadData, ProjectModel
+import gui.widgets.tree_model as tree_model_module
 from gui.widgets.tree_model import ModelTree
 
 
@@ -75,3 +76,53 @@ def test_model_tree_surface_double_click_requests_edit() -> None:
     tree._on_item_double_clicked(tree._root_surfaces.child(0), 0)
 
     assert edits == [("surface", 1)]
+
+
+def test_model_tree_surface_context_menu_can_request_delete(monkeypatch) -> None:
+    _app()
+    tree = ModelTree()
+    tree.refresh(_project_with_tree_content())
+    surface_item = tree._root_surfaces.child(0)
+    deletes: list[tuple[str, int]] = []
+    tree.delete_requested.connect(lambda kind, tag: deletes.append((kind, tag)))
+
+    class _FakeSignal:
+        def __init__(self) -> None:
+            self.slot = None
+
+        def connect(self, slot) -> None:
+            self.slot = slot
+
+    class _FakeAction:
+        def __init__(self, text: str) -> None:
+            self._text = text
+            self.triggered = _FakeSignal()
+
+        def text(self) -> str:
+            return self._text
+
+    class _FakeMenu:
+        def __init__(self, _parent=None) -> None:
+            self._actions: list[_FakeAction] = []
+
+        def addAction(self, text: str) -> _FakeAction:
+            action = _FakeAction(text)
+            self._actions.append(action)
+            return action
+
+        def actions(self) -> list[_FakeAction]:
+            return self._actions
+
+        def exec(self, _pos) -> _FakeAction | None:
+            for action in self._actions:
+                if action.text().startswith("Supprimer"):
+                    action.triggered.slot()
+                    return action
+            return None
+
+    monkeypatch.setattr(tree_model_module, "QMenu", _FakeMenu)
+    monkeypatch.setattr(ModelTree, "itemAt", lambda _self, _pos: surface_item)
+
+    tree._on_context_menu(tree.visualItemRect(surface_item).center())
+
+    assert deletes == [("surface", 1)]

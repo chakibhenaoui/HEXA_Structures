@@ -311,11 +311,10 @@ class ModelTree(QTreeWidget):
                 act_edit.triggered.connect(
                     lambda: self.edit_requested.emit(kind_str, tag)
                 )
-            else:
-                act_del = menu.addAction(f"Supprimer {item.text(0)}")
-                act_del.triggered.connect(
-                    lambda: self.delete_requested.emit(kind_str, tag)
-                )
+            act_del = menu.addAction(f"Supprimer {item.text(0)}")
+            act_del.triggered.connect(
+                lambda: self.delete_requested.emit(kind_str, tag)
+            )
 
         if menu.actions():
             menu.exec(self.viewport().mapToGlobal(pos))

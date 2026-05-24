@@ -7,6 +7,8 @@ from dataclasses import dataclass
 from typing import TYPE_CHECKING
 
 from core.application.ports import GeneratedPlateMeshPort, MeshGeneratorPort
+from core.bar_mesher import generate_coplanar_bar_meshes
+from core.geometry.plate_intersections import detect_plate_intersections
 from core.model_data import NodeData, PlateEdgeSupportData, SurfaceLoad
 
 if TYPE_CHECKING:
@@ -22,6 +24,11 @@ class BuildAnalysisModel:
     def execute(self, project: "ProjectModel") -> "ProjectModel":
         """Return a calculation-ready copy of the user project."""
         analysis_project = deepcopy(project)
+        plate_intersection_reports = {
+            int(plate.tag): detect_plate_intersections(project, plate)
+            for plate in project.plate_regions.values()
+        }
+        setattr(analysis_project, "plate_intersection_reports", plate_intersection_reports)
         generated_meshes: dict[int, GeneratedPlateMeshPort] = {}
 
         for plate in project.plate_regions.values():
@@ -35,6 +42,13 @@ class BuildAnalysisModel:
             _propagate_plate_edge_supports(project, analysis_project, mesh)
 
         setattr(analysis_project, "generated_plate_meshes", generated_meshes)
+        generated_bar_meshes = generate_coplanar_bar_meshes(
+            project,
+            analysis_project,
+            generated_meshes,
+            plate_intersection_reports,
+        )
+        setattr(analysis_project, "generated_bar_meshes", generated_bar_meshes)
         return analysis_project
 
 

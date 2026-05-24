@@ -16,6 +16,8 @@ class GeneratedPlateMeshPort(Protocol):
     surface_tags: list[int]
     mesh_nx: int
     mesh_ny: int
+    u_values: tuple[float, ...]
+    v_values: tuple[float, ...]
 
 
 class MeshGeneratorPort(Protocol):

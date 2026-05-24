@@ -102,6 +102,7 @@ class OpenSeesBackend:
         self.analysis_project = project
         self.builder = OpsBuilder(project)
         self.generated_plate_meshes = {}
+        self.generated_bar_meshes = {}
 
     def run_static(
         self,
@@ -195,12 +196,18 @@ class OpenSeesBackend:
             "generated_plate_meshes",
             {},
         )
+        self.generated_bar_meshes = getattr(
+            self.analysis_project,
+            "generated_bar_meshes",
+            {},
+        )
         self.builder = OpsBuilder(self.analysis_project)
 
     def _attach_analysis_context(self, results: dict) -> None:
         """Handle attach analysis context."""
         results["analysis_project"] = self.analysis_project
         results["generated_plate_meshes"] = self.generated_plate_meshes
+        results["generated_bar_meshes"] = self.generated_bar_meshes
         context = results.setdefault("result_context", {})
         context["user_node_count"] = len(self.project.nodes)
         context["analysis_node_count"] = len(self.analysis_project.nodes)
@@ -225,6 +232,10 @@ class OpenSeesBackend:
             )
             for plate_tag, mesh in self.generated_plate_meshes.items()
         }
+        context["generated_bar_count"] = len(self.generated_bar_meshes)
+        context["generated_bar_segment_count"] = sum(
+            len(mesh.segment_tags) for mesh in self.generated_bar_meshes.values()
+        )
 
     def sample_diagram_component(
         self,

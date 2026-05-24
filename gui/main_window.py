@@ -33,6 +33,7 @@ from PySide6.QtWidgets import (
 )
 
 from config.settings import APP_NAME, APP_VERSION, Settings
+from core.geometry.plate_intersections import detect_plate_intersections
 from core.model_data import (
     ElementLoad,
     NodeData,
@@ -49,6 +50,8 @@ from core.model_data import (
 from core.plate_mesh_settings import effective_plate_mesh_divisions
 from core.selection_copy import build_copy_instance_points, selection_anchor_point
 from core.solvers import AnalysisFeature, SolverEngine, SolverManager
+from gui.dialogs.plate_mesh_dlg import PlateMeshDialog
+from gui.dialogs.plate_region_properties_dlg import PlateRegionPropertiesDialog
 from gui.resources import app_resource_path
 from gui.widgets.tree_model import ModelTree
 from gui.widgets.property_panel import PropertyPanel
@@ -3106,7 +3109,63 @@ class MainWindow(QMainWindow):
             f"{len(plate.corner_node_tags)} noeud(s), section T{section_tag}, "
             "maillage automatique."
         )
+        self._log_plate_intersection_diagnostic(plate)
         return plate
+
+    def _log_plate_intersection_diagnostic(self, plate) -> None:
+        """Log non-blocking plate intersection diagnostics."""
+        try:
+            report = detect_plate_intersections(self.project, plate)
+        except ValueError as exc:
+            self._log(f"Diagnostic plaque P{plate.tag} indisponible : {exc}")
+            return
+
+        message = (
+            f"Plaque P{plate.tag} : {len(report.node_hits)} noeud(s) existant(s) "
+            f"detecte(s), {len(report.bar_hits)} barre(s) intersectee(s)."
+        )
+        self._log(message)
+        try:
+            status_bar = self.statusBar()
+        except RuntimeError:
+            status_bar = None
+        if status_bar is not None:
+            status_bar.showMessage(message, 5000)
+        for warning in report.warnings:
+            self._log(f"Diagnostic plaque P{plate.tag} : {warning}")
+
+    def _log_analysis_mesh_diagnostic(self) -> None:
+        """Log analysis-only mesh enrichment diagnostics."""
+        contexts = [
+            results.get("result_context", {})
+            for results in (getattr(self, "_all_results", {}) or {}).values()
+            if isinstance(results, dict)
+        ]
+        if not contexts:
+            return
+
+        def _safe_int(value) -> int:
+            try:
+                return int(value or 0)
+            except (TypeError, ValueError):
+                return 0
+
+        generated_bar_count = max(
+            _safe_int(context.get("generated_bar_count"))
+            for context in contexts
+        )
+        generated_bar_segment_count = max(
+            _safe_int(context.get("generated_bar_segment_count"))
+            for context in contexts
+        )
+        if generated_bar_count <= 0:
+            return
+
+        self._log(
+            "Maillage d'analyse : "
+            f"{generated_bar_count} barre(s) coplanaire(s) integree(s) "
+            f"en {generated_bar_segment_count} segment(s) interne(s)."
+        )
 
     def _validate_surface_definition(
         self,
@@ -3489,23 +3548,14 @@ class MainWindow(QMainWindow):
             act_diagrams.setToolTip(
                 "Lancez d'abord une analyse de plaques pour afficher les diagrammes."
             )
-        act_mesh_auto = None
-        act_mesh_user = None
-        if tag in getattr(self.project, "plate_regions", {}):
-            plate = self.project.plate_regions[tag]
-            mesh_nx, mesh_ny = effective_plate_mesh_divisions(self.project, plate)
-            mesh_mode = normalize_plate_mesh_mode(getattr(plate, "mesh_mode", None))
+        is_plate_surface = (
+            tag in getattr(self.project, "plate_regions", {})
+            or tag in getattr(self.project, "surface_elements", {})
+        )
+        plate_actions: dict[str, QAction] = {}
+        if is_plate_surface:
             menu.addSeparator()
-            menu_mesh = menu.addMenu("Maillage de calcul")
-            act_mesh_auto = menu_mesh.addAction("Automatique")
-            act_mesh_auto.setCheckable(True)
-            act_mesh_auto.setChecked(mesh_mode == PLATE_MESH_MODE_AUTO)
-            act_mesh_user = menu_mesh.addAction("Utilisateur...")
-            act_mesh_user.setCheckable(True)
-            act_mesh_user.setChecked(mesh_mode == PLATE_MESH_MODE_USER)
-            menu_mesh.addSeparator()
-            act_mesh_info = menu_mesh.addAction(f"Maillage retenu : {mesh_nx} x {mesh_ny}")
-            act_mesh_info.setEnabled(False)
+            plate_actions = self._add_plate_context_menu(menu, tag)
         menu.addSeparator()
         act_properties = menu.addAction("Propriétés")
 
@@ -3518,12 +3568,55 @@ class MainWindow(QMainWindow):
             self._copy_selected_objects()
         elif chosen is act_diagrams:
             self._show_surface_result_map(surface_tag=tag)
-        elif chosen is not None and chosen is act_mesh_auto:
+        elif chosen is not None and chosen is plate_actions.get("mesh_auto"):
             self._set_plate_mesh_auto(tag)
-        elif chosen is not None and chosen is act_mesh_user:
+        elif chosen is not None and chosen is plate_actions.get("mesh_user"):
             self._set_plate_mesh_user_from_menu(tag)
         elif chosen is act_properties:
             self._show_surface_properties(tag)
+
+    def _add_plate_context_menu(self, menu: QMenu, tag: int) -> dict[str, QAction]:
+        """Add plate actions to a context menu."""
+        is_macro_plate = int(tag) in self.project.plate_regions
+        if is_macro_plate:
+            plate = self.project.plate_regions[int(tag)]
+            mesh_nx, mesh_ny = effective_plate_mesh_divisions(self.project, plate)
+            mesh_mode = normalize_plate_mesh_mode(getattr(plate, "mesh_mode", None))
+            menu_plate = menu.addMenu("Plaque macro")
+        else:
+            mesh_nx, mesh_ny = 1, 1
+            mesh_mode = ""
+            menu_plate = menu.addMenu("Plaque")
+
+        act_mesh_auto = menu_plate.addAction("Maillage automatique")
+        act_mesh_auto.setCheckable(True)
+        act_mesh_auto.setChecked(mesh_mode == PLATE_MESH_MODE_AUTO)
+        act_mesh_user = menu_plate.addAction("Nombre de mailles...")
+        act_mesh_user.setCheckable(True)
+        act_mesh_user.setChecked(mesh_mode == PLATE_MESH_MODE_USER)
+        if not is_macro_plate:
+            for action in (act_mesh_auto, act_mesh_user):
+                action.setEnabled(False)
+                action.setToolTip("Disponible uniquement pour une plaque macro.")
+        menu_plate.addSeparator()
+        act_mesh_info = menu_plate.addAction(f"Maillage retenu : {mesh_nx} x {mesh_ny}")
+        act_mesh_info.setEnabled(False)
+        menu_plate.addSeparator()
+
+        disabled_actions = [
+            menu_plate.addAction("Integrer une barre diagonale..."),
+            menu_plate.addAction("Creer un noeud a l'intersection..."),
+            menu_plate.addAction("Decouper une barre traversante..."),
+            menu_plate.addAction("Maillage non structure..."),
+        ]
+        for action in disabled_actions:
+            action.setEnabled(False)
+            action.setToolTip("Fonction a venir.")
+
+        return {
+            "mesh_auto": act_mesh_auto,
+            "mesh_user": act_mesh_user,
+        }
 
     def _set_plate_mesh_auto(self, tag: int) -> None:
         """Set plate mesh auto."""
@@ -3546,28 +3639,15 @@ class MainWindow(QMainWindow):
         plate = self.project.plate_regions.get(tag)
         if plate is None:
             return
-        nx, ok = QInputDialog.getInt(
+        dlg = PlateMeshDialog(
             self,
-            "Maillage utilisateur",
-            "Nombre de mailles en X local :",
-            int(plate.mesh_nx),
-            1,
-            200,
-            1,
+            mesh_nx=int(plate.mesh_nx),
+            mesh_ny=int(plate.mesh_ny),
+            plate_tag=tag,
         )
-        if not ok:
+        if dlg.exec() != QDialog.Accepted:
             return
-        ny, ok = QInputDialog.getInt(
-            self,
-            "Maillage utilisateur",
-            "Nombre de mailles en Y local :",
-            int(plate.mesh_ny),
-            1,
-            200,
-            1,
-        )
-        if not ok:
-            return
+        nx, ny = dlg.values()
         plate.mesh_mode = PLATE_MESH_MODE_USER
         plate.mesh_nx = int(nx)
         plate.mesh_ny = int(ny)
@@ -3663,7 +3743,10 @@ class MainWindow(QMainWindow):
         }
         selected_surfaces = {
             int(tag) for tag in (surface_tags or [])
-            if int(tag) in self.project.surface_elements
+            if (
+                int(tag) in self.project.surface_elements
+                or int(tag) in self.project.plate_regions
+            )
         }
 
         if not selected_nodes and not selected_elements and not selected_surfaces:
@@ -3678,6 +3761,11 @@ class MainWindow(QMainWindow):
             for tag, surface in self.project.surface_elements.items()
             if any(node_tag in selected_nodes for node_tag in surface.node_tags)
         }
+        connected_surfaces.update(
+            tag
+            for tag, plate in self.project.plate_regions.items()
+            if any(node_tag in selected_nodes for node_tag in plate.corner_node_tags)
+        )
         all_elements = selected_elements | connected_elements
         all_surfaces = selected_surfaces | connected_surfaces
         auto_deleted = all_elements - selected_elements
@@ -4935,14 +5023,6 @@ class MainWindow(QMainWindow):
         tag = int(tag)
         if not self._select_surface_for_context(tag):
             return
-        if tag in self.project.plate_regions and tag not in self.project.surface_elements:
-            QMessageBox.information(
-                self,
-                "Plaque utilisateur",
-                "Les proprietes de cette plaque macro sont affichees dans le panneau lateral.",
-            )
-            return
-        from gui.dialogs.surface_properties_dlg import SurfacePropertiesDialog
 
         case_name = self._current_case if self._current_case in self._all_results else None
         if self._all_results:
@@ -4955,6 +5035,19 @@ class MainWindow(QMainWindow):
                 next(iter(self._all_results)),
             )
         case_results = self._all_results.get(case_name or "", None)
+        if tag in self.project.plate_regions and tag not in self.project.surface_elements:
+            dlg = PlateRegionPropertiesDialog(
+                self,
+                self.project,
+                tag,
+                case_name=case_name,
+                case_results=case_results,
+            )
+            dlg.exec()
+            return
+
+        from gui.dialogs.surface_properties_dlg import SurfacePropertiesDialog
+
         dlg = SurfacePropertiesDialog(
             self,
             self.project,
@@ -5167,14 +5260,16 @@ class MainWindow(QMainWindow):
             )
             return
 
-        surface = self.project.surface_elements.get(tag)
-        if surface is None:
+        is_surface = tag in self.project.surface_elements
+        is_plate = tag in self.project.plate_regions
+        if not is_surface and not is_plate:
             return
+        label = f"Plaque P{tag}" if is_plate and not is_surface else f"Surface S{tag}"
 
         reply = QMessageBox.question(
             self,
             "Confirmer la suppression",
-            f"Supprimer la surface S{tag} ?",
+            f"Supprimer {label} ?",
             QMessageBox.Yes | QMessageBox.No,
             QMessageBox.No,
         )
@@ -5192,7 +5287,7 @@ class MainWindow(QMainWindow):
         self._mark_project_modified()
         self.properties.clear_display()
         self._refresh(preserve_view=True)
-        self._log(f"Surface S{tag} supprimée.")
+        self._log(f"{label} supprimée.")
 
     # -- File actions ---------------------------------------------------------
 
@@ -5901,6 +5996,7 @@ class MainWindow(QMainWindow):
                     n_fail += 1
 
             self._log(f"═══ Terminé : {n_ok} réussi(s), {n_fail} échoué(s) ═══")
+            self._log_analysis_mesh_diagnostic()
 
             self._refresh_result_actions()
 

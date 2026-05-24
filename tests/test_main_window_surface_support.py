@@ -14,6 +14,7 @@ from core.analysis_model_builder import build_analysis_model
 from core.model_data import (
     ElementData,
     LoadData,
+    PlateEdgeSupportData,
     PlateSurfaceLoadData,
     ProjectModel,
     SurfaceLoad,
@@ -123,6 +124,7 @@ class _FakeContextMenu:
 
     def __init__(self, _parent=None) -> None:
         self.actions: list[_FakeMenuAction | None] = []
+        self.submenus: dict[str, _FakeContextMenu] = {}
         _FakeContextMenu.last = self
 
     def addAction(self, text: str) -> _FakeMenuAction:  # noqa: N802 - Qt-style name
@@ -133,6 +135,7 @@ class _FakeContextMenu:
     def addMenu(self, text: str) -> "_FakeContextMenu":  # noqa: N802 - Qt-style name
         menu = _FakeContextMenu()
         menu.title = text
+        self.submenus[text] = menu
         self.actions.append(_FakeMenuAction(text))
         _FakeContextMenu.last = self
         return menu
@@ -188,6 +191,25 @@ def _make_window_with_surface_project() -> MainWindow:
     return window
 
 
+def _make_window_with_plate_project() -> MainWindow:
+    window = MainWindow.__new__(MainWindow)
+    project = ProjectModel()
+    project.add_node(0.0, 0.0, 0.0)
+    project.add_node(5.0, 0.0, 0.0)
+    project.add_node(5.0, 4.0, 0.0)
+    project.add_node(0.0, 4.0, 0.0)
+    project.add_material("Beton C30", "concrete", "C30/37")
+    surface_section = project.add_section(
+        "Dalle 20 cm",
+        "surface",
+        1,
+        properties={"thickness": 0.20},
+    )
+    project.add_plate_region((1, 2, 3, 4), section_tag=surface_section.tag)
+    window.project = project
+    return window
+
+
 def test_connected_surface_tags_for_node_returns_matching_surfaces() -> None:
     window = _make_window_with_surface_project()
 
@@ -204,6 +226,23 @@ def test_delete_surface_elements_by_tags_removes_requested_surfaces() -> None:
 
     assert window.project.surface_elements == {}
     assert window.project.surface_loads == []
+
+
+def test_delete_surface_elements_by_tags_removes_requested_plate_regions() -> None:
+    window = _make_window_with_plate_project()
+    window.project.loads[1] = LoadData(tag=1, name="G", load_type="permanent")
+    window.project.plate_surface_loads.append(
+        PlateSurfaceLoadData(load_tag=1, plate_tag=1, qz=-3.0)
+    )
+    window.project.plate_edge_supports.append(
+        PlateEdgeSupportData(plate_tag=1, edge="12", fixities=(1, 1, 1, 0, 0, 0))
+    )
+
+    window._delete_surface_elements_by_tags([1])
+
+    assert window.project.plate_regions == {}
+    assert window.project.plate_surface_loads == []
+    assert window.project.plate_edge_supports == []
 
 
 def test_delete_selected_objects_removes_connected_surfaces(monkeypatch) -> None:
@@ -232,6 +271,32 @@ def test_delete_selected_objects_removes_connected_surfaces(monkeypatch) -> None
     assert any("surface" in message.lower() for message in logs)
 
 
+def test_delete_selected_objects_removes_connected_plate_regions(monkeypatch) -> None:
+    window = _make_window_with_plate_project()
+    window.tree = _DummyTree()
+    window.properties = _DummyProperties()
+    window.model_view = None
+    window.secondary_view = None
+
+    refresh_calls: list[bool] = []
+    mark_calls: list[bool] = []
+    logs: list[str] = []
+
+    window._mark_project_modified = lambda: mark_calls.append(True)
+    window._refresh = lambda preserve_view=False: refresh_calls.append(preserve_view)
+    window._log = lambda message: logs.append(message)
+
+    monkeypatch.setattr(QMessageBox, "question", lambda *args, **kwargs: QMessageBox.Yes)
+
+    window._delete_selected_objects([1], [])
+
+    assert 1 not in window.project.nodes
+    assert window.project.plate_regions == {}
+    assert mark_calls == [True]
+    assert refresh_calls == [True]
+    assert any("surface" in message.lower() for message in logs)
+
+
 def test_delete_selected_objects_removes_explicit_surface_selection(monkeypatch) -> None:
     window = _make_window_with_surface_project()
     window.tree = _DummyTree()
@@ -255,6 +320,56 @@ def test_delete_selected_objects_removes_explicit_surface_selection(monkeypatch)
     assert mark_calls == [True]
     assert refresh_calls == [True]
     assert any("surface" in message.lower() for message in logs)
+
+
+def test_delete_selected_objects_removes_explicit_plate_selection(monkeypatch) -> None:
+    window = _make_window_with_plate_project()
+    window.tree = _DummyTree()
+    window.properties = _DummyProperties()
+    window.model_view = _DummyView()
+    window.secondary_view = _DummyView()
+
+    refresh_calls: list[bool] = []
+    mark_calls: list[bool] = []
+    logs: list[str] = []
+
+    window._mark_project_modified = lambda: mark_calls.append(True)
+    window._refresh = lambda preserve_view=False: refresh_calls.append(preserve_view)
+    window._log = lambda message: logs.append(message)
+
+    monkeypatch.setattr(QMessageBox, "question", lambda *args, **kwargs: QMessageBox.Yes)
+
+    window._delete_selected_objects([], [], [1])
+
+    assert window.project.plate_regions == {}
+    assert mark_calls == [True]
+    assert refresh_calls == [True]
+    assert any("surface" in message.lower() for message in logs)
+
+
+def test_delete_surface_from_menu_removes_plate_region(monkeypatch) -> None:
+    window = _make_window_with_plate_project()
+    window.tree = _DummyTree()
+    window.properties = _DummyProperties()
+    window.model_view = _DummyView()
+    window.secondary_view = _DummyView()
+
+    refresh_calls: list[bool] = []
+    mark_calls: list[bool] = []
+    logs: list[str] = []
+
+    window._mark_project_modified = lambda: mark_calls.append(True)
+    window._refresh = lambda preserve_view=False: refresh_calls.append(preserve_view)
+    window._log = lambda message: logs.append(message)
+
+    monkeypatch.setattr(QMessageBox, "question", lambda *args, **kwargs: QMessageBox.Yes)
+
+    window._delete_surface_from_menu(1)
+
+    assert window.project.plate_regions == {}
+    assert mark_calls == [True]
+    assert refresh_calls == [True]
+    assert any("plaque p1" in message.lower() for message in logs)
 
 
 def test_line_section_items_and_draw_combo_exclude_surface_sections() -> None:
@@ -329,6 +444,27 @@ def test_add_surface_from_selection_creates_surface_and_selects_it() -> None:
     assert window.tree.selected_surface_tag == 1
     assert window.properties.last_surface_tag == 1
     assert any("Plaque P1" in message for message in logs)
+
+
+def test_analysis_mesh_diagnostic_logs_generated_bar_segments() -> None:
+    window = MainWindow.__new__(MainWindow)
+    logs: list[str] = []
+    window._log = lambda message: logs.append(message)
+    window._all_results = {
+        "G (cas 1)": {
+            "result_context": {
+                "generated_bar_count": 1,
+                "generated_bar_segment_count": 4,
+            }
+        }
+    }
+
+    window._log_analysis_mesh_diagnostic()
+
+    assert logs == [
+        "Maillage d'analyse : 1 barre(s) coplanaire(s) integree(s) "
+        "en 4 segment(s) interne(s)."
+    ]
 
 
 def test_add_user_plate_region_rejects_line_section(monkeypatch) -> None:
@@ -553,14 +689,70 @@ def test_surface_context_menu_lists_expected_actions(monkeypatch) -> None:
         "Supprimer",
         "Copier",
         "Afficher diagrammes",
+        "Plaque",
         "Propriétés",
     ]
     assert actions[3].enabled is False
     assert "analyse" in actions[3].tooltip.lower()
+    plate_menu = menu.submenus["Plaque"]
+    plate_actions = [action for action in plate_menu.actions if action is not None]
+    assert [action.text for action in plate_actions] == [
+        "Maillage automatique",
+        "Nombre de mailles...",
+        "Maillage retenu : 1 x 1",
+        "Integrer une barre diagonale...",
+        "Creer un noeud a l'intersection...",
+        "Decouper une barre traversante...",
+        "Maillage non structure...",
+    ]
+    assert plate_actions[0].enabled is False
+    assert plate_actions[1].enabled is False
+    assert all(action.enabled is False for action in plate_actions[2:])
     assert window._selected_surface_tags == [1]
     assert window.tree.selected_surface_tag == 1
     assert window.properties.last_surface_tag == 1
     assert window.model_view.last_selected_args == (([], [], [1]), {"emit_signal": False})
+
+
+def test_macro_plate_context_menu_exposes_mesh_choice_and_disabled_future_actions(monkeypatch) -> None:
+    _app()
+    window = _make_window_with_plate_project()
+    window.tree = _DummyTree()
+    window.properties = _DummyProperties()
+    window.model_view = _DummyView()
+    window.secondary_view = None
+    window._all_results = {}
+    window._selected_node_tags = []
+    window._selected_element_tags = []
+    window._selected_surface_tags = []
+    window._refresh_model_management_menus = lambda: None
+
+    _FakeContextMenu.chosen_text = None
+    monkeypatch.setattr(main_window_module, "QMenu", _FakeContextMenu)
+
+    window._show_surface_context_menu(1, QPoint(12, 24))
+
+    menu = _FakeContextMenu.last
+    assert menu is not None
+    actions = [action for action in menu.actions if action is not None]
+    assert "Plaque macro" in [action.text for action in actions]
+    macro_menu = menu.submenus["Plaque macro"]
+    macro_actions = [action for action in macro_menu.actions if action is not None]
+
+    assert [action.text for action in macro_actions] == [
+        "Maillage automatique",
+        "Nombre de mailles...",
+        "Maillage retenu : 20 x 16",
+        "Integrer une barre diagonale...",
+        "Creer un noeud a l'intersection...",
+        "Decouper une barre traversante...",
+        "Maillage non structure...",
+    ]
+    assert macro_actions[0].enabled is True
+    assert macro_actions[1].enabled is True
+    assert macro_actions[2].enabled is False
+    assert all(action.enabled is False for action in macro_actions[3:])
+    assert all(action.tooltip == "Fonction a venir." for action in macro_actions[3:])
 
 
 def test_surface_context_menu_copy_uses_clicked_surface(monkeypatch) -> None:
@@ -673,19 +865,69 @@ def test_plate_mesh_user_context_action_prompts_for_divisions(monkeypatch) -> No
     window._mark_project_modified = lambda: None
     window._refresh = lambda preserve_view=False: None
     window._log = lambda message: None
-    answers = iter([(12, True), (10, True)])
-    monkeypatch.setattr(
-        main_window_module.QInputDialog,
-        "getInt",
-        lambda *args, **kwargs: next(answers),
-    )
+    dialog_calls: list[dict[str, int]] = []
+
+    class _AcceptedMeshDialog:
+        def __init__(self, _parent=None, **kwargs) -> None:
+            dialog_calls.append(dict(kwargs))
+
+        def exec(self) -> int:
+            return QDialog.Accepted
+
+        def values(self) -> tuple[int, int]:
+            return 12, 10
+
+    monkeypatch.setattr(main_window_module, "PlateMeshDialog", _AcceptedMeshDialog)
 
     window._set_plate_mesh_user_from_menu(plate.tag)
 
+    assert dialog_calls == [{"mesh_nx": 8, "mesh_ny": 8, "plate_tag": plate.tag}]
     assert plate.mesh_mode == "user"
     assert plate.mesh_nx == 12
     assert plate.mesh_ny == 10
     assert window.properties.last_surface_tag == plate.tag
+
+
+def test_macro_plate_properties_opens_dedicated_dialog(monkeypatch) -> None:
+    window = _make_window_with_plate_project()
+    window.tree = _DummyTree()
+    window.properties = _DummyProperties()
+    window.model_view = _DummyView()
+    window.secondary_view = None
+    window._selected_node_tags = []
+    window._selected_element_tags = []
+    window._selected_surface_tags = []
+    window._current_case = None
+    window._all_results = {}
+    window._refresh_model_management_menus = lambda: None
+    dialog_calls: list[dict[str, object]] = []
+
+    class _FakePlateRegionPropertiesDialog:
+        def __init__(self, parent, project, tag, **kwargs) -> None:
+            dialog_calls.append(
+                {
+                    "parent": parent,
+                    "project": project,
+                    "tag": tag,
+                    **kwargs,
+                }
+            )
+
+        def exec(self) -> int:
+            return QDialog.Accepted
+
+    monkeypatch.setattr(
+        main_window_module,
+        "PlateRegionPropertiesDialog",
+        _FakePlateRegionPropertiesDialog,
+    )
+
+    window._show_surface_properties(1)
+
+    assert len(dialog_calls) == 1
+    assert dialog_calls[0]["parent"] is window
+    assert dialog_calls[0]["project"] is window.project
+    assert dialog_calls[0]["tag"] == 1
 
 
 def test_surface_result_support_uses_analysis_model_for_macro_plate() -> None:
