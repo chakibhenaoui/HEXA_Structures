@@ -1256,7 +1256,7 @@ class MainWindow(QMainWindow):
         toolbar.setObjectName("toolbar_primary")
         toolbar.setMovable(False)
         toolbar.setFloatable(False)
-        toolbar.setIconSize(QSize(22, 22))
+        toolbar.setIconSize(QSize(30, 30))
         toolbar.setToolButtonStyle(Qt.ToolButtonIconOnly)
 
         self._apply_primary_toolbar_icons()
