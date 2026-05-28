@@ -6,6 +6,7 @@ Genere un executable Windows autonome incluant :
 - Python + toutes les dependances
 - PySide6, PyVista, VTK
 - Ressources (icones, profiles, templates)
+- Traductions Qt (i18n/*.qm)
 
 Important :
 - OpenSeesPy n'est pas redistribue dans l'executable.
@@ -48,6 +49,7 @@ a = Analysis(
     binaries=[],
     datas=[
         ("resources", "resources"),
+        ("i18n", "i18n"),
         ("gui/ui", "gui/ui"),
         *pyvista_datas,
         *qtpy_datas,

@@ -7,6 +7,7 @@ from PySide6.QtGui import QColor, QFont, QIcon, QPainter, QPen, QPixmap
 from PySide6.QtWidgets import QApplication, QSplashScreen
 
 from config.settings import APP_VERSION, Settings
+from gui.i18n.language_manager import LanguageManager
 from gui.resources import app_resource_path
 
 
@@ -100,6 +101,7 @@ def _update_splash(splash: QSplashScreen, message: str) -> None:
 def main():
     _configure_qt_opengl()
     app = QApplication(sys.argv)
+    app.setOrganizationName("HEXA Structures")
     app.setApplicationName("HEXA Structures")
     app_icon = QIcon(app_resource_path("resources", "icons", "hexa_structures.ico"))
     if not app_icon.isNull():
@@ -110,12 +112,16 @@ def main():
     _update_splash(splash, "Chargement des paramètres...")
 
     settings = Settings.load()
+    language_manager = LanguageManager(app=app)
+    if not language_manager.load_language(settings.gui.language, save=False):
+        language_manager.reset_to_default_language(save=False)
+    app._language_manager = language_manager
     _update_splash(splash, "Chargement des modules graphiques...")
 
     from gui.main_window import MainWindow
 
     _update_splash(splash, "Construction de l'interface...")
-    window = MainWindow(settings)
+    window = MainWindow(settings, language_manager=language_manager)
     if not app_icon.isNull():
         window.setWindowIcon(app_icon)
     _update_splash(splash, "Ouverture de HEXA Structures...")

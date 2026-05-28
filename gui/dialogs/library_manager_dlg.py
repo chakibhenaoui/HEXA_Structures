@@ -35,13 +35,14 @@ class MaterialManagerDialog(QDialog):
         sections: dict[int, SectionData] | None = None,
     ):
         super().__init__(parent)
-        self.setWindowTitle("Définir les matériaux")
+        self.setWindowTitle(self.tr("Définir les matériaux"))
         self.resize(760, 500)
 
         self._materials = deepcopy(materials or {})
         self._sections = deepcopy(sections or {})
 
         self._build_ui()
+        self.retranslate_ui()
         self._refresh_list()
 
     def _build_ui(self) -> None:
@@ -51,45 +52,45 @@ class MaterialManagerDialog(QDialog):
         content = QHBoxLayout()
         root.addLayout(content, 1)
 
-        grp_list = QGroupBox("Matériaux", self)
-        grp_list_lay = QVBoxLayout(grp_list)
-        self.list_items = QListWidget(grp_list)
+        self.grp_list = QGroupBox(self.tr("Matériaux"), self)
+        grp_list_lay = QVBoxLayout(self.grp_list)
+        self.list_items = QListWidget(self.grp_list)
         self.list_items.itemDoubleClicked.connect(
             lambda _item: self._modify_material()
         )
         grp_list_lay.addWidget(self.list_items)
-        content.addWidget(grp_list, 1)
+        content.addWidget(self.grp_list, 1)
 
-        grp_actions = QGroupBox("Cliquer pour :", self)
-        grp_actions_lay = QVBoxLayout(grp_actions)
+        self.grp_actions = QGroupBox(self.tr("Cliquer pour :"), self)
+        grp_actions_lay = QVBoxLayout(self.grp_actions)
 
-        self.btn_add_quick = QPushButton("Ajouter matériau rapide...", grp_actions)
+        self.btn_add_quick = QPushButton(self.tr("Ajouter matériau rapide..."), self.grp_actions)
         self.btn_add_quick.clicked.connect(self._add_material_quick)
         grp_actions_lay.addWidget(self.btn_add_quick)
 
-        self.btn_add = QPushButton("Ajouter matériau...", grp_actions)
+        self.btn_add = QPushButton(self.tr("Ajouter matériau..."), self.grp_actions)
         self.btn_add.clicked.connect(self._add_material)
         grp_actions_lay.addWidget(self.btn_add)
 
-        self.btn_copy = QPushButton("Ajouter copie du matériau...", grp_actions)
+        self.btn_copy = QPushButton(self.tr("Ajouter copie du matériau..."), self.grp_actions)
         self.btn_copy.clicked.connect(self._copy_material)
         grp_actions_lay.addWidget(self.btn_copy)
 
-        self.btn_edit = QPushButton("Modifier / Voir matériau...", grp_actions)
+        self.btn_edit = QPushButton(self.tr("Modifier / Voir matériau..."), self.grp_actions)
         self.btn_edit.clicked.connect(self._modify_material)
         grp_actions_lay.addWidget(self.btn_edit)
 
-        self.btn_delete = QPushButton("Supprimer matériau", grp_actions)
+        self.btn_delete = QPushButton(self.tr("Supprimer matériau"), self.grp_actions)
         self.btn_delete.clicked.connect(self._delete_material)
         grp_actions_lay.addWidget(self.btn_delete)
 
-        self.chk_advanced = QCheckBox("Afficher les propriétés avancées", grp_actions)
+        self.chk_advanced = QCheckBox(self.tr("Afficher les propriétés avancées"), self.grp_actions)
         self.chk_advanced.setEnabled(False)
         grp_actions_lay.addSpacing(8)
         grp_actions_lay.addWidget(self.chk_advanced)
         grp_actions_lay.addStretch(1)
 
-        content.addWidget(grp_actions)
+        content.addWidget(self.grp_actions)
 
         buttons = QDialogButtonBox(
             QDialogButtonBox.Ok | QDialogButtonBox.Cancel,
@@ -99,6 +100,18 @@ class MaterialManagerDialog(QDialog):
         buttons.accepted.connect(self.accept)
         buttons.rejected.connect(self.reject)
         root.addWidget(buttons)
+
+    def retranslate_ui(self) -> None:
+        """Refresh persistent labels after a language change."""
+        self.setWindowTitle(self.tr("Définir les matériaux"))
+        self.grp_list.setTitle(self.tr("Matériaux"))
+        self.grp_actions.setTitle(self.tr("Cliquer pour :"))
+        self.btn_add_quick.setText(self.tr("Ajouter matériau rapide..."))
+        self.btn_add.setText(self.tr("Ajouter matériau..."))
+        self.btn_copy.setText(self.tr("Ajouter copie du matériau..."))
+        self.btn_edit.setText(self.tr("Modifier / Voir matériau..."))
+        self.btn_delete.setText(self.tr("Supprimer matériau"))
+        self.chk_advanced.setText(self.tr("Afficher les propriétés avancées"))
 
     def _refresh_list(self) -> None:
         """Refresh list."""
@@ -237,15 +250,15 @@ class MaterialManagerDialog(QDialog):
         if used_by:
             QMessageBox.warning(
                 self,
-                "Suppression impossible",
-                "Ce matériau est encore utilisé par une ou plusieurs sections.",
+                self.tr("Suppression impossible"),
+                self.tr("Ce matériau est encore utilisé par une ou plusieurs sections."),
             )
             return
 
         reply = QMessageBox.question(
             self,
-            "Confirmer la suppression",
-            f"Supprimer le matériau « {mat.name} » ?",
+            self.tr("Confirmer la suppression"),
+            self.tr("Supprimer le matériau « {name} » ?").format(name=mat.name),
             QMessageBox.Yes | QMessageBox.No,
             QMessageBox.No,
         )
@@ -273,7 +286,7 @@ class SectionManagerDialog(QDialog):
         allowed_types: list[str] | tuple[str, ...] | None = None,
     ):
         super().__init__(parent)
-        self.setWindowTitle("Définir les sections")
+        self.setWindowTitle(self.tr("Définir les sections"))
         self.resize(820, 520)
 
         self._sections = deepcopy(sections or {})
@@ -284,6 +297,7 @@ class SectionManagerDialog(QDialog):
         )
 
         self._build_ui()
+        self.retranslate_ui()
         self._refresh_list()
 
     def _build_ui(self) -> None:
@@ -293,41 +307,41 @@ class SectionManagerDialog(QDialog):
         content = QHBoxLayout()
         root.addLayout(content, 1)
 
-        grp_list = QGroupBox("Sections", self)
-        grp_list_lay = QVBoxLayout(grp_list)
-        self.list_items = QListWidget(grp_list)
+        self.grp_list = QGroupBox(self.tr("Sections"), self)
+        grp_list_lay = QVBoxLayout(self.grp_list)
+        self.list_items = QListWidget(self.grp_list)
         self.list_items.itemDoubleClicked.connect(
             lambda _item: self._modify_section()
         )
         grp_list_lay.addWidget(self.list_items)
-        content.addWidget(grp_list, 1)
+        content.addWidget(self.grp_list, 1)
 
-        grp_actions = QGroupBox("Cliquer pour :", self)
-        grp_actions_lay = QVBoxLayout(grp_actions)
+        self.grp_actions = QGroupBox(self.tr("Cliquer pour :"), self)
+        grp_actions_lay = QVBoxLayout(self.grp_actions)
 
-        self.btn_add = QPushButton("Ajouter section...", grp_actions)
+        self.btn_add = QPushButton(self.tr("Ajouter section..."), self.grp_actions)
         self.btn_add.clicked.connect(self._add_section)
         grp_actions_lay.addWidget(self.btn_add)
 
-        self.btn_copy = QPushButton("Ajouter copie de section...", grp_actions)
+        self.btn_copy = QPushButton(self.tr("Ajouter copie de section..."), self.grp_actions)
         self.btn_copy.clicked.connect(self._copy_section)
         grp_actions_lay.addWidget(self.btn_copy)
 
-        self.btn_edit = QPushButton("Modifier / Voir section...", grp_actions)
+        self.btn_edit = QPushButton(self.tr("Modifier / Voir section..."), self.grp_actions)
         self.btn_edit.clicked.connect(self._modify_section)
         grp_actions_lay.addWidget(self.btn_edit)
 
-        self.btn_delete = QPushButton("Supprimer section", grp_actions)
+        self.btn_delete = QPushButton(self.tr("Supprimer section"), self.grp_actions)
         self.btn_delete.clicked.connect(self._delete_section)
         grp_actions_lay.addWidget(self.btn_delete)
 
-        self.chk_advanced = QCheckBox("Afficher les propriétés avancées", grp_actions)
+        self.chk_advanced = QCheckBox(self.tr("Afficher les propriétés avancées"), self.grp_actions)
         self.chk_advanced.setEnabled(False)
         grp_actions_lay.addSpacing(8)
         grp_actions_lay.addWidget(self.chk_advanced)
         grp_actions_lay.addStretch(1)
 
-        content.addWidget(grp_actions)
+        content.addWidget(self.grp_actions)
 
         buttons = QDialogButtonBox(
             QDialogButtonBox.Ok | QDialogButtonBox.Cancel,
@@ -337,6 +351,17 @@ class SectionManagerDialog(QDialog):
         buttons.accepted.connect(self.accept)
         buttons.rejected.connect(self.reject)
         root.addWidget(buttons)
+
+    def retranslate_ui(self) -> None:
+        """Refresh persistent labels after a language change."""
+        self.setWindowTitle(self.tr("Définir les sections"))
+        self.grp_list.setTitle(self.tr("Sections"))
+        self.grp_actions.setTitle(self.tr("Cliquer pour :"))
+        self.btn_add.setText(self.tr("Ajouter section..."))
+        self.btn_copy.setText(self.tr("Ajouter copie de section..."))
+        self.btn_edit.setText(self.tr("Modifier / Voir section..."))
+        self.btn_delete.setText(self.tr("Supprimer section"))
+        self.chk_advanced.setText(self.tr("Afficher les propriétés avancées"))
 
     def _refresh_list(self) -> None:
         """Refresh list."""
@@ -482,15 +507,17 @@ class SectionManagerDialog(QDialog):
         if tag in self._element_section_tags:
             QMessageBox.warning(
                 self,
-                "Suppression impossible",
-                "Cette section est encore utilisée par un ou plusieurs éléments ou surfaces.",
+                self.tr("Suppression impossible"),
+                self.tr(
+                    "Cette section est encore utilisée par un ou plusieurs éléments ou surfaces."
+                ),
             )
             return
 
         reply = QMessageBox.question(
             self,
-            "Confirmer la suppression",
-            f"Supprimer la section « {sec.name} » ?",
+            self.tr("Confirmer la suppression"),
+            self.tr("Supprimer la section « {name} » ?").format(name=sec.name),
             QMessageBox.Yes | QMessageBox.No,
             QMessageBox.No,
         )

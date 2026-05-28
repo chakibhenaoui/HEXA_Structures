@@ -18,24 +18,6 @@ import config.eurocodes as ec
 from gui.dialogs import load_dialog_ui
 
 
-# ── Labels lisibles ──
-
-_PSI_LABELS: dict[str, str] = {
-    "A": "A — Habitation",
-    "B": "B — Bureaux",
-    "C": "C — Lieux de reunion",
-    "D": "D — Commerces",
-    "E": "E — Stockage",
-    "F": "F — Trafic vehicules <= 30 kN",
-    "G": "G — Trafic vehicules > 30 kN",
-    "H": "H — Toitures",
-    "snow": "Neige (alt. <= 1000 m)",
-    "snow_high": "Neige (alt. > 1000 m)",
-    "wind": "Vent",
-    "temp": "Temperature",
-}
-
-
 class EurocodeSettingsDialog(QDialog):
     """Eurocode settings dialog."""
 
@@ -93,7 +75,7 @@ class EurocodeSettingsDialog(QDialog):
 
         for row, (key, (p0, p1, p2)) in enumerate(ec.PSI_COEFFICIENTS.items()):
             self._psi_keys.append(key)
-            label = _PSI_LABELS.get(key, key)
+            label = self._psi_label(key)
             item = QTableWidgetItem(label)
             item.setFlags(Qt.ItemIsSelectable | Qt.ItemIsEnabled)
             self._tbl_psi.setItem(row, 0, item)
@@ -126,12 +108,14 @@ class EurocodeSettingsDialog(QDialog):
         if self._has_changes():
             reply = QMessageBox.warning(
                 self,
-                "Modification des coefficients Eurocodes",
-                "Vous êtes sur le point de modifier les coefficients normatifs.\n\n"
-                "Ces valeurs sont définies par l'Annexe Nationale Française "
-                "et ne doivent être modifiées que dans des cas justifiés "
-                "(autre pays, recherche, etc.).\n\n"
-                "Confirmer la modification ?",
+                self.tr("Modification des coefficients Eurocodes"),
+                self.tr(
+                    "Vous êtes sur le point de modifier les coefficients normatifs.\n\n"
+                    "Ces valeurs sont définies par l'Annexe Nationale Française "
+                    "et ne doivent être modifiées que dans des cas justifiés "
+                    "(autre pays, recherche, etc.).\n\n"
+                    "Confirmer la modification ?"
+                ),
                 QMessageBox.Yes | QMessageBox.No,
                 QMessageBox.No,
             )
@@ -230,6 +214,23 @@ class EurocodeSettingsDialog(QDialog):
                 spn.setValue(vals[col])
 
     # ── Helpers ──
+
+    def _psi_label(self, key: str) -> str:
+        labels = {
+            "A": self.tr("A — Habitation"),
+            "B": self.tr("B — Bureaux"),
+            "C": self.tr("C — Lieux de réunion"),
+            "D": self.tr("D — Commerces"),
+            "E": self.tr("E — Stockage"),
+            "F": self.tr("F — Trafic véhicules <= 30 kN"),
+            "G": self.tr("G — Trafic véhicules > 30 kN"),
+            "H": self.tr("H — Toitures"),
+            "snow": self.tr("Neige (alt. <= 1000 m)"),
+            "snow_high": self.tr("Neige (alt. > 1000 m)"),
+            "wind": self.tr("Vent"),
+            "temp": self.tr("Température"),
+        }
+        return labels.get(key, key)
 
     @staticmethod
     def _make_spin(min_val: float, max_val: float, decimals: int) -> QDoubleSpinBox:

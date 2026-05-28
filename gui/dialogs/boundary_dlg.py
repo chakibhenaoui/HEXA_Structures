@@ -7,7 +7,6 @@ from PySide6.QtWidgets import QDialog, QWidget
 from core.boundary_conditions import (
     BoundaryCondition,
     BoundaryType,
-    BOUNDARY_LABELS,
     DOF,
     DOF_SHORT,
     PREDEFINED_FIXITIES,
@@ -59,7 +58,7 @@ class BoundaryDialog(QDialog):
         # --- Populate combo box dynamically from enum ---
         self.ui.comboType.setMaxVisibleItems(len(BoundaryType))
         for bc_type in BoundaryType:
-            self.ui.comboType.addItem(BOUNDARY_LABELS[bc_type], bc_type)
+            self.ui.comboType.addItem(self._boundary_label(bc_type), bc_type)
 
         # --- Connect signals ---
         self.ui.comboType.currentIndexChanged.connect(self._on_type_changed)
@@ -96,6 +95,22 @@ class BoundaryDialog(QDialog):
 
         self._update_summary()
 
+    def _boundary_label(self, bc_type: BoundaryType) -> str:
+        labels = {
+            BoundaryType.FREE: self.tr("Libre"),
+            BoundaryType.ENCASTREMENT: self.tr("Encastrement"),
+            BoundaryType.ROTULE: self.tr("Rotule (appui simple)"),
+            BoundaryType.GLISSANT_X: self.tr("Appui glissant X"),
+            BoundaryType.GLISSANT_Y: self.tr("Appui glissant Y"),
+            BoundaryType.GLISSANT_Z: self.tr("Appui glissant Z"),
+            BoundaryType.APPUI_VERTICAL: self.tr("Appui vertical (Uz)"),
+            BoundaryType.APPUI_PLAN_XY: self.tr("Appui plan XY (dalle)"),
+            BoundaryType.ROTULE_GLISSIERE: self.tr("Rotule sur glissière (X)"),
+            BoundaryType.BLOCAGE_ROTATION: self.tr("Blocage rotation seule"),
+            BoundaryType.CUSTOM: self.tr("Personnalisé"),
+        }
+        return labels.get(bc_type, bc_type.value)
+
     def _on_dof_changed(self) -> None:
         """Handle DOF changed."""
         bc_type = self.ui.comboType.currentData()
@@ -123,13 +138,13 @@ class BoundaryDialog(QDialog):
 
         lbl = self.ui.labelSummary
         if not blocked:
-            lbl.setText("Nœud libre (aucun blocage)")
+            lbl.setText(self.tr("Nœud libre (aucun blocage)"))
             lbl.setStyleSheet("font-weight: bold; color: #888;")
         elif len(blocked) == 6:
-            lbl.setText("Encastrement (tout bloqué)")
+            lbl.setText(self.tr("Encastrement (tout bloqué)"))
             lbl.setStyleSheet("font-weight: bold; color: #d32f2f;")
         else:
-            lbl.setText(f"Bloqué : {', '.join(blocked)}")
+            lbl.setText(self.tr("Bloqué : {dof}").format(dof=", ".join(blocked)))
             lbl.setStyleSheet("font-weight: bold; color: #0078d4;")
 
     # ------------------------------------------------------------------

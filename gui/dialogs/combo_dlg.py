@@ -27,18 +27,21 @@ from PySide6.QtWidgets import (
 
 from core.loads import (
     ComboType,
-    COMBO_LABELS,
     auto_generate_combinations,
-    combination_formula,
 )
 from core.model_data import CombinationData, LoadData
 from gui.dialogs import load_dialog_ui
+from gui.i18n.display_labels import (
+    combination_formula_label,
+    combo_type_label,
+    load_name_label,
+)
 
 
 COMBO_TYPES = [
     "ELU",
     "ELS car.",
-    "ELS freq.",
+    "ELS fréq.",
     "ELS quasi-perm.",
     "ELU sism.",
     "Manuelle",
@@ -57,7 +60,11 @@ class CombinationEditDialog(QDialog):
         tag: int | None = None,
     ):
         super().__init__(parent)
-        self.setWindowTitle("Modifier la combinaison" if combo else "Nouvelle combinaison")
+        self.setWindowTitle(
+            self.tr("Modifier la combinaison")
+            if combo
+            else self.tr("Nouvelle combinaison")
+        )
         self.resize(560, 460)
         self._loads = loads
         self._combo = deepcopy(combo)
@@ -74,15 +81,15 @@ class CombinationEditDialog(QDialog):
         self.edit_name = QLineEdit(self)
         self.combo_type = QComboBox(self)
         for combo_type in COMBO_TYPES:
-            self.combo_type.addItem(combo_type, combo_type)
-        form.addRow("Nom :", self.edit_name)
-        form.addRow("Type :", self.combo_type)
+            self.combo_type.addItem(combo_type_label(combo_type), combo_type)
+        form.addRow(self.tr("Nom :"), self.edit_name)
+        form.addRow(self.tr("Type :"), self.combo_type)
         root.addLayout(form)
 
-        grp = QGroupBox("Facteurs des cas de charge", self)
+        grp = QGroupBox(self.tr("Facteurs des cas de charge"), self)
         grp_lay = QVBoxLayout(grp)
         info = QLabel(
-            "Mettre un facteur à 0 pour exclure le cas de charge de la combinaison.",
+            self.tr("Mettre un facteur à 0 pour exclure le cas de charge de la combinaison."),
             grp,
         )
         info.setWordWrap(True)
@@ -100,7 +107,13 @@ class CombinationEditDialog(QDialog):
             spin.setSingleStep(0.05)
             spin.setButtonSymbols(QDoubleSpinBox.NoButtons)
             self._factor_spins[load_tag] = spin
-            factors_layout.addRow(f"{load.name} (T{load_tag}) :", spin)
+            factors_layout.addRow(
+                self.tr("{name} (T{tag}) :").format(
+                    name=load_name_label(load),
+                    tag=load_tag,
+                ),
+                spin,
+            )
         scroll.setWidget(container)
         grp_lay.addWidget(scroll, 1)
         root.addWidget(grp, 1)
@@ -117,7 +130,9 @@ class CombinationEditDialog(QDialog):
     def _load_values(self) -> None:
         """Load values."""
         if self._combo is None:
-            self.edit_name.setText(f"Combinaison {self._tag}")
+            self.edit_name.setText(
+                self.tr("Combinaison {tag}").format(tag=self._tag)
+            )
             idx = self.combo_type.findData("Manuelle")
             if idx >= 0:
                 self.combo_type.setCurrentIndex(idx)
@@ -126,7 +141,10 @@ class CombinationEditDialog(QDialog):
         self.edit_name.setText(self._combo.name)
         idx = self.combo_type.findData(self._combo.combo_type)
         if idx < 0:
-            self.combo_type.addItem(self._combo.combo_type, self._combo.combo_type)
+            self.combo_type.addItem(
+                combo_type_label(self._combo.combo_type),
+                self._combo.combo_type,
+            )
             idx = self.combo_type.findData(self._combo.combo_type)
         if idx >= 0:
             self.combo_type.setCurrentIndex(idx)
@@ -150,8 +168,8 @@ class CombinationEditDialog(QDialog):
         if not factors:
             QMessageBox.warning(
                 self,
-                "Combinaison vide",
-                "Ajoutez au moins un facteur non nul.",
+                self.tr("Combinaison vide"),
+                self.tr("Ajoutez au moins un facteur non nul."),
             )
             return
 
@@ -180,12 +198,13 @@ class CombinationManagerDialog(QDialog):
         combinations: dict[int, CombinationData] | None = None,
     ):
         super().__init__(parent)
-        self.setWindowTitle("Définir les combinaisons")
+        self.setWindowTitle(self.tr("Définir les combinaisons"))
         self.resize(820, 520)
         self._loads = deepcopy(loads or {})
         self._combinations = deepcopy(combinations or {})
 
         self._build_ui()
+        self.retranslate_ui()
         self._refresh_list()
 
     def _build_ui(self) -> None:
@@ -194,7 +213,8 @@ class CombinationManagerDialog(QDialog):
         content = QHBoxLayout()
         root.addLayout(content, 1)
 
-        grp_list = QGroupBox("Combinaisons", self)
+        self.grp_list = QGroupBox(self.tr("Combinaisons"), self)
+        grp_list = self.grp_list
         grp_list_lay = QVBoxLayout(grp_list)
         self.list_items = QListWidget(grp_list)
         self.list_items.currentItemChanged.connect(
@@ -206,37 +226,40 @@ class CombinationManagerDialog(QDialog):
         grp_list_lay.addWidget(self.list_items)
         content.addWidget(grp_list, 1)
 
-        grp_actions = QGroupBox("Cliquer pour :", self)
+        self.grp_actions = QGroupBox(self.tr("Cliquer pour :"), self)
+        grp_actions = self.grp_actions
         grp_actions_lay = QVBoxLayout(grp_actions)
 
-        self.btn_generate = QPushButton("Generer EC0...", grp_actions)
+        self.btn_generate = QPushButton(self.tr("Générer EC0..."), grp_actions)
         self.btn_generate.clicked.connect(self._generate_ec0)
         grp_actions_lay.addWidget(self.btn_generate)
 
-        self.btn_add = QPushButton("Ajouter combinaison...", grp_actions)
+        self.btn_add = QPushButton(self.tr("Ajouter combinaison..."), grp_actions)
         self.btn_add.clicked.connect(self._add_combination)
         grp_actions_lay.addWidget(self.btn_add)
 
-        self.btn_copy = QPushButton("Ajouter copie de combinaison...", grp_actions)
+        self.btn_copy = QPushButton(self.tr("Ajouter copie de combinaison..."), grp_actions)
         self.btn_copy.clicked.connect(self._copy_combination)
         grp_actions_lay.addWidget(self.btn_copy)
 
-        self.btn_edit = QPushButton("Modifier / Voir combinaison...", grp_actions)
+        self.btn_edit = QPushButton(self.tr("Modifier / Voir combinaison..."), grp_actions)
         self.btn_edit.clicked.connect(self._modify_combination)
         grp_actions_lay.addWidget(self.btn_edit)
 
-        self.btn_delete = QPushButton("Supprimer combinaison", grp_actions)
+        self.btn_delete = QPushButton(self.tr("Supprimer combinaison"), grp_actions)
         self.btn_delete.clicked.connect(self._delete_combination)
         grp_actions_lay.addWidget(self.btn_delete)
 
-        self.btn_switch_loads = QPushButton("Aller aux cas de charge...", grp_actions)
+        self.btn_switch_loads = QPushButton(self.tr("Aller aux cas de charge..."), grp_actions)
         self.btn_switch_loads.clicked.connect(self._switch_to_load_cases)
         grp_actions_lay.addSpacing(8)
         grp_actions_lay.addWidget(self.btn_switch_loads)
 
         self.lbl_info = QLabel(
-            "Les combinaisons peuvent être générées automatiquement selon EC0 "
-            "ou saisies manuellement.",
+            self.tr(
+                "Les combinaisons peuvent être générées automatiquement selon EC0 "
+                "ou saisies manuellement."
+            ),
             grp_actions,
         )
         self.lbl_info.setWordWrap(True)
@@ -254,14 +277,39 @@ class CombinationManagerDialog(QDialog):
         buttons.rejected.connect(self.reject)
         root.addWidget(buttons)
 
+    def retranslate_ui(self) -> None:
+        """Refresh persistent labels after a language change."""
+        self.setWindowTitle(self.tr("Définir les combinaisons"))
+        self.grp_list.setTitle(self.tr("Combinaisons"))
+        self.grp_actions.setTitle(self.tr("Cliquer pour :"))
+        self.btn_generate.setText(self.tr("Générer EC0..."))
+        self.btn_add.setText(self.tr("Ajouter combinaison..."))
+        self.btn_copy.setText(self.tr("Ajouter copie de combinaison..."))
+        self.btn_edit.setText(self.tr("Modifier / Voir combinaison..."))
+        self.btn_delete.setText(self.tr("Supprimer combinaison"))
+        self.btn_switch_loads.setText(self.tr("Aller aux cas de charge..."))
+        self.lbl_info.setText(
+            self.tr(
+                "Les combinaisons peuvent être générées automatiquement selon EC0 "
+                "ou saisies manuellement."
+            )
+        )
+
     def _refresh_list(self) -> None:
         """Refresh list."""
         current_tag = self.current_tag()
         self.list_items.clear()
 
         for tag, combo in sorted(self._combinations.items()):
-            formula = combination_formula(combo, self._loads)
-            item = QListWidgetItem(f"{combo.name} (T{tag})\n{combo.combo_type} - {formula}")
+            formula = combination_formula_label(combo, self._loads)
+            item = QListWidgetItem(
+                self.tr("{name} (T{tag})\n{type} - {formula}").format(
+                    name=combo.name,
+                    tag=tag,
+                    type=combo_type_label(combo.combo_type),
+                    formula=formula,
+                )
+            )
             item.setData(Qt.UserRole, tag)
             self.list_items.addItem(item)
 
@@ -310,8 +358,8 @@ class CombinationManagerDialog(QDialog):
         if not generated:
             QMessageBox.information(
                 self,
-                "Generation EC0",
-                "Aucune combinaison n'a été générée avec les choix actuels.",
+                self.tr("Génération EC0"),
+                self.tr("Aucune combinaison n'a été générée avec les choix actuels."),
             )
             return
 
@@ -347,7 +395,7 @@ class CombinationManagerDialog(QDialog):
         new_tag = self._next_tag()
         copied = deepcopy(source)
         copied.tag = new_tag
-        copied.name = f"{source.name} - Copie"
+        copied.name = self.tr("{name} - Copie").format(name=source.name)
         self._combinations[new_tag] = copied
         self._refresh_list()
 
@@ -378,8 +426,8 @@ class CombinationManagerDialog(QDialog):
 
         reply = QMessageBox.question(
             self,
-            "Confirmer la suppression",
-            f"Supprimer la combinaison '{combo.name}' ?",
+            self.tr("Confirmer la suppression"),
+            self.tr("Supprimer la combinaison '{name}' ?").format(name=combo.name),
             QMessageBox.Yes | QMessageBox.No,
             QMessageBox.No,
         )
@@ -436,8 +484,14 @@ class ComboDialog(QDialog):
 
         # Update info label
         self.ui.lbl_info.setText(
-            f"Cas de charges : {perm_count} permanent(s), "
-            f"{var_count} variable(s), {seis_count} sismique(s)"
+            self.tr(
+                "Cas de charges : {permanent} permanent(s), "
+                "{variable} variable(s), {seismic} sismique(s)"
+            ).format(
+                permanent=perm_count,
+                variable=var_count,
+                seismic=seis_count,
+            )
         )
 
         # Dynamically create checkboxes inside grp_types
@@ -450,7 +504,7 @@ class ComboDialog(QDialog):
             ComboType.SLS_QUASI_PERMANENT,
         }
         for ct in ComboType:
-            cb = QCheckBox(COMBO_LABELS[ct])
+            cb = QCheckBox(combo_type_label(ct.value))
             cb.setChecked(ct in default_checked)
             # Disable seismic/accidental if no seismic load case
             if ct in (ComboType.ULS_SEISMIC, ComboType.ULS_ACCIDENTAL) and seis_count == 0:
@@ -479,11 +533,20 @@ class ComboDialog(QDialog):
 
         lines = []
         for combo in self._generated:
-            formula = combination_formula(combo, self._loads)
-            lines.append(f"{combo.name} : {formula}")
+            formula = combination_formula_label(combo, self._loads)
+            lines.append(
+                self.tr("{name} : {formula}").format(
+                    name=combo.name,
+                    formula=formula,
+                )
+            )
 
         self.ui.txt_preview.setPlainText("\n".join(lines))
-        self.ui.lbl_count.setText(f"{len(self._generated)} combinaison(s) générée(s)")
+        self.ui.lbl_count.setText(
+            self.tr("{count} combinaison(s) générée(s)").format(
+                count=len(self._generated)
+            )
+        )
 
     def result(self) -> list[CombinationData]:
         """Handle result."""

@@ -39,8 +39,11 @@ class DiagramWindow(QMainWindow):
     ):
         super().__init__(parent)
         self._window_title = window_title
+        self._case_label_source = case_label
+        self._component_label_source = component_label
+        self._file_label_source = file_label
         self._export_basename = export_basename
-        self.setWindowTitle(window_title)
+        self.setWindowTitle(self._translated_label(window_title))
         self.resize(width, height)
         self._current_component = "N"
         self._current_case_name: str | None = None
@@ -57,14 +60,16 @@ class DiagramWindow(QMainWindow):
         top_lay.setContentsMargins(0, 0, 0, 0)
         top_lay.setSpacing(8)
 
-        top_lay.addWidget(QLabel(case_label, top))
+        self.lbl_case = QLabel(self._translated_label(case_label), top)
+        top_lay.addWidget(self.lbl_case)
 
         self.case_combo = QComboBox(top)
         self.case_combo.setMinimumWidth(260)
         self.case_combo.currentTextChanged.connect(self._on_case_changed)
         top_lay.addWidget(self.case_combo)
 
-        top_lay.addWidget(QLabel(component_label, top))
+        self.lbl_component = QLabel(self._translated_label(component_label), top)
+        top_lay.addWidget(self.lbl_component)
 
         self.component_combo = QComboBox(top)
         self.component_combo.setMinimumWidth(120)
@@ -73,18 +78,19 @@ class DiagramWindow(QMainWindow):
         )
         top_lay.addWidget(self.component_combo)
 
-        top_lay.addWidget(QLabel(file_label, top))
+        self.lbl_file = QLabel(self._translated_label(file_label), top)
+        top_lay.addWidget(self.lbl_file)
 
         self.file_combo = QComboBox(top)
         self.file_combo.setMinimumWidth(280)
         self.file_combo.currentIndexChanged.connect(self.file_index_changed.emit)
         top_lay.addWidget(self.file_combo)
 
-        self.btn_export_png = QPushButton("Exporter PNG", top)
+        self.btn_export_png = QPushButton(self.tr("Exporter PNG"), top)
         self.btn_export_png.clicked.connect(lambda: self._export_current_figure("png"))
         top_lay.addWidget(self.btn_export_png)
 
-        self.btn_export_pdf = QPushButton("Exporter PDF", top)
+        self.btn_export_pdf = QPushButton(self.tr("Exporter PDF"), top)
         self.btn_export_pdf.clicked.connect(lambda: self._export_current_figure("pdf"))
         top_lay.addWidget(self.btn_export_pdf)
 
@@ -103,19 +109,52 @@ class DiagramWindow(QMainWindow):
 
         self.setCentralWidget(root)
         self._setup_toolbar()
+        self.retranslate_ui()
 
     def _setup_toolbar(self) -> None:
         """Set up toolbar."""
-        toolbar = self.addToolBar(self._window_title)
-        toolbar.setMovable(False)
+        self.toolbar = self.addToolBar(self._translated_label(self._window_title))
+        self.toolbar.setMovable(False)
 
-        act_export_png = QAction("Exporter PNG", self)
-        act_export_png.triggered.connect(lambda: self._export_current_figure("png"))
-        toolbar.addAction(act_export_png)
+        self.act_export_png = QAction(self.tr("Exporter PNG"), self)
+        self.act_export_png.triggered.connect(lambda: self._export_current_figure("png"))
+        self.toolbar.addAction(self.act_export_png)
 
-        act_export_pdf = QAction("Exporter PDF", self)
-        act_export_pdf.triggered.connect(lambda: self._export_current_figure("pdf"))
-        toolbar.addAction(act_export_pdf)
+        self.act_export_pdf = QAction(self.tr("Exporter PDF"), self)
+        self.act_export_pdf.triggered.connect(lambda: self._export_current_figure("pdf"))
+        self.toolbar.addAction(self.act_export_pdf)
+
+    def retranslate_ui(self) -> None:
+        """Refresh persistent labels after a language change."""
+        self.lbl_case.setText(self._translated_label(self._case_label_source))
+        self.lbl_component.setText(self._translated_label(self._component_label_source))
+        self.lbl_file.setText(self._translated_label(self._file_label_source))
+        self.btn_export_png.setText(self.tr("Exporter PNG"))
+        self.btn_export_pdf.setText(self.tr("Exporter PDF"))
+        if hasattr(self, "toolbar"):
+            self.toolbar.setWindowTitle(self._translated_label(self._window_title))
+        if hasattr(self, "act_export_png"):
+            self.act_export_png.setText(self.tr("Exporter PNG"))
+        if hasattr(self, "act_export_pdf"):
+            self.act_export_pdf.setText(self.tr("Exporter PDF"))
+        self._update_title()
+
+    def _translated_label(self, text: str) -> str:
+        labels = {
+            "Diagrammes": self.tr("Diagrammes"),
+            "Cartes plaques": self.tr("Cartes plaques"),
+            "Diagramme de barre": self.tr("Diagramme de barre"),
+            "Charges affectées": self.tr("Charges affectées"),
+            "Cas / combinaison :": self.tr("Cas / combinaison :"),
+            "Cas de charge :": self.tr("Cas de charge :"),
+            "Diagramme :": self.tr("Diagramme :"),
+            "Composante :": self.tr("Composante :"),
+            "Affichage :": self.tr("Affichage :"),
+            "File / plan :": self.tr("File / plan :"),
+            "Plan :": self.tr("Plan :"),
+            "Barre :": self.tr("Barre :"),
+        }
+        return labels.get(text, text)
 
     def set_cases(self, cases: list[str], current_case: str | None) -> None:
         """Set cases."""
@@ -226,18 +265,18 @@ class DiagramWindow(QMainWindow):
         if self._current_figure is None:
             QMessageBox.information(
                 self,
-                "Diagrammes",
-                "Aucun diagramme n'est disponible pour l'export.",
+                self.tr("Diagrammes"),
+                self.tr("Aucun diagramme n'est disponible pour l'export."),
             )
             return
 
         filters = {
-            "png": "Image PNG (*.png)",
-            "pdf": "Document PDF (*.pdf)",
+            "png": self.tr("Image PNG (*.png)"),
+            "pdf": self.tr("Document PDF (*.pdf)"),
         }
         path, _ = QFileDialog.getSaveFileName(
             self,
-            "Exporter le diagramme",
+            self.tr("Exporter le diagramme"),
             self._default_export_name(extension),
             filters[extension],
         )
@@ -251,19 +290,30 @@ class DiagramWindow(QMainWindow):
         except Exception as exc:
             QMessageBox.critical(
                 self,
-                "Export impossible",
-                f"L'export du diagramme a échoué :\n{exc}",
+                self.tr("Export impossible"),
+                self.tr("L'export du diagramme a échoué :\n{error}").format(error=exc),
             )
             return
 
-        self.statusBar().showMessage(f"Diagramme exporte : {path}", 5000)
+        self.statusBar().showMessage(
+            self.tr("Diagramme exporté : {path}").format(path=path),
+            5000,
+        )
 
     def _update_title(self) -> None:
         """Update title."""
         case_label = self._current_case_name or "sans cas"
-        file_label = self._current_file_label or "sans file"
+        if self._current_case_name:
+            case_label = self._current_case_name
+        else:
+            case_label = self.tr("sans cas")
+        if self._current_file_label:
+            file_label = self._current_file_label
+        else:
+            file_label = self.tr("sans file")
         self.setWindowTitle(
-            f"{self._window_title} - {self._current_component} - {case_label} - {file_label}"
+            f"{self._translated_label(self._window_title)} - "
+            f"{self._current_component} - {case_label} - {file_label}"
         )
 
     @staticmethod

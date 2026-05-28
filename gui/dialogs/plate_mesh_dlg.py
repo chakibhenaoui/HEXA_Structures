@@ -25,11 +25,13 @@ class PlateMeshDialog(QDialog):
     ) -> None:
         super().__init__(parent)
         suffix = f" P{plate_tag}" if plate_tag is not None else ""
-        self.setWindowTitle(f"Maillage plaque{suffix}")
+        self.setWindowTitle(
+            self.tr("Maillage plaque{suffix}").format(suffix=suffix)
+        )
         self.setMinimumWidth(320)
 
         root = QVBoxLayout(self)
-        note = QLabel("Nombre de mailles du maillage structure local.", self)
+        note = QLabel(self.tr("Nombre de mailles du maillage structure local."), self)
         note.setWordWrap(True)
         root.addWidget(note)
 
@@ -40,8 +42,8 @@ class PlateMeshDialog(QDialog):
         self.spin_ny = QSpinBox(self)
         self.spin_ny.setRange(1, 200)
         self.spin_ny.setValue(max(1, int(mesh_ny)))
-        form.addRow("Mailles en X local :", self.spin_nx)
-        form.addRow("Mailles en Y local :", self.spin_ny)
+        form.addRow(self.tr("Mailles en X local :"), self.spin_nx)
+        form.addRow(self.tr("Mailles en Y local :"), self.spin_ny)
         root.addLayout(form)
 
         buttons = QDialogButtonBox(

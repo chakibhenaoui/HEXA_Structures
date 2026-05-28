@@ -21,6 +21,7 @@ from PySide6.QtWidgets import (
 )
 
 from core.model_data import ProjectModel
+from gui.i18n.display_labels import load_name_label
 
 
 def _fmt(value, precision: int = 6) -> str:
@@ -71,7 +72,12 @@ class ElementPropertiesDialog(QDialog):
         self.case_results = case_results or {}
 
         suffix = f" - {case_name}" if case_name else ""
-        self.setWindowTitle(f"Propriétés de la barre E{self.element_tag}{suffix}")
+        self.setWindowTitle(
+            self.tr("Propriétés de la barre E{tag}{suffix}").format(
+                tag=self.element_tag,
+                suffix=suffix,
+            )
+        )
         self.resize(780, 620)
         self._build_ui()
 
@@ -80,14 +86,14 @@ class ElementPropertiesDialog(QDialog):
         self.tabs = QTabWidget(self)
         root.addWidget(self.tabs, 1)
 
-        self.tabs.addTab(self._build_geometry_tab(), "Géométrie")
-        self.tabs.addTab(self._build_section_tab(), "Propriétés")
-        self.tabs.addTab(self._build_loads_tab(), "Charges")
+        self.tabs.addTab(self._build_geometry_tab(), self.tr("Géométrie"))
+        self.tabs.addTab(self._build_section_tab(), self.tr("Propriétés"))
+        self.tabs.addTab(self._build_loads_tab(), self.tr("Charges"))
         if self._element_result() is not None:
-            self.tabs.addTab(self._build_ntm_tab(), "NTM")
+            self.tabs.addTab(self._build_ntm_tab(), self.tr("NTM"))
         if self._has_displacement_results():
-            self.tabs.addTab(self._build_displacements_tab(), "Déplacements")
-        self.tabs.addTab(self._build_check_tab(), "Vérification")
+            self.tabs.addTab(self._build_displacements_tab(), self.tr("Déplacements"))
+        self.tabs.addTab(self._build_check_tab(), self.tr("Vérification"))
 
         buttons = QDialogButtonBox(QDialogButtonBox.Close, self)
         buttons.rejected.connect(self.reject)
@@ -111,26 +117,26 @@ class ElementPropertiesDialog(QDialog):
                 uy = dy / length
                 uz = dz / length
 
-        general = QGroupBox("Identification", tab)
+        general = QGroupBox(self.tr("Identification"), tab)
         form = QFormLayout(general)
-        form.addRow("Barre :", QLabel(f"E{self.element.tag}", general))
-        form.addRow("Type :", QLabel(self.element.element_type, general))
-        form.addRow("Nœud i :", QLabel(f"N{self.element.node_i}", general))
-        form.addRow("Nœud j :", QLabel(f"N{self.element.node_j}", general))
-        form.addRow("Section :", QLabel(f"T{self.element.section_tag}", general))
+        form.addRow(self.tr("Barre :"), QLabel(f"E{self.element.tag}", general))
+        form.addRow(self.tr("Type :"), QLabel(self.element.element_type, general))
+        form.addRow(self.tr("Nœud i :"), QLabel(f"N{self.element.node_i}", general))
+        form.addRow(self.tr("Nœud j :"), QLabel(f"N{self.element.node_j}", general))
+        form.addRow(self.tr("Section :"), QLabel(f"T{self.element.section_tag}", general))
         if self.case_name:
-            form.addRow("Cas courant :", QLabel(self.case_name, general))
+            form.addRow(self.tr("Cas courant :"), QLabel(self.case_name, general))
         layout.addWidget(general)
 
-        geometry = QGroupBox("Géométrie", tab)
+        geometry = QGroupBox(self.tr("Géométrie"), tab)
         geom_form = QFormLayout(geometry)
         if ni is not None:
-            geom_form.addRow("Coordonnées i :", QLabel(self._coord_text(ni), geometry))
+            geom_form.addRow(self.tr("Coordonnées i :"), QLabel(self._coord_text(ni), geometry))
         if nj is not None:
-            geom_form.addRow("Coordonnées j :", QLabel(self._coord_text(nj), geometry))
-        geom_form.addRow("Longueur :", QLabel(f"{_fmt(length)} m", geometry))
-        geom_form.addRow("Delta X / Y / Z :", QLabel(f"{_fmt(dx)} / {_fmt(dy)} / {_fmt(dz)} m", geometry))
-        geom_form.addRow("Axe local x :", QLabel(f"{_fmt(ux)} / {_fmt(uy)} / {_fmt(uz)}", geometry))
+            geom_form.addRow(self.tr("Coordonnées j :"), QLabel(self._coord_text(nj), geometry))
+        geom_form.addRow(self.tr("Longueur :"), QLabel(f"{_fmt(length)} m", geometry))
+        geom_form.addRow(self.tr("Delta X / Y / Z :"), QLabel(f"{_fmt(dx)} / {_fmt(dy)} / {_fmt(dz)} m", geometry))
+        geom_form.addRow(self.tr("Axe local x :"), QLabel(f"{_fmt(ux)} / {_fmt(uy)} / {_fmt(uz)}", geometry))
         layout.addWidget(geometry)
         layout.addStretch(1)
         return tab
@@ -145,29 +151,29 @@ class ElementPropertiesDialog(QDialog):
             else None
         )
 
-        section_group = QGroupBox("Section", tab)
+        section_group = QGroupBox(self.tr("Section"), tab)
         section_form = QFormLayout(section_group)
         if section is None:
-            section_form.addRow("Section :", QLabel("Section introuvable", section_group))
+            section_form.addRow(self.tr("Section :"), QLabel(self.tr("Section introuvable"), section_group))
         else:
-            section_form.addRow("Nom :", QLabel(section.name, section_group))
-            section_form.addRow("Type :", QLabel(section.section_type, section_group))
-            section_form.addRow("Aire A :", QLabel(f"{_fmt(section.area)} m2", section_group))
-            section_form.addRow("Inertie Iy :", QLabel(f"{_fmt(section.inertia_y)} m4", section_group))
-            section_form.addRow("Inertie Iz :", QLabel(f"{_fmt(section.inertia_z)} m4", section_group))
+            section_form.addRow(self.tr("Nom :"), QLabel(section.name, section_group))
+            section_form.addRow(self.tr("Type :"), QLabel(section.section_type, section_group))
+            section_form.addRow(self.tr("Aire A :"), QLabel(f"{_fmt(section.area)} m2", section_group))
+            section_form.addRow(self.tr("Inertie Iy :"), QLabel(f"{_fmt(section.inertia_y)} m4", section_group))
+            section_form.addRow(self.tr("Inertie Iz :"), QLabel(f"{_fmt(section.inertia_z)} m4", section_group))
         layout.addWidget(section_group)
 
-        material_group = QGroupBox("Matériau", tab)
+        material_group = QGroupBox(self.tr("Matériau"), tab)
         material_form = QFormLayout(material_group)
         if material is None:
-            material_form.addRow("Matériau :", QLabel("Matériau introuvable", material_group))
+            material_form.addRow(self.tr("Matériau :"), QLabel(self.tr("Matériau introuvable"), material_group))
         else:
-            material_form.addRow("Nom :", QLabel(material.name, material_group))
-            material_form.addRow("Type :", QLabel(material.material_type, material_group))
-            material_form.addRow("Nuance :", QLabel(material.grade, material_group))
+            material_form.addRow(self.tr("Nom :"), QLabel(material.name, material_group))
+            material_form.addRow(self.tr("Type :"), QLabel(material.material_type, material_group))
+            material_form.addRow(self.tr("Nuance :"), QLabel(material.grade, material_group))
         layout.addWidget(material_group)
 
-        table = self._make_table(["Propriété", "Valeur"])
+        table = self._make_table([self.tr("Propriété"), self.tr("Valeur")])
         rows: list[tuple[str, object]] = []
         if section is not None:
             rows.extend((f"section.{key}", value) for key, value in _object_items(section.properties))
@@ -180,19 +186,23 @@ class ElementPropertiesDialog(QDialog):
     def _build_loads_tab(self) -> QWidget:
         tab = QWidget(self)
         layout = QVBoxLayout(tab)
-        table = self._make_table(["Cas", "Tag", "Repère", "q1/wx", "q2/wy", "q3/wz"])
+        table = self._make_table([self.tr("Cas"), "Tag", self.tr("Repère"), "q1/wx", "q2/wy", "q3/wz"])
         rows = []
         for load in self.project.element_loads:
             if int(load.element_tag) != self.element_tag:
                 continue
             load_case = self.project.loads.get(load.load_tag)
-            label = load_case.name if load_case is not None else "Cas introuvable"
+            label = (
+                load_name_label(load_case)
+                if load_case is not None
+                else self.tr("Cas introuvable")
+            )
             rows.append([
                 label,
                 f"T{load.load_tag}",
-                "Global"
+                self.tr("Global")
                 if str(getattr(load, "coordinate_system", "local")).lower() == "global"
-                else "Local",
+                else self.tr("Local"),
                 f"{_fmt(load.wx)} kN/m",
                 f"{_fmt(load.wy)} kN/m",
                 f"{_fmt(load.wz)} kN/m",
@@ -204,7 +214,7 @@ class ElementPropertiesDialog(QDialog):
     def _build_ntm_tab(self) -> QWidget:
         tab = QWidget(self)
         layout = QVBoxLayout(tab)
-        table = self._make_table(["Extrémité", "N", "Vy", "Vz", "T", "My", "Mz"])
+        table = self._make_table([self.tr("Extrémité"), "N", "Vy", "Vz", "T", "My", "Mz"])
         result = self._element_result()
         rows = []
         if result is not None:
@@ -235,7 +245,7 @@ class ElementPropertiesDialog(QDialog):
     def _build_displacements_tab(self) -> QWidget:
         tab = QWidget(self)
         layout = QVBoxLayout(tab)
-        table = self._make_table(["Nœud", "Ux", "Uy", "Uz", "Rx", "Ry", "Rz"])
+        table = self._make_table([self.tr("Nœud"), "Ux", "Uy", "Uz", "Rx", "Ry", "Rz"])
         displacements = self.case_results.get("displacements", {})
         rows = []
         for node_tag in (self.element.node_i, self.element.node_j):
@@ -259,8 +269,10 @@ class ElementPropertiesDialog(QDialog):
         tab = QWidget(self)
         layout = QVBoxLayout(tab)
         label = QLabel(
-            "La vérification réglementaire mono-barre sera branchée ici "
-            "lorsque le module de dimensionnement sera disponible.",
+            self.tr(
+                "La vérification réglementaire mono-barre sera branchée ici "
+                "lorsque le module de dimensionnement sera disponible."
+            ),
             tab,
         )
         label.setWordWrap(True)
@@ -293,14 +305,13 @@ class ElementPropertiesDialog(QDialog):
         table.horizontalHeader().setSectionResizeMode(QHeaderView.Stretch)
         return table
 
-    @staticmethod
-    def _fill_table(table: QTableWidget, rows: list[list[object] | tuple[object, ...]]) -> None:
+    def _fill_table(self, table: QTableWidget, rows: list[list[object] | tuple[object, ...]]) -> None:
         table.setRowCount(len(rows))
         for row_idx, row in enumerate(rows):
             for col_idx, value in enumerate(row):
                 table.setItem(row_idx, col_idx, QTableWidgetItem(str(value)))
         if not rows:
             table.setRowCount(1)
-            item = QTableWidgetItem("Aucune donnée")
+            item = QTableWidgetItem(self.tr("Aucune donnée"))
             table.setItem(0, 0, item)
             table.setSpan(0, 0, 1, table.columnCount())

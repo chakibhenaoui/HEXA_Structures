@@ -15,6 +15,7 @@ from PySide6.QtWidgets import (
 
 from core.model_data import PLATE_MESH_MODE_AUTO
 from core.plate_mesh_settings import effective_plate_mesh_divisions
+from gui.i18n.display_labels import combo_type_label, load_name_label, load_type_label
 
 if TYPE_CHECKING:
     from core.model_data import ProjectModel
@@ -36,6 +37,7 @@ class ItemKind(Enum):
 # Custom Qt role for storing the tag and object type
 _ROLE_TAG = Qt.UserRole
 _ROLE_KIND = Qt.UserRole + 1
+_ROLE_OBJECT_TYPE = Qt.UserRole + 2
 
 
 class ModelTree(QTreeWidget):
@@ -57,7 +59,7 @@ class ModelTree(QTreeWidget):
         super().__init__(parent)
         self._project: ProjectModel | None = None
 
-        self.setHeaderLabels(["Élément", "Détails"])
+        self.setHeaderLabels([self.tr("Élément"), self.tr("Détails")])
         self.setMinimumWidth(220)
         self.setColumnWidth(0, 150)
         self.setSelectionMode(QAbstractItemView.SingleSelection)
@@ -68,6 +70,12 @@ class ModelTree(QTreeWidget):
         self.customContextMenuRequested.connect(self._on_context_menu)
         self.itemDoubleClicked.connect(self._on_item_double_clicked)
 
+    def retranslate_ui(self) -> None:
+        """Refresh tree headers and category labels after a language change."""
+        self.setHeaderLabels([self.tr("Élément"), self.tr("Détails")])
+        if self._project is not None:
+            self.refresh(self._project)
+
     # -- Update from the model -----------------------------------------------
 
     def refresh(self, project: ProjectModel) -> None:
@@ -76,7 +84,7 @@ class ModelTree(QTreeWidget):
         self.clear()
 
         self._root_nodes = self._add_category(
-            "Nœuds", f"({len(project.nodes)})", ItemKind.ROOT,
+            self.tr("Nœuds"), f"({len(project.nodes)})", ItemKind.ROOT, "node",
         )
         for tag, node in project.nodes.items():
             fix_str = ""
@@ -98,7 +106,7 @@ class ModelTree(QTreeWidget):
             self._root_nodes.addChild(item)
 
         self._root_materials = self._add_category(
-            "Matériaux", f"({len(project.materials)})", ItemKind.ROOT,
+            self.tr("Matériaux"), f"({len(project.materials)})", ItemKind.ROOT, "material",
         )
         for tag, mat in project.materials.items():
             item = QTreeWidgetItem([mat.name, f"{mat.grade} ({mat.material_type})"])
@@ -107,7 +115,7 @@ class ModelTree(QTreeWidget):
             self._root_materials.addChild(item)
 
         self._root_sections = self._add_category(
-            "Sections", f"({len(project.sections)})", ItemKind.ROOT,
+            self.tr("Sections"), f"({len(project.sections)})", ItemKind.ROOT, "section",
         )
         for tag, sec in project.sections.items():
             item = QTreeWidgetItem([sec.name, sec.section_type])
@@ -116,7 +124,7 @@ class ModelTree(QTreeWidget):
             self._root_sections.addChild(item)
 
         self._root_elements = self._add_category(
-            "Éléments", f"({len(project.elements)})", ItemKind.ROOT,
+            self.tr("Éléments"), f"({len(project.elements)})", ItemKind.ROOT, "element",
         )
         for tag, elem in project.elements.items():
             sec_name = ""
@@ -133,7 +141,7 @@ class ModelTree(QTreeWidget):
 
         visible_surface_count = len(project.surface_elements) + len(project.plate_regions)
         self._root_surfaces = self._add_category(
-            "Surfaces", f"({visible_surface_count})", ItemKind.ROOT,
+            self.tr("Surfaces"), f"({visible_surface_count})", ItemKind.ROOT, "surface",
         )
         for tag, plate in project.plate_regions.items():
             sec_name = ""
@@ -171,19 +179,25 @@ class ModelTree(QTreeWidget):
             self._root_surfaces.addChild(item)
 
         self._root_loads = self._add_category(
-            "Charges", f"({len(project.loads)})", ItemKind.ROOT,
+            self.tr("Charges"), f"({len(project.loads)})", ItemKind.ROOT, "load",
         )
         for tag, lc in project.loads.items():
-            item = QTreeWidgetItem([lc.name, lc.load_type])
+            item = QTreeWidgetItem([
+                load_name_label(lc),
+                load_type_label(lc.load_type),
+            ])
             item.setData(0, _ROLE_TAG, tag)
             item.setData(0, _ROLE_KIND, ItemKind.LOAD_CASE)
             self._root_loads.addChild(item)
 
         self._root_combos = self._add_category(
-            "Combinaisons", f"({len(project.combinations)})", ItemKind.ROOT,
+            self.tr("Combinaisons"),
+            f"({len(project.combinations)})",
+            ItemKind.ROOT,
+            "combination",
         )
         for tag, combo in project.combinations.items():
-            item = QTreeWidgetItem([combo.name, combo.combo_type])
+            item = QTreeWidgetItem([combo.name, combo_type_label(combo.combo_type)])
             item.setData(0, _ROLE_TAG, tag)
             item.setData(0, _ROLE_KIND, ItemKind.COMBINATION)
             self._root_combos.addChild(item)
@@ -191,10 +205,18 @@ class ModelTree(QTreeWidget):
         self.expandAll()
         self._apply_default_expansion()
 
-    def _add_category(self, name: str, detail: str, kind: ItemKind) -> QTreeWidgetItem:
+    def _add_category(
+        self,
+        name: str,
+        detail: str,
+        kind: ItemKind,
+        obj_type: str = "",
+    ) -> QTreeWidgetItem:
         """Add category."""
         item = QTreeWidgetItem([name, detail])
         item.setData(0, _ROLE_KIND, kind)
+        if obj_type:
+            item.setData(0, _ROLE_OBJECT_TYPE, obj_type)
         font = item.font(0)
         font.setBold(True)
         item.setFont(0, font)
@@ -238,6 +260,18 @@ class ModelTree(QTreeWidget):
             self.setCurrentItem(it)
             self.scrollToItem(it)
             self.blockSignals(False)
+
+    def _add_action_label(self, obj_type: str) -> str:
+        """Return the translated add action for a tree object type."""
+        return {
+            "node": self.tr("Ajouter un nœud..."),
+            "element": self.tr("Ajouter un élément..."),
+            "surface": self.tr("Ajouter une surface..."),
+            "material": self.tr("Ajouter un matériau..."),
+            "section": self.tr("Ajouter une section..."),
+            "load": self.tr("Ajouter un cas de charge..."),
+            "combination": self.tr("Ajouter une combinaison..."),
+        }.get(obj_type, self.tr("Ajouter {item}...").format(item=_french_name(obj_type)))
 
     def _find_item(self, kind: ItemKind, tag: int) -> QTreeWidgetItem | None:
         """Find item."""
@@ -288,30 +322,20 @@ class ModelTree(QTreeWidget):
 
         if kind == ItemKind.ROOT:
             # Menu on a root category
-            text = item.text(0)
-            kind_map = {
-                "Nœuds": "node",
-                "Matériaux": "material",
-                "Sections": "section",
-                "Éléments": "element",
-                "Surfaces": "surface",
-                "Charges": "load",
-                "Combinaisons": "combination",
-            }
-            obj_type = kind_map.get(text)
+            obj_type = item.data(0, _ROLE_OBJECT_TYPE)
             if obj_type:
-                act_add = menu.addAction(_add_action_label(obj_type))
+                act_add = menu.addAction(self._add_action_label(str(obj_type)))
                 act_add.triggered.connect(lambda: self.add_requested.emit(obj_type))
         elif kind in (ItemKind.NODE, ItemKind.ELEMENT, ItemKind.SURFACE, ItemKind.MATERIAL,
                       ItemKind.SECTION, ItemKind.LOAD_CASE, ItemKind.COMBINATION):
             # Menu on an object
             kind_str = _kind_to_str(kind)
             if kind == ItemKind.SURFACE:
-                act_edit = menu.addAction(f"Modifier {item.text(0)}...")
+                act_edit = menu.addAction(self.tr("Modifier {item}...").format(item=item.text(0)))
                 act_edit.triggered.connect(
                     lambda: self.edit_requested.emit(kind_str, tag)
                 )
-            act_del = menu.addAction(f"Supprimer {item.text(0)}")
+            act_del = menu.addAction(self.tr("Supprimer {item}").format(item=item.text(0)))
             act_del.triggered.connect(
                 lambda: self.delete_requested.emit(kind_str, tag)
             )

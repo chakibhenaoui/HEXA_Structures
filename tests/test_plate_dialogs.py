@@ -51,5 +51,5 @@ def test_plate_region_properties_dialog_opens_for_macro_plate() -> None:
 
     dialog = PlateRegionPropertiesDialog(None, project, 1)
 
-    assert dialog.windowTitle().startswith("Proprietes de la plaque macro P1")
+    assert dialog.windowTitle().startswith("Propriétés de la plaque macro P1")
     assert dialog.tabs.count() == 4

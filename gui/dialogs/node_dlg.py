@@ -34,15 +34,15 @@ class NodeDialog(QDialog):
         self._forbidden_tags = set(forbidden_tags or set())
 
         self.setWindowTitle(
-            "Modifier le nœud sélectionné" if edit_existing else "Ajouter un nœud"
+            self.tr("Modifier le nœud sélectionné") if edit_existing else self.tr("Ajouter un nœud")
         )
 
         layout = QVBoxLayout(self)
 
         info = QLabel(
-            "Le numéro du nœud est verrouillé à l'ajout."
+            self.tr("Le numéro du nœud est verrouillé à l'ajout.")
             if not allow_tag_edit
-            else "Le numéro du nœud peut être changé s'il n'existe pas déjà."
+            else self.tr("Le numéro du nœud peut être changé s'il n'existe pas déjà.")
         )
         info.setWordWrap(True)
         layout.addWidget(info)
@@ -54,21 +54,21 @@ class NodeDialog(QDialog):
         self._spn_tag.setRange(1, 1_000_000)
         self._spn_tag.setValue(int(node_tag))
         self._spn_tag.setEnabled(allow_tag_edit)
-        form.addRow("Nœud", self._spn_tag)
+        form.addRow(self.tr("Nœud"), self._spn_tag)
 
         self._spn_x = self._make_coord_spin(x)
         self._spn_y = self._make_coord_spin(y)
         self._spn_z = self._make_coord_spin(z)
-        form.addRow("X (m)", self._spn_x)
-        form.addRow("Y (m)", self._spn_y)
-        form.addRow("Z (m)", self._spn_z)
+        form.addRow(self.tr("X (m)"), self._spn_x)
+        form.addRow(self.tr("Y (m)"), self._spn_y)
+        form.addRow(self.tr("Z (m)"), self._spn_z)
 
         self._buttons = QDialogButtonBox(
             QDialogButtonBox.Ok | QDialogButtonBox.Cancel,
             parent=self,
         )
         self._buttons.button(QDialogButtonBox.Ok).setText(
-            "Appliquer" if edit_existing else "Ajouter"
+            self.tr("Appliquer") if edit_existing else self.tr("Ajouter")
         )
         self._buttons.accepted.connect(self._validate)
         self._buttons.rejected.connect(self.reject)
@@ -88,8 +88,8 @@ class NodeDialog(QDialog):
         if self._allow_tag_edit and tag in self._forbidden_tags:
             QMessageBox.warning(
                 self,
-                "Nœud existant",
-                f"Le numéro N{tag} existe déjà. Choisissez un autre numéro.",
+                self.tr("Nœud existant"),
+                self.tr("Le numéro N{tag} existe déjà. Choisissez un autre numéro.").format(tag=tag),
             )
             self._spn_tag.setFocus()
             self._spn_tag.selectAll()

@@ -15,7 +15,7 @@ class ResultsTableWindow(QMainWindow):
 
     def __init__(self, parent=None) -> None:
         super().__init__(parent, Qt.Window)
-        self.setWindowTitle("Tableaux de résultats")
+        self.setWindowTitle(self.tr("Tableaux de résultats"))
         self.resize(1180, 720)
         self.panel = ResultsPanel(self)
         self.setCentralWidget(self.panel)

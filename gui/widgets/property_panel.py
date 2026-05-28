@@ -40,7 +40,8 @@ from core.model_data import (
     surface_type_from_formulation,
 )
 from core.plate_mesh_settings import effective_plate_mesh_divisions
-from core.loads import ComboType, COMBO_LABELS
+from core.loads import ComboType
+from gui.i18n.display_labels import combo_type_label, load_name_label, load_type_label
 
 # Load types with French labels (consistent with load_dlg.py)
 _LOAD_TYPES = {
@@ -60,13 +61,6 @@ _GRADES_BY_TYPE: dict[str, list[str]] = {
     "rebar": list(REBAR_GRADES.keys()),
     "steel": list(STEEL_GRADES.keys()),
 }
-
-_MATERIAL_INFOS: dict[str, str] = {
-    "concrete": "Matériau isotrope base sur une classe de béton Eurocode 2.",
-    "rebar": "Matériau isotrope base sur une nuance d'acier d'armature Eurocode 2.",
-    "steel": "Matériau isotrope base sur une nuance d'acier de construction Eurocode 3.",
-}
-
 
 class PropertyPanel(QScrollArea):
     """Editable property panel."""
@@ -96,7 +90,7 @@ class PropertyPanel(QScrollArea):
 
         # Placeholder
         self._placeholder = QLabel(
-            "Sélectionnez un élément\npour voir ses propriétés."
+            self.tr("Sélectionnez un élément\npour voir ses propriétés.")
         )
         self._placeholder.setAlignment(Qt.AlignCenter)
         self._placeholder.setStyleSheet("color: #888; font-size: 12px;")
@@ -105,6 +99,12 @@ class PropertyPanel(QScrollArea):
     def set_project(self, project: ProjectModel) -> None:
         """Set project."""
         self._project = project
+
+    def retranslate_ui(self) -> None:
+        """Refresh persistent labels after a language change."""
+        self._placeholder.setText(
+            self.tr("Sélectionnez un élément\npour voir ses propriétés.")
+        )
 
     def set_plate_editing_enabled(self, enabled: bool, reason: str = "") -> None:
         """Set plate editing enabled."""
@@ -147,24 +147,29 @@ class PropertyPanel(QScrollArea):
         node = self._project.nodes[tag]
         self._clear_form()
 
-        group = QGroupBox(f"Nœud N{tag}")
+        group = QGroupBox(self.tr("Nœud N{tag}").format(tag=tag))
         form = QFormLayout(group)
 
         # Coordinates
         self._spin_x = self._make_spin(node.x, -1e6, 1e6, " m")
         self._spin_y = self._make_spin(node.y, -1e6, 1e6, " m")
         self._spin_z = self._make_spin(node.z, -1e6, 1e6, " m")
-        form.addRow("X :", self._spin_x)
-        form.addRow("Y :", self._spin_y)
-        form.addRow("Z :", self._spin_z)
+        form.addRow(self.tr("X :"), self._spin_x)
+        form.addRow(self.tr("Y :"), self._spin_y)
+        form.addRow(self.tr("Z :"), self._spin_z)
 
         # Support conditions (6 DOF)
-        dof_labels = ("Ux (translation X)", "Uy (translation Y)",
-                      "Uz (translation Z)", "Rx (rotation X)",
-                      "Ry (rotation Y)", "Rz (rotation Z)")
+        dof_labels = (
+            self.tr("Ux (translation X)"),
+            self.tr("Uy (translation Y)"),
+            self.tr("Uz (translation Z)"),
+            self.tr("Rx (rotation X)"),
+            self.tr("Ry (rotation Y)"),
+            self.tr("Rz (rotation Z)"),
+        )
         self._chk_fixities: list[QCheckBox] = []
         for i, label in enumerate(dof_labels):
-            cb = QCheckBox(f"Bloqué {label}")
+            cb = QCheckBox(self.tr("Bloqué {label}").format(label=label))
             cb.setChecked(bool(node.fixities[i]) if i < len(node.fixities) else False)
             self._chk_fixities.append(cb)
             form.addRow(cb)
@@ -182,7 +187,7 @@ class PropertyPanel(QScrollArea):
         elem = self._project.elements[tag]
         self._clear_form()
 
-        group = QGroupBox(f"Élément E{tag}")
+        group = QGroupBox(self.tr("Élément E{tag}").format(tag=tag))
         form = QFormLayout(group)
 
         # Nodes (editable through combobox)
@@ -198,8 +203,8 @@ class PropertyPanel(QScrollArea):
             self._combo_node_i.setCurrentIndex(idx_i)
         if idx_j >= 0:
             self._combo_node_j.setCurrentIndex(idx_j)
-        form.addRow("Nœud I :", self._combo_node_i)
-        form.addRow("Nœud J :", self._combo_node_j)
+        form.addRow(self.tr("Nœud I :"), self._combo_node_i)
+        form.addRow(self.tr("Nœud J :"), self._combo_node_j)
 
         # Section (editable through combobox)
         self._combo_section = QComboBox()
@@ -209,7 +214,7 @@ class PropertyPanel(QScrollArea):
             self._combo_section.addItem(f"{sec.name} (T{stag})", stag)
             if stag == elem.section_tag:
                 self._combo_section.setCurrentIndex(self._combo_section.count() - 1)
-        form.addRow("Section :", self._combo_section)
+        form.addRow(self.tr("Section :"), self._combo_section)
 
         # Type (editable)
         self._combo_elem_type = QComboBox()
@@ -218,14 +223,14 @@ class PropertyPanel(QScrollArea):
         idx_t = self._combo_elem_type.findText(elem.element_type)
         if idx_t >= 0:
             self._combo_elem_type.setCurrentIndex(idx_t)
-        form.addRow("Type :", self._combo_elem_type)
+        form.addRow(self.tr("Type :"), self._combo_elem_type)
 
         # Longueur (lecture seule)
         ni = self._project.nodes.get(elem.node_i)
         nj = self._project.nodes.get(elem.node_j)
         if ni and nj:
             length = ((nj.x - ni.x)**2 + (nj.y - ni.y)**2 + (nj.z - ni.z)**2) ** 0.5
-            form.addRow("Longueur :", QLabel(f"{length:.3f} m"))
+            form.addRow(self.tr("Longueur :"), QLabel(f"{length:.3f} m"))
 
         form.addRow(self._make_buttons(self._apply_element))
 
@@ -245,11 +250,11 @@ class PropertyPanel(QScrollArea):
         surface = self._project.surface_elements[tag]
         self._clear_form()
 
-        group = QGroupBox(f"Surface S{tag}")
+        group = QGroupBox(self.tr("Surface S{tag}").format(tag=tag))
         form = QFormLayout(group)
 
         form.addRow(
-            "Nœuds :",
+            self.tr("Nœuds :"),
             QLabel(", ".join(f"N{node_tag}" for node_tag in surface.node_tags)),
         )
 
@@ -265,25 +270,25 @@ class PropertyPanel(QScrollArea):
         self._combo_surface_section.currentIndexChanged.connect(
             self._update_surface_section_summary
         )
-        form.addRow("Section :", self._combo_surface_section)
+        form.addRow(self.tr("Section :"), self._combo_surface_section)
 
         self._lbl_surface_formulation = QLabel()
         self._lbl_surface_thickness = QLabel()
         self._lbl_surface_solver_type = QLabel()
-        form.addRow("Formulation :", self._lbl_surface_formulation)
-        form.addRow("Épaisseur :", self._lbl_surface_thickness)
-        form.addRow("Type solveur :", self._lbl_surface_solver_type)
+        form.addRow(self.tr("Formulation :"), self._lbl_surface_formulation)
+        form.addRow(self.tr("Épaisseur :"), self._lbl_surface_thickness)
+        form.addRow(self.tr("Type solveur :"), self._lbl_surface_solver_type)
 
         form.addRow(
-            "Aire :",
+            self.tr("Aire :"),
             QLabel(f"{self._surface_area(surface):.3f} m²"),
         )
 
         if not self._plate_editing_enabled:
-            info = QLabel(self._plate_editing_reason or "Édition plaque indisponible.")
+            info = QLabel(self._plate_editing_reason or self.tr("Édition plaque indisponible."))
             info.setWordWrap(True)
             info.setStyleSheet("color: #8a5a00; font-size: 11px;")
-            form.addRow("Info :", info)
+            form.addRow(self.tr("Info :"), info)
             self._combo_surface_section.setEnabled(False)
 
         self._update_surface_section_summary()
@@ -301,10 +306,10 @@ class PropertyPanel(QScrollArea):
         plate = self._project.plate_regions[tag]
         self._clear_form()
 
-        group = QGroupBox(f"Plaque P{tag}")
+        group = QGroupBox(self.tr("Plaque P{tag}").format(tag=tag))
         form = QFormLayout(group)
         form.addRow(
-            "Noeuds :",
+            self.tr("Nœuds :"),
             QLabel(", ".join(f"N{node_tag}" for node_tag in plate.corner_node_tags)),
         )
         section = self._project.sections.get(plate.section_tag)
@@ -312,12 +317,12 @@ class PropertyPanel(QScrollArea):
             f"{section.name} (T{plate.section_tag})"
             if section is not None else f"T{plate.section_tag}"
         )
-        form.addRow("Section :", QLabel(section_text))
-        form.addRow("Formulation :", QLabel(str(plate.formulation)))
+        form.addRow(self.tr("Section :"), QLabel(section_text))
+        form.addRow(self.tr("Formulation :"), QLabel(str(plate.formulation)))
         effective_nx, effective_ny = effective_plate_mesh_divisions(self._project, plate)
         self._combo_plate_mesh_mode = QComboBox()
-        self._combo_plate_mesh_mode.addItem("Automatique", PLATE_MESH_MODE_AUTO)
-        self._combo_plate_mesh_mode.addItem("Utilisateur", PLATE_MESH_MODE_USER)
+        self._combo_plate_mesh_mode.addItem(self.tr("Automatique"), PLATE_MESH_MODE_AUTO)
+        self._combo_plate_mesh_mode.addItem(self.tr("Utilisateur"), PLATE_MESH_MODE_USER)
         mode = normalize_plate_mesh_mode(getattr(plate, "mesh_mode", None))
         idx = self._combo_plate_mesh_mode.findData(mode)
         if idx >= 0:
@@ -339,9 +344,9 @@ class PropertyPanel(QScrollArea):
         mesh_layout.addWidget(QLabel("Y"))
         mesh_layout.addWidget(self._spin_plate_mesh_ny)
         mesh_layout.addStretch(1)
-        form.addRow("Mode :", self._combo_plate_mesh_mode)
-        form.addRow("Utilisateur :", mesh_row)
-        form.addRow("Calcul :", QLabel(f"{effective_nx} x {effective_ny}"))
+        form.addRow(self.tr("Mode :"), self._combo_plate_mesh_mode)
+        form.addRow(self.tr("Utilisateur :"), mesh_row)
+        form.addRow(self.tr("Calcul :"), QLabel(f"{effective_nx} x {effective_ny}"))
         self._combo_plate_mesh_mode.currentIndexChanged.connect(
             lambda *_args: self._update_plate_mesh_edit_state()
         )
@@ -367,43 +372,43 @@ class PropertyPanel(QScrollArea):
         mat = self._project.materials[tag]
         self._clear_form()
 
-        group = QGroupBox(f"Matériau — {mat.name}")
+        group = QGroupBox(self.tr("Matériau — {name}").format(name=mat.name))
         layout = QVBoxLayout(group)
 
-        general_group = QGroupBox("Données générales")
+        general_group = QGroupBox(self.tr("Données générales"))
         general_form = QFormLayout(general_group)
         self._edit_mat_name = QLineEdit(mat.name)
         self._combo_mat_type = QComboBox()
         for key, label in [
-            ("concrete", "Béton (EC2)"),
-            ("rebar", "Armatures (EC2)"),
-            ("steel", "Acier de construction (EC3)"),
+            ("concrete", self.tr("Béton (EC2)")),
+            ("rebar", self.tr("Armatures (EC2)")),
+            ("steel", self.tr("Acier de construction (EC3)")),
         ]:
             self._combo_mat_type.addItem(label, key)
         self._combo_mat_grade = QComboBox()
         self._lbl_mat_info = QLabel()
         self._lbl_mat_info.setWordWrap(True)
         self._lbl_mat_info.setStyleSheet("color: #666; font-size: 11px;")
-        general_form.addRow("Nom :", self._edit_mat_name)
-        general_form.addRow("Type :", self._combo_mat_type)
-        general_form.addRow("Nuance / classe :", self._combo_mat_grade)
+        general_form.addRow(self.tr("Nom :"), self._edit_mat_name)
+        general_form.addRow(self.tr("Type :"), self._combo_mat_type)
+        general_form.addRow(self.tr("Nuance / classe :"), self._combo_mat_grade)
         general_form.addRow("", self._lbl_mat_info)
         layout.addWidget(general_group)
 
         props = isotropic_material_properties(mat.material_type, mat.grade, mat.properties)
 
-        weight_group = QGroupBox("Poids et masse")
+        weight_group = QGroupBox(self.tr("Poids et masse"))
         weight_form = QFormLayout(weight_group)
         self._spin_mat_unit_weight = self._make_spin(props["unit_weight"], 0.0, 500.0, " kN/m3")
         self._spin_mat_unit_weight.setDecimals(3)
         self._spin_mat_unit_weight.setSingleStep(0.5)
         self._edit_mat_mass_density = QLineEdit()
         self._edit_mat_mass_density.setReadOnly(True)
-        weight_form.addRow("Poids volumique :", self._spin_mat_unit_weight)
-        weight_form.addRow("Masse volumique :", self._edit_mat_mass_density)
+        weight_form.addRow(self.tr("Poids volumique :"), self._spin_mat_unit_weight)
+        weight_form.addRow(self.tr("Masse volumique :"), self._edit_mat_mass_density)
         layout.addWidget(weight_group)
 
-        isotropic_group = QGroupBox("Propriétés isotropes")
+        isotropic_group = QGroupBox(self.tr("Propriétés isotropes"))
         isotropic_form = QFormLayout(isotropic_group)
         self._spin_mat_young = self._make_spin(props["young_modulus"], 0.0, 1e9, " kPa")
         self._spin_mat_young.setDecimals(0)
@@ -413,9 +418,9 @@ class PropertyPanel(QScrollArea):
         self._spin_mat_poisson.setSingleStep(0.01)
         self._edit_mat_shear = QLineEdit()
         self._edit_mat_shear.setReadOnly(True)
-        isotropic_form.addRow("Module de Young E :", self._spin_mat_young)
-        isotropic_form.addRow("Coefficient de Poisson nu :", self._spin_mat_poisson)
-        isotropic_form.addRow("Module de cisaillement G :", self._edit_mat_shear)
+        isotropic_form.addRow(self.tr("Module de Young E :"), self._spin_mat_young)
+        isotropic_form.addRow(self.tr("Coefficient de Poisson nu :"), self._spin_mat_poisson)
+        isotropic_form.addRow(self.tr("Module de cisaillement G :"), self._edit_mat_shear)
         layout.addWidget(isotropic_group)
 
         self._material_form_syncing = True
@@ -448,27 +453,27 @@ class PropertyPanel(QScrollArea):
         sec = self._project.sections[tag]
         self._clear_form()
 
-        group = QGroupBox(f"Section — {sec.name}")
+        group = QGroupBox(self.tr("Section — {name}").format(name=sec.name))
         form = QFormLayout(group)
 
         self._edit_sec_name = QLineEdit(sec.name)
-        form.addRow("Nom :", self._edit_sec_name)
+        form.addRow(self.tr("Nom :"), self._edit_sec_name)
 
         # Type (editable)
         self._combo_sec_type = QComboBox()
         sec_types = [
-            ("rectangular", "Rectangulaire"),
-            ("T", "Section en T"),
-            ("I_profile", "Profilé acier"),
+            ("rectangular", self.tr("Rectangulaire")),
+            ("T", self.tr("Section en T")),
+            ("I_profile", self.tr("Profilé acier")),
         ]
         if sec.is_surface or self._plate_editing_enabled:
-            sec_types.append(("surface", "Section surfacique"))
+            sec_types.append(("surface", self.tr("Section surfacique")))
         for key, label in sec_types:
             self._combo_sec_type.addItem(label, key)
         idx = self._combo_sec_type.findData(sec.section_type)
         if idx >= 0:
             self._combo_sec_type.setCurrentIndex(idx)
-        form.addRow("Type :", self._combo_sec_type)
+        form.addRow(self.tr("Type :"), self._combo_sec_type)
 
         # Associated material (editable)
         self._combo_sec_material = QComboBox()
@@ -478,7 +483,7 @@ class PropertyPanel(QScrollArea):
                 self._combo_sec_material.setCurrentIndex(
                     self._combo_sec_material.count() - 1
                 )
-        form.addRow("Matériau :", self._combo_sec_material)
+        form.addRow(self.tr("Matériau :"), self._combo_sec_material)
 
         self._spin_sec_thickness = self._make_spin(
             sec.thickness or 0.20,
@@ -487,7 +492,7 @@ class PropertyPanel(QScrollArea):
             " m",
         )
         self._spin_sec_thickness.setSingleStep(0.01)
-        form.addRow("Épaisseur :", self._spin_sec_thickness)
+        form.addRow(self.tr("Épaisseur :"), self._spin_sec_thickness)
 
         self._combo_sec_surface_formulation = QComboBox()
         for formulation in SURFACE_FORMULATION_TYPES:
@@ -497,28 +502,28 @@ class PropertyPanel(QScrollArea):
         )
         if idx_formulation >= 0:
             self._combo_sec_surface_formulation.setCurrentIndex(idx_formulation)
-        form.addRow("Formulation :", self._combo_sec_surface_formulation)
+        form.addRow(self.tr("Formulation :"), self._combo_sec_surface_formulation)
 
         # Geometric properties (editable)
         self._spin_area = self._make_spin(sec.area * 1e4, 0, 1e6)
         self._spin_area.setSuffix(" cm²")
-        form.addRow("Aire :", self._spin_area)
+        form.addRow(self.tr("Aire :"), self._spin_area)
 
         self._spin_iy = self._make_spin(sec.inertia_y * 1e8, 0, 1e12)
         self._spin_iy.setSuffix(" cm⁴")
-        form.addRow("Iy :", self._spin_iy)
+        form.addRow(self.tr("Iy :"), self._spin_iy)
 
         self._spin_iz = self._make_spin(sec.inertia_z * 1e8, 0, 1e12)
         self._spin_iz.setSuffix(" cm⁴")
-        form.addRow("Iz :", self._spin_iz)
+        form.addRow(self.tr("Iz :"), self._spin_iz)
 
         self._combo_sec_type.currentIndexChanged.connect(self._on_section_type_changed)
         self._on_section_type_changed()
         if sec.is_surface and not self._plate_editing_enabled:
-            info = QLabel(self._plate_editing_reason or "Édition plaque indisponible.")
+            info = QLabel(self._plate_editing_reason or self.tr("Édition plaque indisponible."))
             info.setWordWrap(True)
             info.setStyleSheet("color: #8a5a00; font-size: 11px;")
-            form.addRow("Info :", info)
+            form.addRow(self.tr("Info :"), info)
             self._edit_sec_name.setEnabled(False)
             self._combo_sec_type.setEnabled(False)
             self._combo_sec_material.setEnabled(False)
@@ -542,30 +547,32 @@ class PropertyPanel(QScrollArea):
         lc = self._project.loads[tag]
         self._clear_form()
 
-        group = QGroupBox(f"Cas de charge — {lc.name}")
+        group = QGroupBox(
+            self.tr("Cas de charge — {name}").format(name=load_name_label(lc))
+        )
         form = QFormLayout(group)
 
         self._edit_load_name = QLineEdit(lc.name)
-        form.addRow("Nom :", self._edit_load_name)
+        form.addRow(self.tr("Nom :"), self._edit_load_name)
 
         self._combo_load_type = QComboBox()
         for key, label in _LOAD_TYPES.items():
-            self._combo_load_type.addItem(label, key)
+            self._combo_load_type.addItem(load_type_label(key), key)
         idx = self._combo_load_type.findData(lc.load_type)
         if idx >= 0:
             self._combo_load_type.setCurrentIndex(idx)
-        form.addRow("Type :", self._combo_load_type)
+        form.addRow(self.tr("Type :"), self._combo_load_type)
 
         self._edit_load_category = QLineEdit(lc.category or "")
-        self._edit_load_category.setPlaceholderText("Ex : A, B, C, neige, vent...")
-        form.addRow("Catégorie :", self._edit_load_category)
+        self._edit_load_category.setPlaceholderText(self.tr("Ex : A, B, C, neige, vent..."))
+        form.addRow(self.tr("Catégorie :"), self._edit_load_category)
 
         form.addRow(self._make_buttons(self._apply_load))
 
         # List nodal loads for this case
         nodal = [nl for nl in self._project.nodal_loads if nl.load_tag == tag]
         if nodal:
-            form.addRow(QLabel(f"— {len(nodal)} charge(s) nodale(s) —"))
+            form.addRow(QLabel(self.tr("— {count} charge(s) nodale(s) —").format(count=len(nodal))))
             for nl in nodal:
                 parts = []
                 for attr, label in [("fx", "Fx"), ("fy", "Fy"), ("fz", "Fz"),
@@ -579,7 +586,7 @@ class PropertyPanel(QScrollArea):
         # Distributed loads
         elem_loads = [el for el in self._project.element_loads if el.load_tag == tag]
         if elem_loads:
-            form.addRow(QLabel(f"— {len(elem_loads)} charge(s) répartie(s) —"))
+            form.addRow(QLabel(self.tr("— {count} charge(s) répartie(s) —").format(count=len(elem_loads))))
             for el in elem_loads:
                 parts = []
                 for attr, label in [("wx", "wx"), ("wy", "wy"), ("wz", "wz")]:
@@ -601,31 +608,34 @@ class PropertyPanel(QScrollArea):
         combo = self._project.combinations[tag]
         self._clear_form()
 
-        group = QGroupBox(f"Combinaison — {combo.name}")
+        group = QGroupBox(self.tr("Combinaison — {name}").format(name=combo.name))
         form = QFormLayout(group)
 
         self._edit_combo_name = QLineEdit(combo.name)
-        form.addRow("Nom :", self._edit_combo_name)
+        form.addRow(self.tr("Nom :"), self._edit_combo_name)
 
         self._combo_combo_type = QComboBox()
         for ct in ComboType:
-            self._combo_combo_type.addItem(COMBO_LABELS[ct], ct.value)
+            self._combo_combo_type.addItem(combo_type_label(ct.value), ct.value)
         idx = self._combo_combo_type.findData(combo.combo_type)
         if idx >= 0:
             self._combo_combo_type.setCurrentIndex(idx)
-        form.addRow("Type :", self._combo_combo_type)
+        form.addRow(self.tr("Type :"), self._combo_combo_type)
 
         # Editable factors
         self._combo_factor_spins: dict[int, QDoubleSpinBox] = {}
         if self._project.loads:
-            form.addRow(QLabel("— Facteurs —"))
+            form.addRow(QLabel(self.tr("— Facteurs —")))
             for ltag in sorted(self._project.loads.keys()):
                 lc = self._project.loads[ltag]
                 factor = combo.factors.get(ltag, 0.0)
                 spin = self._make_spin(factor, 0.0, 99.99)
                 spin.setDecimals(2)
                 self._combo_factor_spins[ltag] = spin
-                form.addRow(f"  {lc.name} :", spin)
+                form.addRow(
+                    self.tr("  {name} :").format(name=load_name_label(lc)),
+                    spin,
+                )
 
         form.addRow(self._make_buttons(self._apply_combination))
 
@@ -659,8 +669,8 @@ class PropertyPanel(QScrollArea):
         if section is None or section.is_surface:
             QMessageBox.warning(
                 self,
-                "Section barre requise",
-                "Un element filaire doit utiliser une section de barre, pas une section plaque.",
+                self.tr("Section barre requise"),
+                self.tr("Un élément filaire doit utiliser une section de barre, pas une section plaque."),
             )
             return
         elem.section_tag = section_tag
@@ -682,10 +692,14 @@ class PropertyPanel(QScrollArea):
             if actual_count != expected_count:
                 QMessageBox.warning(
                     self,
-                    "Formulation incompatible",
-                    (
-                        f"La section sélectionnée attend {expected_count} nœud(s), "
-                        f"mais la surface S{self._current_tag} en a {actual_count}."
+                    self.tr("Formulation incompatible"),
+                    self.tr(
+                        "La section sélectionnée attend {expected_count} nœud(s), "
+                        "mais la surface S{tag} en a {actual_count}."
+                    ).format(
+                        expected_count=expected_count,
+                        tag=self._current_tag,
+                        actual_count=actual_count,
                     ),
                 )
                 return
@@ -740,9 +754,9 @@ class PropertyPanel(QScrollArea):
             if used_by_surfaces:
                 QMessageBox.warning(
                     self,
-                    "Section utilisée",
-                    (
-                        "Cette section est encore affectee a une ou plusieurs surfaces. "
+                    self.tr("Section utilisée"),
+                    self.tr(
+                        "Cette section est encore affectée à une ou plusieurs surfaces. "
                         "Conservez un type de section plaque."
                     ),
                 )
@@ -765,10 +779,15 @@ class PropertyPanel(QScrollArea):
                 )
                 QMessageBox.warning(
                     self,
-                    "Formulation incompatible",
-                    (
-                        f"La formulation {new_formulation} attend {expected_count} nœud(s), "
-                        f"mais la surface S{incompatible_surfaces[0]} en a {actual_count}."
+                    self.tr("Formulation incompatible"),
+                    self.tr(
+                        "La formulation {formulation} attend {expected_count} nœud(s), "
+                        "mais la surface S{tag} en a {actual_count}."
+                    ).format(
+                        formulation=new_formulation,
+                        expected_count=expected_count,
+                        tag=incompatible_surfaces[0],
+                        actual_count=actual_count,
                     ),
                 )
                 return
@@ -900,7 +919,11 @@ class PropertyPanel(QScrollArea):
         """Update material info."""
         if hasattr(self, "_lbl_mat_info"):
             self._lbl_mat_info.setText(
-                _MATERIAL_INFOS.get(self._combo_mat_type.currentData(), "")
+                {
+                    "concrete": self.tr("Matériau isotrope basé sur une classe de béton Eurocode 2."),
+                    "rebar": self.tr("Matériau isotrope basé sur une nuance d'acier d'armature Eurocode 2."),
+                    "steel": self.tr("Matériau isotrope basé sur une nuance d'acier de construction Eurocode 3."),
+                }.get(self._combo_mat_type.currentData(), "")
             )
 
     def _update_material_derived_fields(self) -> None:
@@ -958,10 +981,10 @@ class PropertyPanel(QScrollArea):
         container = QWidget()
         h = QHBoxLayout(container)
         h.setContentsMargins(0, 0, 0, 0)
-        btn_apply = QPushButton("Appliquer")
+        btn_apply = QPushButton(self.tr("Appliquer"))
         btn_apply.clicked.connect(apply_slot)
         btn_apply.setEnabled(enabled)
-        btn_close = QPushButton("Fermer")
+        btn_close = QPushButton(self.tr("Fermer"))
         btn_close.clicked.connect(self.clear_display)
         h.addWidget(btn_apply)
         h.addWidget(btn_close)

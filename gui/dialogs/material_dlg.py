@@ -24,18 +24,6 @@ from core.material_properties import (
 )
 
 
-_MATERIAL_TYPES = {
-    "concrete": "Béton (EC2)",
-    "rebar": "Armatures (EC2)",
-    "steel": "Acier de construction (EC3)",
-}
-
-_MATERIAL_INFOS = {
-    "concrete": "Matériau isotrope base sur une classe de béton Eurocode 2.",
-    "rebar": "Matériau isotrope base sur une nuance d'acier d'armature Eurocode 2.",
-    "steel": "Matériau isotrope base sur une nuance d'acier de construction Eurocode 3.",
-}
-
 _GRADES_BY_TYPE = {
     "concrete": list(CONCRETE_GRADES.keys()),
     "rebar": list(REBAR_GRADES.keys()),
@@ -64,7 +52,7 @@ class MaterialDialog(QDialog):
         self._init_properties = dict(properties or {})
         self._syncing_identity = False
 
-        self.setWindowTitle("Données matériau")
+        self.setWindowTitle(self.tr("Données matériau"))
         self.resize(560, 420)
 
         self._build_ui()
@@ -73,48 +61,57 @@ class MaterialDialog(QDialog):
     def _build_ui(self) -> None:
         root = QVBoxLayout(self)
 
-        grp_general = QGroupBox("Données generales", self)
-        general_form = QFormLayout(grp_general)
-        self.edit_name = QLineEdit(grp_general)
-        self.combo_type = QComboBox(grp_general)
-        self.combo_grade = QComboBox(grp_general)
-        self.lbl_info = QLabel(grp_general)
+        self.grp_general = QGroupBox(self)
+        general_form = QFormLayout(self.grp_general)
+        self.edit_name = QLineEdit(self.grp_general)
+        self.combo_type = QComboBox(self.grp_general)
+        self.combo_grade = QComboBox(self.grp_general)
+        self.lbl_info = QLabel(self.grp_general)
         self.lbl_info.setWordWrap(True)
         self.lbl_info.setStyleSheet("color: #666; font-size: 11px;")
-        general_form.addRow("Nom :", self.edit_name)
-        general_form.addRow("Type :", self.combo_type)
-        general_form.addRow("Nuance / classe :", self.combo_grade)
+        self.lbl_name = QLabel(self)
+        self.lbl_type = QLabel(self)
+        self.lbl_grade = QLabel(self)
+        general_form.addRow(self.lbl_name, self.edit_name)
+        general_form.addRow(self.lbl_type, self.combo_type)
+        general_form.addRow(self.lbl_grade, self.combo_grade)
         general_form.addRow("", self.lbl_info)
-        root.addWidget(grp_general)
+        root.addWidget(self.grp_general)
 
         middle_layout = QGridLayout()
         root.addLayout(middle_layout)
 
-        grp_weight = QGroupBox("Poids et masse", self)
-        weight_form = QFormLayout(grp_weight)
+        self.grp_weight = QGroupBox(self)
+        weight_form = QFormLayout(self.grp_weight)
         self.spin_unit_weight = self._make_spin(0.0, 0.0, 500.0, 3, 0.5, " kN/m3")
-        self.edit_mass_density = QLineEdit(grp_weight)
+        self.edit_mass_density = QLineEdit(self.grp_weight)
         self.edit_mass_density.setReadOnly(True)
-        weight_form.addRow("Poids volumique :", self.spin_unit_weight)
-        weight_form.addRow("Masse volumique :", self.edit_mass_density)
-        middle_layout.addWidget(grp_weight, 0, 0)
+        self.lbl_unit_weight = QLabel(self)
+        self.lbl_mass_density = QLabel(self)
+        weight_form.addRow(self.lbl_unit_weight, self.spin_unit_weight)
+        weight_form.addRow(self.lbl_mass_density, self.edit_mass_density)
+        middle_layout.addWidget(self.grp_weight, 0, 0)
 
-        grp_units = QGroupBox("Unités", self)
-        units_form = QFormLayout(grp_units)
-        self.lbl_units = QLabel("kN, m, C", grp_units)
-        units_form.addRow("Systeme interne :", self.lbl_units)
-        middle_layout.addWidget(grp_units, 0, 1)
+        self.grp_units = QGroupBox(self)
+        units_form = QFormLayout(self.grp_units)
+        self.lbl_units = QLabel("kN, m, C", self.grp_units)
+        self.lbl_internal_system = QLabel(self)
+        units_form.addRow(self.lbl_internal_system, self.lbl_units)
+        middle_layout.addWidget(self.grp_units, 0, 1)
 
-        grp_isotropic = QGroupBox("Propriétés isotropes", self)
-        isotropic_form = QFormLayout(grp_isotropic)
+        self.grp_isotropic = QGroupBox(self)
+        isotropic_form = QFormLayout(self.grp_isotropic)
         self.spin_young = self._make_spin(0.0, 0.0, 1_000_000_000.0, 0, 100_000.0, " kPa")
         self.spin_poisson = self._make_spin(0.0, 0.0, 0.499, 3, 0.01)
-        self.edit_shear = QLineEdit(grp_isotropic)
+        self.edit_shear = QLineEdit(self.grp_isotropic)
         self.edit_shear.setReadOnly(True)
-        isotropic_form.addRow("Module de Young E :", self.spin_young)
-        isotropic_form.addRow("Coefficient de Poisson nu :", self.spin_poisson)
-        isotropic_form.addRow("Module de cisaillement G :", self.edit_shear)
-        root.addWidget(grp_isotropic)
+        self.lbl_young = QLabel(self)
+        self.lbl_poisson = QLabel(self)
+        self.lbl_shear = QLabel(self)
+        isotropic_form.addRow(self.lbl_young, self.spin_young)
+        isotropic_form.addRow(self.lbl_poisson, self.spin_poisson)
+        isotropic_form.addRow(self.lbl_shear, self.edit_shear)
+        root.addWidget(self.grp_isotropic)
 
         self.button_box = QDialogButtonBox(
             QDialogButtonBox.Ok | QDialogButtonBox.Cancel,
@@ -125,8 +122,8 @@ class MaterialDialog(QDialog):
     def _setup_ui(self) -> None:
         self.edit_name.setText(self._init_name)
 
-        for key, label in _MATERIAL_TYPES.items():
-            self.combo_type.addItem(label, key)
+        for key in _GRADES_BY_TYPE:
+            self.combo_type.addItem(self._material_type_label(key), key)
 
         self.button_box.accepted.connect(self._validate)
         self.button_box.rejected.connect(self.reject)
@@ -156,6 +153,62 @@ class MaterialDialog(QDialog):
         self._update_derived_fields()
         if not self._init_name:
             self._auto_name()
+        self.retranslate_ui()
+
+    def retranslate_ui(self) -> None:
+        """Refresh persistent dialog labels after a language change."""
+        self.setWindowTitle(self.tr("Données matériau"))
+        self.grp_general.setTitle(self.tr("Données générales"))
+        self.grp_weight.setTitle(self.tr("Poids et masse"))
+        self.grp_units.setTitle(self.tr("Unités"))
+        self.grp_isotropic.setTitle(self.tr("Propriétés isotropes"))
+        self.lbl_name.setText(self.tr("Nom :"))
+        self.lbl_type.setText(self.tr("Type :"))
+        self.lbl_grade.setText(self.tr("Nuance / classe :"))
+        self.lbl_unit_weight.setText(self.tr("Poids volumique :"))
+        self.lbl_mass_density.setText(self.tr("Masse volumique :"))
+        self.lbl_internal_system.setText(self.tr("Système interne :"))
+        self.lbl_young.setText(self.tr("Module de Young E :"))
+        self.lbl_poisson.setText(self.tr("Coefficient de Poisson nu :"))
+        self.lbl_shear.setText(self.tr("Module de cisaillement G :"))
+        self._refresh_material_type_labels()
+        self._update_info()
+        self.button_box.button(QDialogButtonBox.Ok).setText(self.tr("OK"))
+        self.button_box.button(QDialogButtonBox.Cancel).setText(self.tr("Annuler"))
+
+    def _refresh_material_type_labels(self) -> None:
+        """Refresh material type combo labels while preserving stored data."""
+        current = self.material_type()
+        self.combo_type.blockSignals(True)
+        for index in range(self.combo_type.count()):
+            key = str(self.combo_type.itemData(index) or "")
+            self.combo_type.setItemText(index, self._material_type_label(key))
+        idx = self.combo_type.findData(current)
+        if idx >= 0:
+            self.combo_type.setCurrentIndex(idx)
+        self.combo_type.blockSignals(False)
+
+    def _material_type_label(self, material_type: str) -> str:
+        labels = {
+            "concrete": self.tr("Béton (EC2)"),
+            "rebar": self.tr("Armatures (EC2)"),
+            "steel": self.tr("Acier de construction (EC3)"),
+        }
+        return labels.get(material_type, material_type)
+
+    def _material_info(self, material_type: str) -> str:
+        labels = {
+            "concrete": self.tr(
+                "Matériau isotrope basé sur une classe de béton Eurocode 2."
+            ),
+            "rebar": self.tr(
+                "Matériau isotrope basé sur une nuance d'acier d'armature Eurocode 2."
+            ),
+            "steel": self.tr(
+                "Matériau isotrope basé sur une nuance d'acier de construction Eurocode 3."
+            ),
+        }
+        return labels.get(material_type, "")
 
     def _populate_grades(self, *, preferred_grade: str = "") -> None:
         """Handle populate grades."""
@@ -194,7 +247,7 @@ class MaterialDialog(QDialog):
 
     def _update_info(self) -> None:
         """Update info."""
-        self.lbl_info.setText(_MATERIAL_INFOS.get(self.material_type(), ""))
+        self.lbl_info.setText(self._material_info(self.material_type()))
 
     def _auto_name(self) -> None:
         """Suggest an automatic name from the material type and grade."""
@@ -202,13 +255,21 @@ class MaterialDialog(QDialog):
         if not grade:
             return
         prefix = {
-            "concrete": "Béton",
-            "rebar": "Armature",
-            "steel": "Acier",
-        }.get(self.material_type(), "Matériau")
+            "concrete": self.tr("Béton"),
+            "rebar": self.tr("Armature"),
+            "steel": self.tr("Acier"),
+        }.get(self.material_type(), self.tr("Matériau"))
         current = self.edit_name.text().strip()
-        if not current or any(current.startswith(p) for p in self._AUTO_PREFIXES):
+        if not current or any(current.startswith(p) for p in self._auto_prefixes()):
             self.edit_name.setText(f"{prefix} {grade}")
+
+    def _auto_prefixes(self) -> tuple[str, ...]:
+        return self._AUTO_PREFIXES + (
+            self.tr("Béton"),
+            self.tr("Armature"),
+            self.tr("Acier"),
+            self.tr("Matériau"),
+        )
 
     def _update_derived_fields(self) -> None:
         """Update derived fields."""

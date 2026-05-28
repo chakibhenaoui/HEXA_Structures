@@ -17,6 +17,7 @@ from core.model_data import (
     ElementLoad,
     ProjectModel,
 )
+from gui.i18n.display_labels import load_name_label, load_type_label
 from gui.resources import app_resource_path
 
 
@@ -71,10 +72,23 @@ class LoadEditor(QWidget):
 
     def _populate_combos(self) -> None:
         """Handle populate combinations."""
-        for key, label in LOAD_TYPES.items():
-            self.ui.cmb_type.addItem(label, key)
-        for key, label in LIVE_CATEGORIES.items():
-            self.ui.cmb_category.addItem(label, key)
+        for key in LOAD_TYPES:
+            self.ui.cmb_type.addItem(load_type_label(key), key)
+        for key in LIVE_CATEGORIES:
+            self.ui.cmb_category.addItem(self._category_label(key), key)
+
+    def _category_label(self, key: str) -> str:
+        labels = {
+            "A": self.tr("A — Habitation, résidentiel"),
+            "B": self.tr("B — Bureaux"),
+            "C": self.tr("C — Lieux de réunion"),
+            "D": self.tr("D — Commerces"),
+            "E": self.tr("E — Stockage"),
+            "F": self.tr("F — Trafic véhicules ≤ 30 kN"),
+            "G": self.tr("G — Trafic véhicules > 30 kN"),
+            "H": self.tr("H — Toitures"),
+        }
+        return labels.get(key, key)
 
     def _connect_signals(self) -> None:
         """Handle connect signals."""
@@ -97,8 +111,13 @@ class LoadEditor(QWidget):
         if not self._project:
             return
         for lc in self._project.loads.values():
-            type_label = LOAD_TYPES.get(lc.load_type, lc.load_type)
-            item = QListWidgetItem(f"{lc.name} ({type_label})")
+            type_label = load_type_label(lc.load_type)
+            item = QListWidgetItem(
+                self.tr("{name} ({type})").format(
+                    name=load_name_label(lc),
+                    type=type_label,
+                )
+            )
             item.setData(Qt.UserRole, lc.tag)
             self.ui.lst_loads.addItem(item)
 
@@ -160,7 +179,10 @@ class LoadEditor(QWidget):
         if load_type == "live":
             category = self.ui.cmb_category.currentData() or "A"
 
-        name = f"{LOAD_TYPES.get(load_type, 'Charge')} {tag}"
+        name = self.tr("{type} {tag}").format(
+            type=load_type_label(load_type) or self.tr("Charge"),
+            tag=tag,
+        )
         lc = LoadData(tag=tag, name=name, load_type=load_type, category=category)
         self._project.loads[tag] = lc
 

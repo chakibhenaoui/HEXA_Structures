@@ -86,7 +86,7 @@ class AxisGridTable(QTableWidget):
 
     def _build_ui(self) -> None:
         self.setColumnCount(2)
-        self.setHorizontalHeaderLabels(["Repère", "Coordonnées"])
+        self.setHorizontalHeaderLabels([self.tr("Repère"), self.tr("Coordonnées")])
         self.setItemDelegateForColumn(1, CoordinateItemDelegate(self))
         self.horizontalHeader().setSectionResizeMode(0, QHeaderView.Stretch)
         self.horizontalHeader().setSectionResizeMode(1, QHeaderView.Stretch)
@@ -161,8 +161,8 @@ class AxisGridTable(QTableWidget):
             self.setCurrentCell(row, 0)
 
         menu = QMenu(self)
-        add_action = menu.addAction("Ajouter une ligne")
-        delete_action = menu.addAction("Supprimer la ligne")
+        add_action = menu.addAction(self.tr("Ajouter une ligne"))
+        delete_action = menu.addAction(self.tr("Supprimer la ligne"))
         delete_action.setEnabled(row >= 0 or self.currentRow() >= 0)
 
         action = menu.exec(self.viewport().mapToGlobal(position))
@@ -192,8 +192,13 @@ class AxisGridTable(QTableWidget):
             coordinate, ok = self._LOCALE.toDouble(coordinate_text)
             if not ok:
                 raise ValueError(
-                    f"Axe {self._axis_name}, ligne {row + 1} : "
-                    f"coordonnée invalide '{coordinate_text}'."
+                    self.tr(
+                        "Axe {axis}, ligne {row} : coordonnée invalide '{value}'."
+                    ).format(
+                        axis=self._axis_name,
+                        row=row + 1,
+                        value=coordinate_text,
+                    )
                 )
             entries.append(
                 GridAxisEntry(
@@ -231,7 +236,7 @@ class GridDialog(QDialog):
         default_enabled: bool = False,
     ):
         super().__init__(parent)
-        self.setWindowTitle("Définir la grille 3D")
+        self.setWindowTitle(self.tr("Définir la grille 3D"))
         self.resize(920, 430)
         self._grid = grid or Grid3DData()
         self._default_enabled = default_enabled
@@ -241,14 +246,16 @@ class GridDialog(QDialog):
     def _build_ui(self) -> None:
         root = QVBoxLayout(self)
 
-        self.chk_enabled = QCheckBox("Afficher et utiliser la grille", self)
+        self.chk_enabled = QCheckBox(self.tr("Afficher et utiliser la grille"), self)
         self.chk_enabled.setChecked(self._grid.enabled or self._default_enabled)
         root.addWidget(self.chk_enabled)
 
         hint = QLabel(
-            "Chaque axe comporte 5 lignes initiales. "
-            "Utilisez les boutons pour ajouter ou supprimer une ligne, "
-            "ou le clic droit sur une ligne pour la supprimer.",
+            self.tr(
+                "Chaque axe comporte 5 lignes initiales. "
+                "Utilisez les boutons pour ajouter ou supprimer une ligne, "
+                "ou le clic droit sur une ligne pour la supprimer."
+            ),
             self,
         )
         hint.setWordWrap(True)
@@ -256,23 +263,23 @@ class GridDialog(QDialog):
 
         tables_layout = QHBoxLayout()
         tables_layout.setSpacing(12)
-        self.table_x = self._create_axis_group("Axe X", self._grid.axis_entries("X"))
-        self.table_y = self._create_axis_group("Axe Y", self._grid.axis_entries("Y"))
-        self.table_z = self._create_axis_group("Axe Z", self._grid.axis_entries("Z"))
+        self.table_x = self._create_axis_group("X", self.tr("Axe X"), self._grid.axis_entries("X"))
+        self.table_y = self._create_axis_group("Y", self.tr("Axe Y"), self._grid.axis_entries("Y"))
+        self.table_z = self._create_axis_group("Z", self.tr("Axe Z"), self._grid.axis_entries("Z"))
         tables_layout.addWidget(self._group_x, 1)
         tables_layout.addWidget(self._group_y, 1)
         tables_layout.addWidget(self._group_z, 1)
         root.addLayout(tables_layout)
 
-        summary_box = QGroupBox("Synthèse", self)
+        summary_box = QGroupBox(self.tr("Synthèse"), self)
         summary_layout = QGridLayout(summary_box)
         self.lbl_axes = QLabel(self)
         self.lbl_axes.setWordWrap(True)
         self.lbl_mode = QLabel(self)
         self.lbl_mode.setWordWrap(True)
-        summary_layout.addWidget(QLabel("Axes :", self), 0, 0)
+        summary_layout.addWidget(QLabel(self.tr("Axes :"), self), 0, 0)
         summary_layout.addWidget(self.lbl_axes, 0, 1)
-        summary_layout.addWidget(QLabel("Mode :", self), 1, 0)
+        summary_layout.addWidget(QLabel(self.tr("Mode :"), self), 1, 0)
         summary_layout.addWidget(self.lbl_mode, 1, 1)
         root.addWidget(summary_box)
 
@@ -292,32 +299,33 @@ class GridDialog(QDialog):
 
     def _create_axis_group(
         self,
+        axis_name: str,
         title: str,
         entries: list[GridAxisEntry],
     ) -> AxisGridTable:
         group = QGroupBox(title, self)
         layout = QVBoxLayout(group)
-        table = AxisGridTable(title[-1], entries, group)
+        table = AxisGridTable(axis_name, entries, group)
         layout.addWidget(table)
         actions_layout = QHBoxLayout()
-        btn_add = QPushButton("Ajouter une ligne", group)
+        btn_add = QPushButton(self.tr("Ajouter une ligne"), group)
         btn_add.clicked.connect(
             lambda _checked=False, current_table=table: self._add_row_to_table(current_table)
         )
         actions_layout.addWidget(btn_add)
-        btn_delete = QPushButton("Supprimer la ligne", group)
+        btn_delete = QPushButton(self.tr("Supprimer la ligne"), group)
         btn_delete.clicked.connect(
             lambda _checked=False, current_table=table: current_table.remove_current_or_selected_row()
         )
         actions_layout.addWidget(btn_delete)
         actions_layout.addStretch(1)
         layout.addLayout(actions_layout)
-        helper = QLabel("Colonnes : repère puis coordonnée en mêtres.", group)
+        helper = QLabel(self.tr("Colonnes : repère puis coordonnée en mètres."), group)
         helper.setWordWrap(True)
         layout.addWidget(helper)
-        if title.endswith("X"):
+        if axis_name == "X":
             self._group_x = group
-        elif title.endswith("Y"):
+        elif axis_name == "Y":
             self._group_y = group
         else:
             self._group_z = group
@@ -341,21 +349,23 @@ class GridDialog(QDialog):
             "Z": self._axis_line_count(self.table_z),
         }
         if any(count == 0 for count in axis_counts.values()):
-            return "Grille incomplète : chaque axe doit contenir au moins une coordonnée."
+            return self.tr("Grille incomplète : chaque axe doit contenir au moins une coordonnée.")
 
         single_axes = [axis for axis, count in axis_counts.items() if count == 1]
         if len(single_axes) == 0:
-            return "Grille 3D complète."
+            return self.tr("Grille 3D complète.")
         if len(single_axes) == 1:
             axis = single_axes[0]
             plane = {"X": "YZ", "Y": "XZ", "Z": "XY"}[axis]
             return (
-                f"Mode 2D détecté : travail conseille dans le plan {plane} "
-                f"(axe {axis} unique)."
+                self.tr("Mode 2D détecté : travail conseillé dans le plan {plane} (axe {axis} unique).").format(
+                    plane=plane,
+                    axis=axis,
+                )
             )
         if len(single_axes) == 2:
-            return "Mode 1D détecté : une seule ligne de grille."
-        return "Mode ponctuel détecté : une seule intersection de grille."
+            return self.tr("Mode 1D détecté : une seule ligne de grille.")
+        return self.tr("Mode ponctuel détecté : une seule intersection de grille.")
 
     def _update_summary(self) -> None:
         """Update summary."""
@@ -365,7 +375,10 @@ class GridDialog(QDialog):
             "Z": self._axis_line_count(self.table_z),
         }
         self.lbl_axes.setText(
-            ", ".join(f"{axis} : {count} axes" for axis, count in axis_counts.items())
+            ", ".join(
+                self.tr("{axis} : {count} axes").format(axis=axis, count=count)
+                for axis, count in axis_counts.items()
+            )
         )
         self.lbl_mode.setText(self._grid_mode_text())
 
@@ -374,7 +387,7 @@ class GridDialog(QDialog):
         y_entries = self.table_y.axis_entries()
         z_entries = self.table_z.axis_entries()
         if not x_entries or not y_entries or not z_entries:
-            raise ValueError("Chaque axe doit contenir au moins une coordonnée.")
+            raise ValueError(self.tr("Chaque axe doit contenir au moins une coordonnée."))
         return Grid3DData(
             enabled=self.chk_enabled.isChecked(),
             x_items=x_entries,
@@ -387,7 +400,7 @@ class GridDialog(QDialog):
         try:
             self._result_grid = self._collect_result()
         except ValueError as exc:
-            QMessageBox.warning(self, "Grille invalide", str(exc))
+            QMessageBox.warning(self, self.tr("Grille invalide"), str(exc))
             return
         self.accept()
 

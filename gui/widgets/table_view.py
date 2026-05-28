@@ -20,6 +20,8 @@ from PySide6.QtWidgets import (
     QWidget,
 )
 
+from gui.i18n.display_labels import combo_type_label, tagged_load_label
+
 if TYPE_CHECKING:
     from core.model_data import ProjectModel
 
@@ -151,7 +153,7 @@ class CombinationTableWidget(QWidget):
 
         # Barre de boutons
         btn_bar = QHBoxLayout()
-        self._btn_delete = QPushButton("Supprimer la sélection")
+        self._btn_delete = QPushButton(self.tr("Supprimer la sélection"))
         self._btn_delete.clicked.connect(self._delete_selected)
         self._btn_delete.setEnabled(False)
         btn_bar.addWidget(self._btn_delete)
@@ -178,7 +180,7 @@ class CombinationTableWidget(QWidget):
         self._load_tags = sorted(project.loads.keys())
         fixed_cols = ["Tag", "Nom", "Type"]
         load_headers = [
-            f"{project.loads[lt].name} (T{lt})" for lt in self._load_tags
+            tagged_load_label(project.loads[lt], lt) for lt in self._load_tags
         ]
         headers = fixed_cols + load_headers
 
@@ -204,7 +206,7 @@ class CombinationTableWidget(QWidget):
             self._table.setItem(row, 1, item_name)
 
             # Type (lecture seule)
-            item_type = QTableWidgetItem(combo.combo_type)
+            item_type = QTableWidgetItem(combo_type_label(combo.combo_type))
             item_type.setFlags(Qt.ItemIsSelectable | Qt.ItemIsEnabled)
             self._table.setItem(row, 2, item_type)
 
@@ -290,8 +292,8 @@ class CombinationTableWidget(QWidget):
         n = len(tags_to_delete)
         reply = QMessageBox.question(
             self,
-            "Supprimer",
-            f"Supprimer {n} combinaison(s) sélectionnée(s) ?",
+            self.tr("Supprimer"),
+            self.tr("Supprimer {count} combinaison(s) sélectionnée(s) ?").format(count=n),
             QMessageBox.Yes | QMessageBox.No,
             QMessageBox.No,
         )

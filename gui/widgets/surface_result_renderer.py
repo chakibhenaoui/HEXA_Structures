@@ -5,6 +5,7 @@ from __future__ import annotations
 from typing import TYPE_CHECKING
 
 import numpy as np
+from PySide6.QtCore import QCoreApplication
 
 if TYPE_CHECKING:
     from core.model_data import ProjectModel
@@ -31,6 +32,20 @@ _SURFACE_COMPONENT_SPECS: dict[str, dict[str, object]] = {
 }
 
 SURFACE_RESULT_COMPONENTS: tuple[str, ...] = tuple(_SURFACE_COMPONENT_SPECS)
+
+
+def _surface_component_title(component: str) -> str:
+    labels = {
+        "Nxx": QCoreApplication.translate("SurfaceResultRenderer", "Effort membranaire Nxx (kN/m)"),
+        "Nyy": QCoreApplication.translate("SurfaceResultRenderer", "Effort membranaire Nyy (kN/m)"),
+        "Nxy": QCoreApplication.translate("SurfaceResultRenderer", "Effort membranaire Nxy (kN/m)"),
+        "Mxx": QCoreApplication.translate("SurfaceResultRenderer", "Moment plaque Mxx (kN.m/m)"),
+        "Myy": QCoreApplication.translate("SurfaceResultRenderer", "Moment plaque Myy (kN.m/m)"),
+        "Mxy": QCoreApplication.translate("SurfaceResultRenderer", "Moment plaque Mxy (kN.m/m)"),
+        "Qx": QCoreApplication.translate("SurfaceResultRenderer", "Effort tranchant Qx (kN/m)"),
+        "Qy": QCoreApplication.translate("SurfaceResultRenderer", "Effort tranchant Qy (kN/m)"),
+    }
+    return labels.get(component, component)
 
 
 def _project_node(project: ProjectModel, node_tag: int, plane: str) -> tuple[float, float]:
@@ -181,10 +196,16 @@ def detect_plate_result_files(project: ProjectModel) -> list[dict]:
         files.append(
             {
                 "label": (
-                    f"Plaque P{int(plate_tag)}{label_name} "
-                    f"({int(getattr(mesh, 'mesh_nx', plate.mesh_nx))}"
-                    f"x{int(getattr(mesh, 'mesh_ny', plate.mesh_ny))}, "
-                    f"{len(surface_tags)} surf.)"
+                    QCoreApplication.translate(
+                        "SurfaceResultRenderer",
+                        "Plaque P{tag}{name} ({nx}x{ny}, {count} surf.)",
+                    ).format(
+                        tag=int(plate_tag),
+                        name=label_name,
+                        nx=int(getattr(mesh, "mesh_nx", plate.mesh_nx)),
+                        ny=int(getattr(mesh, "mesh_ny", plate.mesh_ny)),
+                        count=len(surface_tags),
+                    )
                 ),
                 "plane": _LOCAL_PLANE,
                 "local_surface": True,
@@ -234,7 +255,14 @@ def detect_surface_result_files(
         axis_name = _AXIS_NAMES[axis_idx]
         files.append(
             {
-                "label": f"Plan {axis_name} = {value:.3g} m ({len(surface_tags)} surf.)",
+                "label": QCoreApplication.translate(
+                    "SurfaceResultRenderer",
+                    "Plan {axis} = {value:.3g} m ({count} surf.)",
+                ).format(
+                    axis=axis_name,
+                    value=value,
+                    count=len(surface_tags),
+                ),
                 "plane": plane,
                 "axis": axis_idx,
                 "value": float(value),
@@ -278,7 +306,10 @@ def surface_result_file_for_surface(
         return None
     origin, u_axis, v_axis = basis
     return {
-        "label": f"Plaque S{int(surface_tag)} (repere local)",
+        "label": QCoreApplication.translate(
+            "SurfaceResultRenderer",
+            "Plaque S{tag} (repère local)",
+        ).format(tag=int(surface_tag)),
         "plane": _LOCAL_PLANE,
         "local_surface": True,
         "surface_tags": [int(surface_tag)],
@@ -553,7 +584,10 @@ def build_surface_result_figure(
         ax.text(
             0.5,
             0.5,
-            "Aucune plaque coplanaire compatible n'est disponible.",
+            QCoreApplication.translate(
+                "SurfaceResultRenderer",
+                "Aucune plaque coplanaire compatible n'est disponible.",
+            ),
             ha="center",
             va="center",
             fontsize=11,
@@ -566,7 +600,10 @@ def build_surface_result_figure(
         ax.text(
             0.5,
             0.5,
-            "Aucun résultat plaque exploitable n'est disponible pour cette vue.",
+            QCoreApplication.translate(
+                "SurfaceResultRenderer",
+                "Aucun résultat plaque exploitable n'est disponible pour cette vue.",
+            ),
             ha="center",
             va="center",
             fontsize=11,
@@ -626,15 +663,18 @@ def build_surface_result_figure(
     ax.set_aspect("equal", adjustable="datalim")
     ax.grid(False)
     if plane == _LOCAL_PLANE:
-        ax.set_xlabel("u local (m)")
-        ax.set_ylabel("v local (m)")
+        ax.set_xlabel(QCoreApplication.translate("SurfaceResultRenderer", "u local (m)"))
+        ax.set_ylabel(QCoreApplication.translate("SurfaceResultRenderer", "v local (m)"))
     else:
         ax.set_xlabel(f"{plane[0]} (m)")
         ax.set_ylabel(f"{plane[1]} (m)")
-    title = str(_SURFACE_COMPONENT_SPECS[component]["title"])
+    title = _surface_component_title(component)
     label = file_info.get("label", "")
     if label:
-        title = f"{title} - {label}"
+        title = QCoreApplication.translate(
+            "SurfaceResultRenderer",
+            "{title} - {label}",
+        ).format(title=title, label=label)
     ax.set_title(title, fontsize=12)
     ax.margins(0.08, 0.08)
     fig.tight_layout()

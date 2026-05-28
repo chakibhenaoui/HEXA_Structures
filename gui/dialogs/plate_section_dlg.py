@@ -65,7 +65,7 @@ class PlateSectionDialog(QDialog):
         )
 
         self.setWindowTitle(
-            "Modifier la section plaque" if name else "Nouvelle section plaque"
+            self.tr("Modifier la section plaque") if name else self.tr("Nouvelle section plaque")
         )
         self.resize(560, 470)
 
@@ -75,17 +75,23 @@ class PlateSectionDialog(QDialog):
     def _build_ui(self) -> None:
         root = QVBoxLayout(self)
 
-        grp_general = QGroupBox("Nouvelle section plaque", self)
+        grp_general = QGroupBox(self.tr("Nouvelle section plaque"), self)
         general_form = QFormLayout(grp_general)
         self.edit_name = QLineEdit(grp_general)
-        general_form.addRow("Nom :", self.edit_name)
+        general_form.addRow(self.tr("Nom :"), self.edit_name)
         root.addWidget(grp_general)
 
-        grp_formulation = QGroupBox("Type d'élément", self)
+        grp_formulation = QGroupBox(self.tr("Type d'élément"), self)
         formulation_layout = QVBoxLayout(grp_formulation)
         self.formulation_group = QButtonGroup(self)
         self._radio_by_formulation: dict[str, QRadioButton] = {}
-        for formulation, subtitle in _FORMULATION_ROWS:
+        subtitles = {
+            "ShellMITC4": self.tr("Usage général"),
+            "ShellDKGQ": self.tr("Dalle mince (h/L < 1/10)"),
+            "ShellNLDKGQ": self.tr("Non-linéaire géométrique"),
+        }
+        for formulation, _subtitle in _FORMULATION_ROWS:
+            subtitle = subtitles.get(formulation, "")
             radio = QRadioButton(f"{formulation}   {subtitle}", grp_formulation)
             self.formulation_group.addButton(radio)
             self.formulation_group.setId(radio, len(self._radio_by_formulation))
@@ -93,7 +99,7 @@ class PlateSectionDialog(QDialog):
             formulation_layout.addWidget(radio)
         root.addWidget(grp_formulation)
 
-        grp_geometry = QGroupBox("Définition", self)
+        grp_geometry = QGroupBox(self.tr("Définition"), self)
         geometry_layout = QGridLayout(grp_geometry)
         self.combo_material = QComboBox(grp_geometry)
         self.btn_add_material = QPushButton("+", grp_geometry)
@@ -102,16 +108,16 @@ class PlateSectionDialog(QDialog):
         material_row.addWidget(self.combo_material, 1)
         material_row.addWidget(self.btn_add_material)
         self.spin_thickness = self._make_spin(0.20, 0.001, 10.0, 3, 0.01, " m")
-        geometry_layout.addWidget(QLabel("Matériau", grp_geometry), 0, 0)
+        geometry_layout.addWidget(QLabel(self.tr("Matériau"), grp_geometry), 0, 0)
         geometry_layout.addLayout(material_row, 0, 1)
-        geometry_layout.addWidget(QLabel("Épaisseur h", grp_geometry), 1, 0)
+        geometry_layout.addWidget(QLabel(self.tr("Épaisseur h"), grp_geometry), 1, 0)
         geometry_layout.addWidget(self.spin_thickness, 1, 1)
         root.addWidget(grp_geometry)
 
         middle_layout = QHBoxLayout()
         root.addLayout(middle_layout)
 
-        grp_material_info = QGroupBox("Récapitulatif matériau", self)
+        grp_material_info = QGroupBox(self.tr("Récapitulatif matériau"), self)
         material_info_form = QFormLayout(grp_material_info)
         self.lbl_material_e = QLabel("-", grp_material_info)
         self.lbl_material_nu = QLabel("-", grp_material_info)
@@ -121,7 +127,7 @@ class PlateSectionDialog(QDialog):
         material_info_form.addRow("ρ =", self.lbl_material_rho)
         middle_layout.addWidget(grp_material_info, 1)
 
-        grp_element_info = QGroupBox("Info élément", self)
+        grp_element_info = QGroupBox(self.tr("Info élément"), self)
         element_info_layout = QVBoxLayout(grp_element_info)
         self.lbl_formulation_info = QLabel(grp_element_info)
         self.lbl_formulation_info.setWordWrap(True)
@@ -134,14 +140,14 @@ class PlateSectionDialog(QDialog):
             Qt.Horizontal,
             self,
         )
-        self.button_box.button(QDialogButtonBox.Ok).setText("Créer section")
-        self.button_box.button(QDialogButtonBox.Cancel).setText("Annuler")
+        self.button_box.button(QDialogButtonBox.Ok).setText(self.tr("Créer section"))
+        self.button_box.button(QDialogButtonBox.Cancel).setText(self.tr("Annuler"))
         root.addWidget(self.button_box)
 
     def _setup_ui(self) -> None:
         self.edit_name.setText(self._init_name)
         self.button_box.button(QDialogButtonBox.Ok).setText(
-            "OK" if self._is_edit_mode else "Créer section"
+            "OK" if self._is_edit_mode else self.tr("Créer section")
         )
         self._populate_materials(preferred_tag=self._init_material_tag)
         self.spin_thickness.setValue(float(self._init_properties.get("thickness", 0.20)))
@@ -170,7 +176,7 @@ class PlateSectionDialog(QDialog):
         for tag, mat in sorted(self._materials.items()):
             self.combo_material.addItem(f"{mat.name} — {mat.grade}", tag)
         if self.combo_material.count() == 0:
-            self.combo_material.addItem("(aucun matériau - utilisez +)", None)
+            self.combo_material.addItem(self.tr("(aucun matériau - utilisez +)"), None)
         if preferred_tag is not None:
             idx = self.combo_material.findData(preferred_tag)
             if idx >= 0:
@@ -206,8 +212,11 @@ class PlateSectionDialog(QDialog):
         formulation = self._selected_formulation()
         generic_type = SURFACE_FORMULATION_TYPES[formulation]
         self.lbl_formulation_info.setText(
-            f"{formulation} : {SURFACE_FORMULATION_INFOS[formulation]}\n"
-            f"Type générique transmis au solveur : {generic_type}."
+            self.tr("{formulation} : {info}\nType générique transmis au solveur : {generic_type}.").format(
+                formulation=formulation,
+                info=SURFACE_FORMULATION_INFOS[formulation],
+                generic_type=generic_type,
+            )
         )
 
     def _add_material(self) -> None:
@@ -236,8 +245,8 @@ class PlateSectionDialog(QDialog):
         if self.combo_material.currentData() is None:
             QMessageBox.warning(
                 self,
-                "Matériau requis",
-                "Ajoutez ou choisissez d'abord un matériau pour la plaque.",
+                self.tr("Matériau requis"),
+                self.tr("Ajoutez ou choisissez d'abord un matériau pour la plaque."),
             )
             return
         self.accept()

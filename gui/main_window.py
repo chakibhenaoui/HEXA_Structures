@@ -52,6 +52,13 @@ from core.selection_copy import build_copy_instance_points, selection_anchor_poi
 from core.solvers import AnalysisFeature, SolverEngine, SolverManager
 from gui.dialogs.plate_mesh_dlg import PlateMeshDialog
 from gui.dialogs.plate_region_properties_dlg import PlateRegionPropertiesDialog
+from gui.i18n.display_labels import (
+    analysis_combination_label,
+    analysis_load_case_label,
+    load_name_label,
+    tagged_load_label,
+)
+from gui.i18n.language_manager import LanguageManager
 from gui.resources import app_resource_path
 from gui.widgets.tree_model import ModelTree
 from gui.widgets.property_panel import PropertyPanel
@@ -68,9 +75,21 @@ class MainWindow(QMainWindow):
     _SURFACE_RESULT_COMPONENTS = ["Mxx", "Myy", "Mxy", "Qx", "Qy", "Nxx", "Nyy", "Nxy"]
     _MAX_HISTORY_ACTIONS = 10
 
-    def __init__(self, settings: Settings | None = None):
+    def __init__(
+        self,
+        settings: Settings | None = None,
+        language_manager: LanguageManager | None = None,
+    ):
         super().__init__()
         self.settings = settings or Settings()
+        self.language_manager = language_manager or LanguageManager()
+        if language_manager is None:
+            loaded = self.language_manager.load_language(
+                self.settings.gui.language,
+                save=False,
+            )
+            if not loaded:
+                self.language_manager.reset_to_default_language(save=False)
         self.project = ProjectModel()
         self.project.seed_default_library()
         self._solver_manager = SolverManager()
@@ -166,9 +185,9 @@ class MainWindow(QMainWindow):
         self.act_define_loads = self.ui.findChild(QAction, "act_define_loads")
         self.act_gen_combos = self.ui.findChild(QAction, "act_gen_combos")
         if self.act_add_load is not None:
-            self.act_add_load.setText("Cas de charge...")
+            self.act_add_load.setText(self.tr("Cas de charge..."))
         if self.act_gen_combos is not None:
-            self.act_gen_combos.setText("Combinaisons...")
+            self.act_gen_combos.setText(self.tr("Combinaisons..."))
 
         self.act_run = self.ui.findChild(QAction, "act_run")
         self.act_eurocode_settings = self.ui.findChild(QAction, "act_eurocode_settings")
@@ -189,8 +208,8 @@ class MainWindow(QMainWindow):
         self.act_diagram_T = self.ui.findChild(QAction, "act_diagram_T")
         self.act_hide_diagrams = self.ui.findChild(QAction, "act_hide_diagrams")
         self.act_envelopes = self.ui.findChild(QAction, "act_envelopes")
-        self.act_res_surfaces = QAction("Résultats plaques", self)
-        self.act_surface_map = QAction("Cartes plaques...", self)
+        self.act_res_surfaces = QAction(self.tr("Résultats plaques"), self)
+        self.act_surface_map = QAction(self.tr("Cartes plaques..."), self)
 
         self.act_view_xy = self.ui.findChild(QAction, "act_view_xy")
         self.act_view_xz = self.ui.findChild(QAction, "act_view_xz")
@@ -198,9 +217,9 @@ class MainWindow(QMainWindow):
         self.act_view_iso = self.ui.findChild(QAction, "act_view_iso")
         self.act_show_node_tags = self.ui.findChild(QAction, "act_show_node_tags")
         self.act_show_section_names = self.ui.findChild(QAction, "act_show_section_names")
-        self.act_show_extruded_sections = QAction("Sections 3D extrudées", self)
+        self.act_show_extruded_sections = QAction(self.tr("Sections 3D extrudées"), self)
         self.act_show_extruded_sections.setCheckable(True)
-        self.act_show_assigned_loads = QAction("Afficher charges...", self)
+        self.act_show_assigned_loads = QAction(self.tr("Afficher charges..."), self)
         self.menu_file = self.ui.findChild(QMenu, "menu_file")
         self.menu_edit = self.ui.findChild(QMenu, "menu_edit")
         self.menu_model = self.ui.findChild(QMenu, "menu_model")
@@ -208,14 +227,15 @@ class MainWindow(QMainWindow):
         self.menu_analysis = self.ui.findChild(QMenu, "menu_analysis")
         self.menu_results = self.ui.findChild(QMenu, "menu_results")
         self.menu_view = self.ui.findChild(QMenu, "menu_view")
+        self.menu_settings = self.ui.findChild(QMenu, "menu_settings")
         self.menu_help = self.ui.findChild(QMenu, "menu_help")
 
         self.act_about = self.ui.findChild(QAction, "act_about")
-        self.act_undo_model = QAction("Annuler", self)
+        self.act_undo_model = QAction(self.tr("Annuler"), self)
         self.act_undo_model.setShortcut("Ctrl+Z")
-        self.act_redo_model = QAction("Rétablir", self)
+        self.act_redo_model = QAction(self.tr("Rétablir"), self)
         self.act_redo_model.setShortcut("Ctrl+Y")
-        self.act_copy_selection = QAction("Copier...", self)
+        self.act_copy_selection = QAction(self.tr("Copier..."), self)
         self.act_copy_selection.setShortcut("Ctrl+C")
         self.act_copy_selection.setEnabled(False)
 
@@ -246,7 +266,7 @@ class MainWindow(QMainWindow):
             self.secondary_view.show_section_names = self.settings.gui.show_section_names
             self.secondary_view.show_extruded_sections = self.settings.gui.show_extruded_sections
         else:
-            self.secondary_view = QLabel("Vue dupliquée indisponible")
+            self.secondary_view = QLabel(self.tr("Vue dupliquée indisponible"))
             self.secondary_view.setAlignment(Qt.AlignCenter)
         self._view_splitter = QSplitter(Qt.Horizontal, self)
         self._view_splitter.addWidget(self._view_widget)
@@ -267,7 +287,7 @@ class MainWindow(QMainWindow):
         self.setCentralWidget(self._central_views_widget)
 
         # --- Left dock: model tree ---
-        self.dock_tree = QDockWidget("Arbre du modèle", self)
+        self.dock_tree = QDockWidget(self.tr("Arbre du modèle"), self)
         self.dock_tree.setAllowedAreas(Qt.LeftDockWidgetArea | Qt.RightDockWidgetArea)
         self.tree = ModelTree()
         self.tree.refresh(self.project)
@@ -275,7 +295,7 @@ class MainWindow(QMainWindow):
         self.addDockWidget(Qt.LeftDockWidgetArea, self.dock_tree)
 
         # --- Right dock: properties ---
-        self.dock_properties = QDockWidget("Propriétés", self)
+        self.dock_properties = QDockWidget(self.tr("Propriétés"), self)
         self.dock_properties.setAllowedAreas(Qt.LeftDockWidgetArea | Qt.RightDockWidgetArea)
         self.properties = PropertyPanel()
         self.properties.set_project(self.project)
@@ -283,7 +303,7 @@ class MainWindow(QMainWindow):
         self.addDockWidget(Qt.RightDockWidgetArea, self.dock_properties)
 
         # --- Bottom dock: results / console tabs ---
-        self.dock_bottom = QDockWidget("Informations", self)
+        self.dock_bottom = QDockWidget(self.tr("Informations"), self)
         self.dock_bottom.setAllowedAreas(Qt.BottomDockWidgetArea)
 
         # Retrieve the QTabWidget and console from the .ui file
@@ -300,7 +320,7 @@ class MainWindow(QMainWindow):
         self._replace_bottom_placeholder(
             "results_tab_placeholder",
             self.results_panel,
-            "Résultats",
+            self.tr("Résultats"),
             fallback_index=1,
         )
 
@@ -309,7 +329,7 @@ class MainWindow(QMainWindow):
         self._replace_bottom_placeholder(
             "nodes_tab_placeholder",
             self.node_table,
-            "Nœuds",
+            self.tr("Nœuds"),
             fallback_index=2,
         )
 
@@ -318,7 +338,7 @@ class MainWindow(QMainWindow):
         self._replace_bottom_placeholder(
             "combos_tab_placeholder",
             self.combo_table,
-            "Combinaisons",
+            self.tr("Combinaisons"),
             fallback_index=3,
         )
         self._remove_duplicate_bottom_tabs()
@@ -330,7 +350,7 @@ class MainWindow(QMainWindow):
         # --- Add dock toggles to the View menu ---
         menu_view = self.menu_view
         if menu_view is not None:
-            self.act_toggle_split_view = QAction("Afficher 2 fenêtres", self)
+            self.act_toggle_split_view = QAction(self.tr("Afficher 2 fenêtres"), self)
             self.act_toggle_split_view.setCheckable(True)
             self.act_toggle_split_view.toggled.connect(self._toggle_split_view)
             menu_view.addAction(self.act_toggle_split_view)
@@ -354,11 +374,13 @@ class MainWindow(QMainWindow):
         self._setup_results_menu()
         self._refresh_result_actions()
         self._setup_view_menu()
+        self._setup_settings_menu()
         self._setup_menu_bar_structure()
         self._setup_primary_toolbar()
+        self.retranslate_ui()
         self._setup_parallel_view_controls()
         self._toggle_split_view(False)
-        self._log("HEXA Structures initialisé. Prêt.")
+        self._log(self.tr("HEXA Structures initialisé. Prêt."))
 
     def _replace_bottom_placeholder(
         self,
@@ -594,21 +616,25 @@ class MainWindow(QMainWindow):
             return
 
         if self.menu_edit is None:
-            self.menu_edit = QMenu("Édition", menubar)
+            self.menu_edit = QMenu(self.tr("Édition"), menubar)
             self.menu_edit.setObjectName("menu_edit")
         if self.menu_charges is None:
-            self.menu_charges = QMenu("Charges", menubar)
+            self.menu_charges = QMenu(self.tr("Charges"), menubar)
             self.menu_charges.setObjectName("menu_charges")
+        if getattr(self, "menu_settings", None) is None:
+            self.menu_settings = QMenu(self.tr("Paramètres"), menubar)
+            self.menu_settings.setObjectName("menu_settings")
 
         menu_specs = (
-            (self.menu_file, "Fichier"),
-            (self.menu_edit, "Édition"),
-            (self.menu_model, "Modèle"),
-            (self.menu_view, "Vue"),
-            (self.menu_charges, "Charges"),
-            (self.menu_analysis, "Analyse"),
-            (self.menu_results, "Résultats"),
-            (self.menu_help, "Aide"),
+            (self.menu_file, self.tr("Fichier")),
+            (self.menu_edit, self.tr("Édition")),
+            (self.menu_model, self.tr("Modèle")),
+            (self.menu_view, self.tr("Vue")),
+            (self.menu_charges, self.tr("Charges")),
+            (self.menu_analysis, self.tr("Analyse")),
+            (self.menu_results, self.tr("Résultats")),
+            (self.menu_settings, self.tr("Paramètres")),
+            (self.menu_help, self.tr("Aide")),
         )
         for menu, title in menu_specs:
             if menu is not None:
@@ -633,40 +659,46 @@ class MainWindow(QMainWindow):
 
     def _setup_model_management_menus(self) -> None:
         """Set up model management menus."""
-        self.act_define_grid = QAction("Définir la grille 3D...", self)
+        self.act_define_grid = QAction(self.tr("Définir la grille 3D..."), self)
         self.act_define_grid.triggered.connect(self._define_grid)
-        self.act_select_tool = QAction("Sélection", self)
+        self.act_select_tool = QAction(self.tr("Sélection"), self)
         self.act_select_tool.setCheckable(True)
         self.act_select_tool.setChecked(True)
         self.act_select_tool.toggled.connect(self._toggle_selection_tool)
-        self.act_draw_node = QAction("Dessiner un nœud", self)
+        self.act_draw_node = QAction(self.tr("Dessiner un nœud"), self)
         self.act_draw_node.setCheckable(True)
         self.act_draw_node.toggled.connect(self._toggle_draw_nodes)
-        self.act_draw_bars = QAction("Dessiner des barres", self)
+        self.act_draw_bars = QAction(self.tr("Dessiner des barres"), self)
         self.act_draw_bars.setCheckable(True)
         self.act_draw_bars.toggled.connect(self._toggle_draw_bars)
-        self.act_draw_surface = QAction("Dessiner une surface", self)
+        self.act_draw_surface = QAction(self.tr("Dessiner une surface"), self)
         self.act_draw_surface.setCheckable(True)
         self.act_draw_surface.toggled.connect(self._toggle_draw_surface)
-        self.act_draw_orthogonal = QAction("Tracé orthogonal", self)
+        self.act_draw_orthogonal = QAction(self.tr("Tracé orthogonal"), self)
         self.act_draw_orthogonal.setCheckable(True)
         self.act_draw_orthogonal.setChecked(False)
-        self.act_cancel_draw = QAction("Annuler le dessin", self)
+        self.act_cancel_draw = QAction(self.tr("Annuler le dessin"), self)
         self.act_cancel_draw.triggered.connect(self._cancel_bar_drawing)
-        self.act_add_surface = QAction("Ajouter une surface depuis la sélection", self)
+        self.act_add_surface = QAction(
+            self.tr("Ajouter une surface depuis la sélection"),
+            self,
+        )
         self.act_add_surface.triggered.connect(lambda: self._on_add_requested("surface"))
-        self.act_edit_surface = QAction("Modifier la surface sélectionnée...", self)
+        self.act_edit_surface = QAction(self.tr("Modifier la surface sélectionnée..."), self)
         self.act_edit_surface.triggered.connect(self._edit_surface)
-        self.act_add_plate_section = QAction("Nouvelle section plaque...", self)
+        self.act_add_plate_section = QAction(self.tr("Nouvelle section plaque..."), self)
         self.act_add_plate_section.triggered.connect(self._add_plate_section)
 
-        self.act_manage_materials = QAction("Matériaux...", self)
+        self.act_manage_materials = QAction(self.tr("Matériaux..."), self)
         self.act_manage_materials.triggered.connect(self._manage_materials)
-        self.act_manage_sections = QAction("Sections...", self)
+        self.act_manage_sections = QAction(self.tr("Sections..."), self)
         self.act_manage_sections.triggered.connect(self._manage_sections)
-        self.act_manage_plate_sections = QAction("Sections plaque...", self)
+        self.act_manage_plate_sections = QAction(self.tr("Sections plaque..."), self)
         self.act_manage_plate_sections.triggered.connect(self._manage_plate_sections)
-        self.act_assign_load_selection = QAction("Affecter charges à la sélection...", self)
+        self.act_assign_load_selection = QAction(
+            self.tr("Affecter charges à la sélection..."),
+            self,
+        )
         self.act_assign_load_selection.triggered.connect(self._assign_loads_to_selection)
 
         if self.menu_model is not None:
@@ -717,7 +749,7 @@ class MainWindow(QMainWindow):
 
         self._clear_menu_structure(self.menu_results)
 
-        menu_tables = self.menu_results.addMenu("Tableaux")
+        menu_tables = self.menu_results.addMenu(self.tr("Tableaux"))
         menu_tables.addAction(self.act_res_displacements)
         menu_tables.addAction(self.act_res_reactions)
         menu_tables.addAction(self.act_res_forces)
@@ -726,7 +758,7 @@ class MainWindow(QMainWindow):
         menu_tables.addSeparator()
         menu_tables.addAction(self.act_envelopes)
 
-        menu_diagrams = self.menu_results.addMenu("Diagrammes")
+        menu_diagrams = self.menu_results.addMenu(self.tr("Diagrammes"))
         menu_diagrams.addAction(self.act_diagram_N)
         menu_diagrams.addAction(self.act_diagram_Vy)
         menu_diagrams.addAction(self.act_diagram_Vz)
@@ -737,7 +769,7 @@ class MainWindow(QMainWindow):
         menu_diagrams.addAction(self.act_hide_diagrams)
 
         if getattr(self, "act_surface_map", None) is not None:
-            menu_surfaces = self.menu_results.addMenu("Plaques")
+            menu_surfaces = self.menu_results.addMenu(self.tr("Plaques"))
             menu_surfaces.addAction(self.act_surface_map)
 
         self.menu_results.addSeparator()
@@ -752,7 +784,7 @@ class MainWindow(QMainWindow):
         self.menu_analysis.addAction(self.act_run)
         self.menu_analysis.addSeparator()
 
-        self.menu_solver = self.menu_analysis.addMenu("Moteur de calcul")
+        self.menu_solver = self.menu_analysis.addMenu(self.tr("Moteur de calcul"))
         self.solver_action_group = QActionGroup(self)
         self.solver_action_group.setExclusive(True)
 
@@ -773,10 +805,10 @@ class MainWindow(QMainWindow):
         self.menu_solver.addAction(self.act_solver_opensees)
 
         self.menu_solver.addSeparator()
-        self.act_solver_help = QAction("Aide installation des solveurs...", self)
+        self.act_solver_help = QAction(self.tr("Aide installation des solveurs..."), self)
         self.act_solver_help.triggered.connect(self._show_solver_install_help)
         self.menu_solver.addAction(self.act_solver_help)
-        self.act_solver_capabilities = QAction("Capacités des moteurs...", self)
+        self.act_solver_capabilities = QAction(self.tr("Capacités des moteurs..."), self)
         self.act_solver_capabilities.triggered.connect(
             self._show_solver_capabilities
         )
@@ -857,26 +889,29 @@ class MainWindow(QMainWindow):
         requested = self._normalize_solver_engine(requested_raw)
         resolved = self._resolved_solver_engine()
         if requested != resolved:
-            return (
+            return self.tr(
                 "Les plaques sont disponibles uniquement avec OpenSeesPy. "
-                f"Le moteur effectif est actuellement {self._solver_label(resolved)} "
-                f"(repli depuis {self._solver_label(requested)})."
+                "Le moteur effectif est actuellement {resolved} "
+                "(repli depuis {requested})."
+            ).format(
+                resolved=self._solver_label(resolved),
+                requested=self._solver_label(requested),
             )
-        return (
+        return self.tr(
             "Les plaques sont disponibles uniquement avec OpenSeesPy. "
-            f"Le moteur courant est actuellement {self._solver_label(resolved)}."
-        )
+            "Le moteur courant est actuellement {resolved}."
+        ).format(resolved=self._solver_label(resolved))
 
     def _ensure_surface_features_available(
         self,
-        title: str = "Plaques indisponibles",
+        title: str | None = None,
     ) -> bool:
         """Ensure surface features available."""
         if self._surface_features_enabled():
             return True
         QMessageBox.information(
             self,
-            title,
+            title or self.tr("Plaques indisponibles"),
             self._surface_features_disabled_reason(),
         )
         return False
@@ -900,10 +935,12 @@ class MainWindow(QMainWindow):
             }.get(engine.value, "")
             QMessageBox.information(
                 self,
-                "Solveur non disponible",
-                f"{self._solver_label(engine)} n'est pas installé.\n\n"
-                f"{install_hint}\n\n"
-                "Le logiciel reste sur le moteur actuellement disponible.",
+                self.tr("Solveur non disponible"),
+                self.tr(
+                    "{engine} n'est pas installé.\n\n"
+                    "{install_hint}\n\n"
+                    "Le logiciel reste sur le moteur actuellement disponible."
+                ).format(engine=self._solver_label(engine), install_hint=install_hint),
             )
             return
 
@@ -926,7 +963,11 @@ class MainWindow(QMainWindow):
             self.act_draw_surface.setChecked(False)
         if not self._diagram_support_is_available():
             self._clear_diagrams()
-        self._log(f"Moteur de calcul sélectionné : {self._solver_label(engine)}.")
+        self._log(
+            self.tr("Moteur de calcul sélectionné : {engine}.").format(
+                engine=self._solver_label(engine)
+            )
+        )
 
     def _show_solver_install_help(self) -> None:
         """Show solver install help."""
@@ -938,21 +979,28 @@ class MainWindow(QMainWindow):
         opensees = info_by_engine.get(SolverEngine.OPENSEES, {})
         QMessageBox.information(
             self,
-            "Moteurs de calcul",
-            "PyNite est le moteur recommandé et par défaut pour le logiciel.\n"
-            "OpenSeesPy reste disponible comme moteur avancé optionnel.\n\n"
-            f"- {self._solver_label(SolverEngine.PYNITE)} : {pynite.get('tooltip', '')}\n"
-            f"- {self._solver_label(SolverEngine.OPENSEES)} : {opensees.get('tooltip', '')}",
+            self.tr("Moteurs de calcul"),
+            self.tr(
+                "PyNite est le moteur recommandé et par défaut pour le logiciel.\n"
+                "OpenSeesPy reste disponible comme moteur avancé optionnel.\n\n"
+                "- {pynite_label} : {pynite_tip}\n"
+                "- {opensees_label} : {opensees_tip}"
+            ).format(
+                pynite_label=self._solver_label(SolverEngine.PYNITE),
+                pynite_tip=pynite.get("tooltip", ""),
+                opensees_label=self._solver_label(SolverEngine.OPENSEES),
+                opensees_tip=opensees.get("tooltip", ""),
+            ),
         )
 
     def _show_solver_capabilities(self) -> None:
         """Show solver capabilities."""
         rows = self._solver_manager.get_capability_matrix()
         lines = [
-            "Prêt = disponible maintenant dans HEXA Structures",
-            "Moteur capable = support natif du moteur, raccordement logiciel à faire",
-            "Prévu = cible dans HEXA Structures, souvent via une surcouche interne",
-            "Non prévu = hors cible à court terme",
+            self.tr("Prêt = disponible maintenant dans HEXA Structures"),
+            self.tr("Moteur capable = support natif du moteur, raccordement logiciel à faire"),
+            self.tr("Prévu = cible dans HEXA Structures, souvent via une surcouche interne"),
+            self.tr("Non prévu = hors cible à court terme"),
             "",
         ]
         for row in rows:
@@ -970,20 +1018,21 @@ class MainWindow(QMainWindow):
         lines.extend(
             [
                 "",
-                "Orientation cible :",
-                f"- Calcul courant : {self._solver_label(requested)} si disponible",
-                "- Fallback automatique selon capacité par type d'analyse",
-                (
-                    "- Sismique modal spectral : "
-                    f"{self._solver_label(spectral_engine)} à court terme, "
-                    "puis surcouche interne HEXA Structures a moyen terme"
+                self.tr("Orientation cible :"),
+                self.tr("- Calcul courant : {engine} si disponible").format(
+                    engine=self._solver_label(requested)
                 ),
+                self.tr("- Fallback automatique selon capacité par type d'analyse"),
+                self.tr(
+                    "- Sismique modal spectral : {engine} à court terme, "
+                    "puis surcouche interne HEXA Structures à moyen terme"
+                ).format(engine=self._solver_label(spectral_engine)),
             ]
         )
 
         QMessageBox.information(
             self,
-            "Capacités des moteurs",
+            self.tr("Capacités des moteurs"),
             "\n".join(lines).strip(),
         )
 
@@ -1222,24 +1271,263 @@ class MainWindow(QMainWindow):
 
         self._clear_menu_structure(self.menu_view)
 
-        menu_orientation = self.menu_view.addMenu("Orientation")
+        menu_orientation = self.menu_view.addMenu(self.tr("Orientation"))
         menu_orientation.addAction(self.act_view_xy)
         menu_orientation.addAction(self.act_view_xz)
         menu_orientation.addAction(self.act_view_yz)
         menu_orientation.addAction(self.act_view_iso)
 
-        menu_display = self.menu_view.addMenu("Affichage")
+        menu_display = self.menu_view.addMenu(self.tr("Affichage"))
         menu_display.addAction(self.act_show_node_tags)
         menu_display.addAction(self.act_show_section_names)
         menu_display.addAction(self.act_show_extruded_sections)
 
-        menu_windows = self.menu_view.addMenu("Fenêtres")
+        menu_windows = self.menu_view.addMenu(self.tr("Fenêtres"))
         if getattr(self, "act_toggle_split_view", None) is not None:
             menu_windows.addAction(self.act_toggle_split_view)
             menu_windows.addSeparator()
         menu_windows.addAction(self.dock_tree.toggleViewAction())
         menu_windows.addAction(self.dock_properties.toggleViewAction())
         menu_windows.addAction(self.dock_bottom.toggleViewAction())
+
+    def _setup_settings_menu(self) -> None:
+        """Set up application settings menu."""
+        if getattr(self, "menu_settings", None) is None:
+            return
+
+        self._clear_menu_structure(self.menu_settings)
+        self.menu_language = self.menu_settings.addMenu(self.tr("Langue"))
+        self.language_action_group = QActionGroup(self)
+        self.language_action_group.setExclusive(True)
+        current_language = self.language_manager.current_language_code
+
+        for code, label in self.language_manager.list_available_languages().items():
+            action = QAction(label, self)
+            action.setCheckable(True)
+            action.setData(code)
+            action.setChecked(code == current_language)
+            action.triggered.connect(
+                lambda checked=False, language_code=code: self._change_language(language_code)
+            )
+            self.language_action_group.addAction(action)
+            self.menu_language.addAction(action)
+
+    def _change_language(self, language_code: str) -> None:
+        """Load a language and refresh visible GUI strings."""
+        if self.language_manager.load_language(language_code):
+            selected_language = self.language_manager.current_language_code
+            self.settings.gui.language = selected_language
+            self.settings.save()
+            self.retranslate_ui()
+            label = self.language_manager.language_label(selected_language)
+            self._log(self.tr("Langue de l'interface : {language}").format(language=label))
+            return
+
+        if getattr(self, "statusbar", None) is not None:
+            self.statusbar.showMessage(
+                self.tr("Traduction indisponible pour cette langue."),
+                5000,
+            )
+        self._setup_settings_menu()
+
+    def retranslate_ui(self) -> None:
+        """Refresh visible strings after a Qt translator change."""
+        self._retranslate_actions()
+        self._setup_menu_bar_structure()
+        self._setup_edit_menu()
+        self._setup_charges_menu()
+        self._setup_results_menu()
+        self._setup_analysis_menu()
+        self._setup_view_menu()
+        self._setup_settings_menu()
+        self._retranslate_docks()
+        self._refresh_model_management_menus()
+        self._refresh_primary_toolbar_texts()
+        self._retranslate_view_controls()
+        self._update_title()
+
+        for widget_name in ("tree", "properties", "results_panel"):
+            widget = getattr(self, widget_name, None)
+            if widget is not None and hasattr(widget, "retranslate_ui"):
+                widget.retranslate_ui()
+
+        for window_name in (
+            "_diagram_window",
+            "_surface_diagram_window",
+            "_element_diagram_window",
+            "_load_diagram_window",
+        ):
+            window = getattr(self, window_name, None)
+            if window is not None and hasattr(window, "retranslate_ui"):
+                window.retranslate_ui()
+
+    def _retranslate_docks(self) -> None:
+        """Refresh dock and bottom tab titles."""
+        if getattr(self, "dock_tree", None) is not None:
+            self.dock_tree.setWindowTitle(self.tr("Arbre du modèle"))
+        if getattr(self, "dock_properties", None) is not None:
+            self.dock_properties.setWindowTitle(self.tr("Propriétés"))
+        if getattr(self, "dock_bottom", None) is not None:
+            self.dock_bottom.setWindowTitle(self.tr("Informations"))
+        if getattr(self, "tab_bottom", None) is not None:
+            self._set_bottom_tab_title(getattr(self, "console", None), self.tr("Console"))
+            self._set_bottom_tab_title(
+                getattr(self, "results_panel", None),
+                self.tr("Résultats"),
+            )
+            self._set_bottom_tab_title(getattr(self, "node_table", None), self.tr("Nœuds"))
+            self._set_bottom_tab_title(
+                getattr(self, "combo_table", None),
+                self.tr("Combinaisons"),
+            )
+
+    def _set_bottom_tab_title(self, widget: QWidget | None, title: str) -> None:
+        if widget is None or getattr(self, "tab_bottom", None) is None:
+            return
+        idx = self.tab_bottom.indexOf(widget)
+        if idx >= 0:
+            self.tab_bottom.setTabText(idx, title)
+
+    def _retranslate_actions(self) -> None:
+        """Refresh action text for the main window surface translated in this pass."""
+        action_texts = (
+            (getattr(self, "act_new", None), self.tr("Nouveau projet")),
+            (getattr(self, "act_open", None), self.tr("Ouvrir...")),
+            (getattr(self, "act_save", None), self.tr("Enregistrer")),
+            (getattr(self, "act_save_as", None), self.tr("Enregistrer sous...")),
+            (getattr(self, "act_quit", None), self.tr("Quitter")),
+            (getattr(self, "act_add_node", None), self.tr("Ajouter un nœud...")),
+            (getattr(self, "act_add_material", None), self.tr("Ajouter un matériau...")),
+            (getattr(self, "act_add_section", None), self.tr("Ajouter une section...")),
+            (getattr(self, "act_add_element", None), self.tr("Ajouter un élément...")),
+            (getattr(self, "act_boundary", None), self.tr("Conditions aux limites...")),
+            (getattr(self, "act_add_load", None), self.tr("Cas de charge...")),
+            (getattr(self, "act_define_loads", None), self.tr("Définir les charges...")),
+            (getattr(self, "act_gen_combos", None), self.tr("Combinaisons...")),
+            (getattr(self, "act_run", None), self.tr("Lancer l'analyse")),
+            (
+                getattr(self, "act_eurocode_settings", None),
+                self.tr("Paramètres Eurocodes..."),
+            ),
+            (
+                getattr(self, "act_res_displacements", None),
+                self.tr("Déplacements nodaux"),
+            ),
+            (getattr(self, "act_res_reactions", None), self.tr("Réactions d'appui")),
+            (getattr(self, "act_res_forces", None), self.tr("Efforts internes")),
+            (getattr(self, "act_res_deformed", None), self.tr("Déformée")),
+            (
+                getattr(self, "act_diagram_N", None),
+                self.tr("Diagramme N (effort normal)"),
+            ),
+            (
+                getattr(self, "act_diagram_Vy", None),
+                self.tr("Diagramme Vy (tranchant horizontal)"),
+            ),
+            (
+                getattr(self, "act_diagram_Vz", None),
+                self.tr("Diagramme Vz (tranchant vertical/gravité)"),
+            ),
+            (
+                getattr(self, "act_diagram_My", None),
+                self.tr("Diagramme My (moment gravitaire)"),
+            ),
+            (
+                getattr(self, "act_diagram_Mz", None),
+                self.tr("Diagramme Mz (moment latéral)"),
+            ),
+            (getattr(self, "act_diagram_T", None), self.tr("Diagramme T (torsion)")),
+            (getattr(self, "act_hide_diagrams", None), self.tr("Masquer diagrammes")),
+            (getattr(self, "act_envelopes", None), self.tr("Enveloppes")),
+            (getattr(self, "act_res_surfaces", None), self.tr("Résultats plaques")),
+            (getattr(self, "act_surface_map", None), self.tr("Cartes plaques...")),
+            (getattr(self, "act_view_xy", None), self.tr("Vue XY (dessus)")),
+            (getattr(self, "act_view_xz", None), self.tr("Vue XZ (face)")),
+            (getattr(self, "act_view_yz", None), self.tr("Vue YZ (côté)")),
+            (getattr(self, "act_view_iso", None), self.tr("Vue isométrique")),
+            (getattr(self, "act_show_node_tags", None), self.tr("Numéros des nœuds")),
+            (getattr(self, "act_show_section_names", None), self.tr("Noms des sections")),
+            (
+                getattr(self, "act_show_extruded_sections", None),
+                self.tr("Sections 3D extrudées"),
+            ),
+            (getattr(self, "act_show_assigned_loads", None), self.tr("Afficher charges...")),
+            (getattr(self, "act_about", None), self.tr("À propos...")),
+            (getattr(self, "act_undo_model", None), self.tr("Annuler")),
+            (getattr(self, "act_redo_model", None), self.tr("Rétablir")),
+            (getattr(self, "act_copy_selection", None), self.tr("Copier...")),
+            (getattr(self, "act_toggle_split_view", None), self.tr("Afficher 2 fenêtres")),
+            (getattr(self, "act_define_grid", None), self.tr("Définir la grille 3D...")),
+            (getattr(self, "act_select_tool", None), self.tr("Sélection")),
+            (getattr(self, "act_draw_node", None), self.tr("Dessiner un nœud")),
+            (getattr(self, "act_draw_bars", None), self.tr("Dessiner des barres")),
+            (getattr(self, "act_draw_surface", None), self.tr("Dessiner une surface")),
+            (getattr(self, "act_draw_orthogonal", None), self.tr("Tracé orthogonal")),
+            (getattr(self, "act_cancel_draw", None), self.tr("Annuler le dessin")),
+            (
+                getattr(self, "act_add_surface", None),
+                self.tr("Ajouter une surface depuis la sélection"),
+            ),
+            (
+                getattr(self, "act_edit_surface", None),
+                self.tr("Modifier la surface sélectionnée..."),
+            ),
+            (
+                getattr(self, "act_add_plate_section", None),
+                self.tr("Nouvelle section plaque..."),
+            ),
+            (getattr(self, "act_manage_materials", None), self.tr("Matériaux...")),
+            (getattr(self, "act_manage_sections", None), self.tr("Sections...")),
+            (
+                getattr(self, "act_manage_plate_sections", None),
+                self.tr("Sections plaque..."),
+            ),
+            (
+                getattr(self, "act_assign_load_selection", None),
+                self.tr("Affecter charges à la sélection..."),
+            ),
+            (
+                getattr(self, "act_solver_help", None),
+                self.tr("Aide installation des solveurs..."),
+            ),
+            (
+                getattr(self, "act_solver_capabilities", None),
+                self.tr("Capacités des moteurs..."),
+            ),
+        )
+        for action, text in action_texts:
+            if action is not None:
+                action.setText(text)
+
+    def _refresh_primary_toolbar_texts(self) -> None:
+        toolbar = getattr(self, "toolbar_primary", None)
+        if toolbar is None:
+            return
+        toolbar.setWindowTitle(self.tr("Outils principaux"))
+        for action in toolbar.actions():
+            if action.isSeparator() or not action.text():
+                continue
+            action.setToolTip(action.text())
+            action.setStatusTip(action.text())
+
+    def _retranslate_view_controls(self) -> None:
+        """Refresh labels and actions in the view-control strip."""
+        if hasattr(self, "lbl_draw_section"):
+            self.lbl_draw_section.setText(self.tr("Section :"))
+        if hasattr(self, "lbl_plane"):
+            self.lbl_plane.setText(self.tr("Vue A :"))
+        if hasattr(self, "lbl_secondary_plane"):
+            self.lbl_secondary_plane.setText(self.tr("Vue B :"))
+        if hasattr(self, "act_prev_parallel"):
+            self.act_prev_parallel.setText(self.tr("File précédente"))
+        if hasattr(self, "act_next_parallel"):
+            self.act_next_parallel.setText(self.tr("File suivante"))
+        if hasattr(self, "btn_undo_history"):
+            self.btn_undo_history.setText(self.tr("Annuler"))
+        if hasattr(self, "btn_redo_history"):
+            self.btn_redo_history.setText(self.tr("Rétablir"))
+        if hasattr(self, "btn_copy_selection"):
+            self.btn_copy_selection.setText(self.tr("Copier"))
 
     def _clear_menu_structure(self, menu: QMenu) -> None:
         """Clear menu structure."""
@@ -1252,7 +1540,7 @@ class MainWindow(QMainWindow):
         if existing_toolbar is not None:
             self.removeToolBar(existing_toolbar)
 
-        toolbar = QToolBar("Outils principaux", self)
+        toolbar = QToolBar(self.tr("Outils principaux"), self)
         toolbar.setObjectName("toolbar_primary")
         toolbar.setMovable(False)
         toolbar.setFloatable(False)
@@ -1585,13 +1873,13 @@ class MainWindow(QMainWindow):
         if self.toolbar_main is None or self.model_view is None:
             return
 
-        self.lbl_draw_section = QLabel("Section :", self)
+        self.lbl_draw_section = QLabel(self.tr("Section :"), self)
         self.combo_draw_section = QComboBox(self)
         self.combo_draw_section.setMinimumWidth(180)
         self.lbl_draw_section.hide()
         self.combo_draw_section.hide()
 
-        self.lbl_plane = QLabel("Vue A :", self)
+        self.lbl_plane = QLabel(self.tr("Vue A :"), self)
         self.combo_plane = QComboBox(self)
         self.combo_plane.addItems(["3D", "XY", "XZ", "YZ"])
         self.combo_plane.currentTextChanged.connect(self._on_parallel_plane_changed)
@@ -1606,12 +1894,12 @@ class MainWindow(QMainWindow):
         )
         self.lbl_file.hide()
         self.combo_parallel_value.hide()
-        self.act_prev_parallel = QAction("File précédente", self)
+        self.act_prev_parallel = QAction(self.tr("File précédente"), self)
         self.act_prev_parallel.triggered.connect(lambda: self._step_parallel_value(-1))
-        self.act_next_parallel = QAction("File suivante", self)
+        self.act_next_parallel = QAction(self.tr("File suivante"), self)
         self.act_next_parallel.triggered.connect(lambda: self._step_parallel_value(1))
 
-        self.lbl_secondary_plane = QLabel("Vue B :", self)
+        self.lbl_secondary_plane = QLabel(self.tr("Vue B :"), self)
         self.combo_secondary_plane = QComboBox(self)
         self.combo_secondary_plane.addItems(["3D", "XY", "XZ", "YZ"])
         self.combo_secondary_plane.setCurrentText("3D")
@@ -1632,6 +1920,7 @@ class MainWindow(QMainWindow):
 
         self._refresh_draw_section_controls()
         self._refresh_parallel_view_controls(apply_view=False)
+        self._retranslate_view_controls()
 
     def _refresh_model_management_menus(self) -> None:
         """Refresh model management menus."""
@@ -1642,15 +1931,17 @@ class MainWindow(QMainWindow):
         self._sync_plate_editing_state()
         if hasattr(self, "act_manage_materials"):
             self.act_manage_materials.setText(
-                f"Matériaux... ({len(self.project.materials)})"
+                self.tr("Matériaux... ({count})").format(count=len(self.project.materials))
             )
         if hasattr(self, "act_manage_sections"):
             self.act_manage_sections.setText(
-                f"Sections... ({len(self._line_section_items())})"
+                self.tr("Sections... ({count})").format(count=len(self._line_section_items()))
             )
         if hasattr(self, "act_manage_plate_sections"):
             self.act_manage_plate_sections.setText(
-                f"Sections plaque... ({len(self._surface_section_items())})"
+                self.tr("Sections plaque... ({count})").format(
+                    count=len(self._surface_section_items())
+                )
             )
             self.act_manage_plate_sections.setEnabled(surface_features_enabled)
             self.act_manage_plate_sections.setToolTip(
@@ -1670,18 +1961,22 @@ class MainWindow(QMainWindow):
                 + len(self._selected_existing_element_tags())
             )
             self.act_assign_load_selection.setText(
-                f"Affecter charges à la sélection... ({selected_count})"
+                self.tr("Affecter charges à la sélection... ({count})").format(
+                    count=selected_count
+                )
                 if selected_count
-                else "Affecter charges à la sélection..."
+                else self.tr("Affecter charges à la sélection...")
             )
             self.act_assign_load_selection.setEnabled(selected_count > 0)
         if hasattr(self, "act_add_surface"):
             selected_node_count = len(self._selected_existing_node_tags())
             surface_section_count = len(self._surface_section_items())
             self.act_add_surface.setText(
-                f"Ajouter une surface depuis la sélection... ({selected_node_count})"
+                self.tr("Ajouter une surface depuis la sélection... ({count})").format(
+                    count=selected_node_count
+                )
                 if selected_node_count
-                else "Ajouter une surface depuis la sélection..."
+                else self.tr("Ajouter une surface depuis la sélection...")
             )
             self.act_add_surface.setEnabled(
                 surface_features_enabled
@@ -1697,9 +1992,9 @@ class MainWindow(QMainWindow):
         if hasattr(self, "act_edit_surface"):
             selected_surface_tag = selected_surface_tags[0] if selected_surface_count == 1 else None
             self.act_edit_surface.setText(
-                f"Modifier la surface S{selected_surface_tag}..."
+                self.tr("Modifier la surface S{tag}...").format(tag=selected_surface_tag)
                 if selected_surface_tag is not None
-                else "Modifier la surface sélectionnée..."
+                else self.tr("Modifier la surface sélectionnée...")
             )
             edit_surface_enabled = surface_features_enabled and selected_surface_count == 1
             edit_surface_reason = (
@@ -1708,7 +2003,7 @@ class MainWindow(QMainWindow):
                 else (
                     surface_features_reason
                     if not surface_features_enabled
-                    else "Sélectionnez une seule surface pour la modifier."
+                    else self.tr("Sélectionnez une seule surface pour la modifier.")
                 )
             )
             self.act_edit_surface.setEnabled(edit_surface_enabled)
@@ -1749,7 +2044,7 @@ class MainWindow(QMainWindow):
 
         plane = self.combo_plane.currentText() or "3D"
         if plane == "3D":
-            self.lbl_file.setText("File =")
+            self.lbl_file.setText(self.tr("File ="))
             self.combo_parallel_value.blockSignals(True)
             self.combo_parallel_value.clear()
             self.combo_parallel_value.blockSignals(False)
@@ -1880,7 +2175,7 @@ class MainWindow(QMainWindow):
 
         plane = self.combo_secondary_plane.currentText() or "3D"
         if plane == "3D":
-            self.lbl_secondary_file.setText("File =")
+            self.lbl_secondary_file.setText(self.tr("File ="))
             self.combo_secondary_value.blockSignals(True)
             self.combo_secondary_value.clear()
             self.combo_secondary_value.blockSignals(False)
@@ -2064,8 +2359,8 @@ class MainWindow(QMainWindow):
         if enabled and not self.project.grid.enabled:
             QMessageBox.information(
                 self,
-                "Dessin sur grille",
-                "Définissez d'abord une grille active avant de dessiner.",
+                self.tr("Dessin sur grille"),
+                self.tr("Définissez d'abord une grille active avant de dessiner."),
             )
             self.act_draw_node.setChecked(False)
             return
@@ -2114,16 +2409,16 @@ class MainWindow(QMainWindow):
         if enabled and not self.project.grid.enabled:
             QMessageBox.information(
                 self,
-                "Dessin sur grille",
-                "Définissez d'abord une grille active avant de dessiner.",
+                self.tr("Dessin sur grille"),
+                self.tr("Définissez d'abord une grille active avant de dessiner."),
             )
             self.act_draw_bars.setChecked(False)
             return
         if enabled and self._default_draw_section_tag() is None:
             QMessageBox.information(
                 self,
-                "Dessin sur grille",
-                "Créez ou choisissez d'abord une section pour dessiner des barres.",
+                self.tr("Dessin sur grille"),
+                self.tr("Créez ou choisissez d'abord une section pour dessiner des barres."),
             )
             self.act_draw_bars.setChecked(False)
             return
@@ -2177,8 +2472,8 @@ class MainWindow(QMainWindow):
         if enabled and not self.project.grid.enabled:
             QMessageBox.information(
                 self,
-                "Dessin sur grille",
-                "Définissez d'abord une grille active avant de dessiner.",
+                self.tr("Dessin sur grille"),
+                self.tr("Définissez d'abord une grille active avant de dessiner."),
             )
             self.act_draw_surface.setChecked(False)
             return
@@ -2283,10 +2578,12 @@ class MainWindow(QMainWindow):
             return True
         QMessageBox.information(
             self,
-            "Dessin plaque temporairement limité",
-            "Le dessin interactif des plaques est provisoirement limité aux dalles et voiles "
-            "quadrangulaires. Choisissez une section de type ShellMITC4, "
-            "ShellDKGQ ou ShellNLDKGQ.",
+            self.tr("Dessin plaque temporairement limité"),
+            self.tr(
+                "Le dessin interactif des plaques est provisoirement limité aux dalles et voiles "
+                "quadrangulaires. Choisissez une section de type ShellMITC4, "
+                "ShellDKGQ ou ShellNLDKGQ."
+            ),
         )
         return False
 
@@ -2524,8 +2821,8 @@ class MainWindow(QMainWindow):
         if sec is None or not sec.is_surface:
             QMessageBox.warning(
                 self,
-                "Section plaque requise",
-                "Choisissez d'abord une section plaque valide avant de dessiner.",
+                self.tr("Section plaque requise"),
+                self.tr("Choisissez d'abord une section plaque valide avant de dessiner."),
             )
             if getattr(self, "act_draw_surface", None) is not None:
                 self.act_draw_surface.setChecked(False)
@@ -2579,8 +2876,8 @@ class MainWindow(QMainWindow):
         if existing_surface_tag is not None:
             QMessageBox.information(
                 self,
-                "Surface existante",
-                f"Une surface S{existing_surface_tag} utilise déjà ces nœuds.",
+                self.tr("Surface existante"),
+                self.tr("Une surface S{tag} utilise déjà ces nœuds.").format(tag=existing_surface_tag),
             )
             self._reset_surface_draw_points()
             self._select_surface_after_change(existing_surface_tag)
@@ -2590,8 +2887,8 @@ class MainWindow(QMainWindow):
         if existing_plate_tag is not None:
             QMessageBox.information(
                 self,
-                "Plaque existante",
-                f"Une plaque P{existing_plate_tag} utilise deja ces noeuds.",
+                self.tr("Plaque existante"),
+                self.tr("Une plaque P{tag} utilise déjà ces nœuds.").format(tag=existing_plate_tag),
             )
             self._reset_surface_draw_points()
             return False
@@ -2704,8 +3001,8 @@ class MainWindow(QMainWindow):
         if section_tag is None:
             QMessageBox.warning(
                 self,
-                "Section requise",
-                "Aucune section disponible pour créer une barre.",
+                self.tr("Section requise"),
+                self.tr("Aucune section disponible pour créer une barre."),
             )
             self.act_draw_bars.setChecked(False)
             return
@@ -2723,7 +3020,7 @@ class MainWindow(QMainWindow):
         try:
             elem = self.project.add_element(node_i, node_j, section_tag=section_tag)
         except ValueError as exc:
-            QMessageBox.warning(self, "Barre invalide", str(exc))
+            QMessageBox.warning(self, self.tr("Barre invalide"), str(exc))
             self._reset_bar_draw_origin()
             return
         self._mark_project_modified()
@@ -2856,7 +3153,7 @@ class MainWindow(QMainWindow):
     def _choose_material_tag(self, title: str, prompt: str) -> int | None:
         """Choose material tag."""
         if not self.project.materials:
-            QMessageBox.information(self, title, "Aucun matériau disponible.")
+            QMessageBox.information(self, title, self.tr("Aucun matériau disponible."))
             return None
 
         tags = sorted(self.project.materials.keys())
@@ -2904,8 +3201,8 @@ class MainWindow(QMainWindow):
         if not section_items:
             QMessageBox.information(
                 self,
-                "Section plaque requise",
-                "Créez d'abord une section plaque.",
+                self.tr("Section plaque requise"),
+                self.tr("Créez d'abord une section plaque."),
             )
             return None
         if len(section_items) == 1:
@@ -2921,8 +3218,8 @@ class MainWindow(QMainWindow):
         ]
         choice, ok = QInputDialog.getItem(
             self,
-            "Section plaque",
-            "Choisissez la section plaque à affecter :",
+            self.tr("Section plaque"),
+            self.tr("Choisissez la section plaque à affecter :"),
             items,
             0,
             False,
@@ -3083,9 +3380,11 @@ class MainWindow(QMainWindow):
         if sec is None or not getattr(sec, "is_surface", False):
             QMessageBox.warning(
                 self,
-                "Section plaque requise",
-                "La plaque doit utiliser une section plaque/surface, pas une section de barre. "
-                "Creez ou choisissez une section plaque avant de continuer.",
+                self.tr("Section plaque requise"),
+                self.tr(
+                    "La plaque doit utiliser une section plaque/surface, pas une section de barre. "
+                    "Créez ou choisissez une section plaque avant de continuer."
+                ),
             )
             return None
 
@@ -3102,7 +3401,7 @@ class MainWindow(QMainWindow):
                 formulation=formulation,
             )
         except ValueError as exc:
-            QMessageBox.warning(self, "Plaque invalide", str(exc))
+            QMessageBox.warning(self, self.tr("Plaque invalide"), str(exc))
             return None
         self._log(
             f"Plaque P{plate.tag} creee sur {plane} avec "
@@ -3179,8 +3478,8 @@ class MainWindow(QMainWindow):
         if sec is None or not sec.is_surface:
             QMessageBox.warning(
                 self,
-                "Section plaque requise",
-                "Choisissez une section plaque valide avant de créer ou modifier la surface.",
+                self.tr("Section plaque requise"),
+                self.tr("Choisissez une section plaque valide avant de créer ou modifier la surface."),
             )
             return None
 
@@ -3189,16 +3488,19 @@ class MainWindow(QMainWindow):
         if len(normalized_node_tags) != expected_count:
             QMessageBox.warning(
                 self,
-                "Formulation incompatible",
-                f"La section {sec.surface_formulation} attend {expected_count} nœud(s).",
+                self.tr("Formulation incompatible"),
+                self.tr("La section {formulation} attend {count} nœud(s).").format(
+                    formulation=sec.surface_formulation,
+                    count=expected_count,
+                ),
             )
             return None
 
         if len(set(normalized_node_tags)) != len(normalized_node_tags):
             QMessageBox.warning(
                 self,
-                "Surface invalide",
-                "Chaque nœud d'une plaque doit être unique.",
+                self.tr("Surface invalide"),
+                self.tr("Chaque nœud d'une plaque doit être unique."),
             )
             return None
 
@@ -3206,8 +3508,8 @@ class MainWindow(QMainWindow):
         if plane is None:
             QMessageBox.warning(
                 self,
-                "Plan invalide",
-                "Les nœuds choisis doivent rester dans un même plan.",
+                self.tr("Plan invalide"),
+                self.tr("Les nœuds choisis doivent rester dans un même plan."),
             )
             return None
 
@@ -3216,8 +3518,8 @@ class MainWindow(QMainWindow):
         if area <= 1e-9:
             QMessageBox.warning(
                 self,
-                "Surface invalide",
-                "Les nœuds choisis sont alignes ou ne définissent pas une plaque valide.",
+                self.tr("Surface invalide"),
+                self.tr("Les nœuds choisis sont alignés ou ne définissent pas une plaque valide."),
             )
             return None
 
@@ -3366,8 +3668,8 @@ class MainWindow(QMainWindow):
         if sec is None or not sec.is_surface:
             QMessageBox.warning(
                 self,
-                "Section plaque requise",
-                "Choisissez d'abord une section plaque valide avant de dessiner.",
+                self.tr("Section plaque requise"),
+                self.tr("Choisissez d'abord une section plaque valide avant de dessiner."),
             )
             if getattr(self, "act_draw_surface", None) is not None:
                 self.act_draw_surface.setChecked(False)
@@ -3506,17 +3808,19 @@ class MainWindow(QMainWindow):
             return
 
         menu = QMenu(self)
-        act_edit = menu.addAction("Modifier")
-        act_delete = menu.addAction("Supprimer")
-        act_copy = menu.addAction("Copier")
+        act_edit = menu.addAction(self.tr("Modifier"))
+        act_delete = menu.addAction(self.tr("Supprimer"))
+        act_copy = menu.addAction(self.tr("Copier"))
         menu.addSeparator()
-        act_diagrams = menu.addAction("Afficher diagrammes")
+        act_diagrams = menu.addAction(self.tr("Afficher diagrammes"))
         has_results = self._element_diagram_available(tag)
         act_diagrams.setEnabled(has_results)
         if not has_results:
-            act_diagrams.setToolTip("Lancez d'abord une analyse pour afficher les diagrammes.")
+            act_diagrams.setToolTip(
+                self.tr("Lancez d'abord une analyse pour afficher les diagrammes.")
+            )
         menu.addSeparator()
-        act_properties = menu.addAction("Propriétés")
+        act_properties = menu.addAction(self.tr("Propriétés"))
 
         chosen = menu.exec(global_pos)
         if chosen is act_edit:
@@ -3537,16 +3841,18 @@ class MainWindow(QMainWindow):
             return
 
         menu = QMenu(self)
-        act_edit = menu.addAction("Modifier")
-        act_delete = menu.addAction("Supprimer")
-        act_copy = menu.addAction("Copier")
+        act_edit = menu.addAction(self.tr("Modifier"))
+        act_delete = menu.addAction(self.tr("Supprimer"))
+        act_copy = menu.addAction(self.tr("Copier"))
         menu.addSeparator()
-        act_diagrams = menu.addAction("Afficher diagrammes")
+        act_diagrams = menu.addAction(self.tr("Afficher diagrammes"))
         has_results = self._surface_diagram_available(tag)
         act_diagrams.setEnabled(has_results)
         if not has_results:
             act_diagrams.setToolTip(
-                "Lancez d'abord une analyse de plaques pour afficher les diagrammes."
+                self.tr(
+                    "Lancez d'abord une analyse de plaques pour afficher les diagrammes."
+                )
             )
         is_plate_surface = (
             tag in getattr(self.project, "plate_regions", {})
@@ -3557,7 +3863,7 @@ class MainWindow(QMainWindow):
             menu.addSeparator()
             plate_actions = self._add_plate_context_menu(menu, tag)
         menu.addSeparator()
-        act_properties = menu.addAction("Propriétés")
+        act_properties = menu.addAction(self.tr("Propriétés"))
 
         chosen = menu.exec(global_pos)
         if chosen is act_edit:
@@ -3582,36 +3888,38 @@ class MainWindow(QMainWindow):
             plate = self.project.plate_regions[int(tag)]
             mesh_nx, mesh_ny = effective_plate_mesh_divisions(self.project, plate)
             mesh_mode = normalize_plate_mesh_mode(getattr(plate, "mesh_mode", None))
-            menu_plate = menu.addMenu("Plaque macro")
+            menu_plate = menu.addMenu(self.tr("Plaque macro"))
         else:
             mesh_nx, mesh_ny = 1, 1
             mesh_mode = ""
-            menu_plate = menu.addMenu("Plaque")
+            menu_plate = menu.addMenu(self.tr("Plaque"))
 
-        act_mesh_auto = menu_plate.addAction("Maillage automatique")
+        act_mesh_auto = menu_plate.addAction(self.tr("Maillage automatique"))
         act_mesh_auto.setCheckable(True)
         act_mesh_auto.setChecked(mesh_mode == PLATE_MESH_MODE_AUTO)
-        act_mesh_user = menu_plate.addAction("Nombre de mailles...")
+        act_mesh_user = menu_plate.addAction(self.tr("Nombre de mailles..."))
         act_mesh_user.setCheckable(True)
         act_mesh_user.setChecked(mesh_mode == PLATE_MESH_MODE_USER)
         if not is_macro_plate:
             for action in (act_mesh_auto, act_mesh_user):
                 action.setEnabled(False)
-                action.setToolTip("Disponible uniquement pour une plaque macro.")
+                action.setToolTip(self.tr("Disponible uniquement pour une plaque macro."))
         menu_plate.addSeparator()
-        act_mesh_info = menu_plate.addAction(f"Maillage retenu : {mesh_nx} x {mesh_ny}")
+        act_mesh_info = menu_plate.addAction(
+            self.tr("Maillage retenu : {nx} x {ny}").format(nx=mesh_nx, ny=mesh_ny)
+        )
         act_mesh_info.setEnabled(False)
         menu_plate.addSeparator()
 
         disabled_actions = [
-            menu_plate.addAction("Integrer une barre diagonale..."),
-            menu_plate.addAction("Creer un noeud a l'intersection..."),
-            menu_plate.addAction("Decouper une barre traversante..."),
-            menu_plate.addAction("Maillage non structure..."),
+            menu_plate.addAction(self.tr("Intégrer une barre diagonale...")),
+            menu_plate.addAction(self.tr("Créer un nœud à l'intersection...")),
+            menu_plate.addAction(self.tr("Découper une barre traversante...")),
+            menu_plate.addAction(self.tr("Maillage non structuré...")),
         ]
         for action in disabled_actions:
             action.setEnabled(False)
-            action.setToolTip("Fonction a venir.")
+            action.setToolTip(self.tr("Fonction à venir."))
 
         return {
             "mesh_auto": act_mesh_auto,
@@ -3771,25 +4079,32 @@ class MainWindow(QMainWindow):
         auto_deleted = all_elements - selected_elements
 
         msg = (
-            "Supprimer la sélection courante ?\n\n"
-            f"- Nœuds : {len(selected_nodes)}\n"
-            f"- Éléments : {len(all_elements)}\n"
-            f"- Surfaces : {len(all_surfaces)}"
+            self.tr("Supprimer la sélection courante ?")
+            + "\n\n"
+            + self.tr("- Nœuds : {count}").format(count=len(selected_nodes))
+            + "\n"
+            + self.tr("- Éléments : {count}").format(count=len(all_elements))
+            + "\n"
+            + self.tr("- Surfaces : {count}").format(count=len(all_surfaces))
         )
         if auto_deleted:
             msg += (
-                f"\n\n{len(auto_deleted)} élément(s) connecté(s) "
-                "aux nœuds sélectionnés seront aussi supprimé(s)."
+                "\n\n"
+                + self.tr(
+                    "{count} élément(s) connecté(s) aux nœuds sélectionnés seront aussi supprimé(s)."
+                ).format(count=len(auto_deleted))
             )
         if connected_surfaces:
             msg += (
-                f"\n\n{len(connected_surfaces)} surface(s) connectée(s) "
-                "aux nœuds sélectionnés seront aussi supprimée(s)."
+                "\n\n"
+                + self.tr(
+                    "{count} surface(s) connectée(s) aux nœuds sélectionnés seront aussi supprimée(s)."
+                ).format(count=len(connected_surfaces))
             )
 
         reply = QMessageBox.question(
             self,
-            "Confirmer la suppression",
+            self.tr("Confirmer la suppression"),
             msg,
             QMessageBox.Yes | QMessageBox.No,
             QMessageBox.No,
@@ -3849,17 +4164,26 @@ class MainWindow(QMainWindow):
         s = self.project.stats
         requested = self._normalize_solver_engine(self.settings.analysis.solver_engine)
         resolved = self._solver_manager.resolve_engine(requested)
-        solver_part = f"Moteur : {self._solver_label(resolved)}"
+        solver_part = self.tr("Moteur : {engine}").format(engine=self._solver_label(resolved))
         if requested != resolved:
-            solver_part += f" (repli depuis {self._solver_label(requested)})"
+            solver_part += self.tr(" (repli depuis {engine})").format(
+                engine=self._solver_label(requested)
+            )
         self.statusbar.showMessage(
-            f"Nœuds : {s['nodes']}  |  "
-            f"Éléments : {s['elements']}  |  "
-            f"Surfaces : {s['surface_elements']}  |  "
-            f"Matériaux : {s['materials']}  |  "
-            f"Sections : {s['sections']}  |  "
-            f"Charges : {s['loads']}  |  "
-            f"Combinaisons : {s['combinations']}  |  "
+            self.tr("Nœuds : {count}").format(count=s["nodes"])
+            + "  |  "
+            + self.tr("Éléments : {count}").format(count=s["elements"])
+            + "  |  "
+            + self.tr("Surfaces : {count}").format(count=s["surface_elements"])
+            + "  |  "
+            + self.tr("Matériaux : {count}").format(count=s["materials"])
+            + "  |  "
+            + self.tr("Sections : {count}").format(count=s["sections"])
+            + "  |  "
+            + self.tr("Charges : {count}").format(count=s["loads"])
+            + "  |  "
+            + self.tr("Combinaisons : {count}").format(count=s["combinations"])
+            + "  |  "
             f"{solver_part}"
         )
 
@@ -3902,10 +4226,12 @@ class MainWindow(QMainWindow):
         if duplicate_tag is not None:
             QMessageBox.warning(
                 self,
-                "Coordonnées déjà utilisées",
-                (
-                    f"Un nœud N{duplicate_tag} existe déjà en "
-                    f"({float(data['x']):.3f}, {float(data['y']):.3f}, {float(data['z']):.3f})."
+                self.tr("Coordonnées déjà utilisées"),
+                self.tr("Un nœud N{tag} existe déjà en ({x:.3f}, {y:.3f}, {z:.3f}).").format(
+                    tag=duplicate_tag,
+                    x=float(data["x"]),
+                    y=float(data["y"]),
+                    z=float(data["z"]),
                 ),
             )
             self._select_node_after_change(duplicate_tag)
@@ -3920,8 +4246,10 @@ class MainWindow(QMainWindow):
         except ValueError:
             QMessageBox.warning(
                 self,
-                "Nœud existant",
-                f"Le numéro N{int(data['tag'])} existe déjà. Choisissez un autre numéro.",
+                self.tr("Nœud existant"),
+                self.tr("Le numéro N{tag} existe déjà. Choisissez un autre numéro.").format(
+                    tag=int(data["tag"])
+                ),
             )
             return
 
@@ -4164,9 +4492,9 @@ class MainWindow(QMainWindow):
                 loop.quit()
 
         self.statusbar.showMessage(
-            "Choisissez l'origine de copie dans une vue. Échap pour annuler."
+            self.tr("Choisissez l'origine de copie dans une vue. Échap pour annuler.")
         )
-        self._log("Choix d'origine de copie : cliquez dans une vue. Échap pour annuler.")
+        self._log(self.tr("Choix d'origine de copie : cliquez dans une vue. Échap pour annuler."))
 
         try:
             for view in candidate_views:
@@ -4210,7 +4538,7 @@ class MainWindow(QMainWindow):
         selected_surface_tags = self._selected_existing_surface_tags()
         if selected_surface_tags and not self._surface_features_enabled():
             if not selected_node_tags and not selected_element_tags:
-                self._ensure_surface_features_available("Plaques indisponibles")
+                self._ensure_surface_features_available(self.tr("Plaques indisponibles"))
                 return
             self._log(
                 "Les surfaces sélectionnées sont ignorées car les plaques sont indisponibles avec le solveur courant."
@@ -4220,8 +4548,8 @@ class MainWindow(QMainWindow):
         if not selected_node_tags and not selected_element_tags and not selected_surface_tags:
             QMessageBox.information(
                 self,
-                "Copier la sélection",
-                "Sélectionnez au moins un nœud, une barre ou une surface avant de copier.",
+                self.tr("Copier la sélection"),
+                self.tr("Sélectionnez au moins un nœud, une barre ou une surface avant de copier."),
             )
             return
 
@@ -4233,8 +4561,8 @@ class MainWindow(QMainWindow):
         if not source_node_tags:
             QMessageBox.warning(
                 self,
-                "Copier la sélection",
-                "Impossible de déterminer les nœuds à copier.",
+                self.tr("Copier la sélection"),
+                self.tr("Impossible de déterminer les nœuds à copier."),
             )
             return
 
@@ -4305,11 +4633,16 @@ class MainWindow(QMainWindow):
             if conflict_kind == "existing" and conflict_tag is not None and conflict_point is not None:
                 QMessageBox.warning(
                     self,
-                    "Coordonnées déjà utilisées",
-                    (
-                        f"La copie créerait un nœud aux mêmes coordonnées que N{conflict_tag} :\n"
-                        f"({conflict_point[0]:.3f}, {conflict_point[1]:.3f}, {conflict_point[2]:.3f}).\n\n"
+                    self.tr("Coordonnées déjà utilisées"),
+                    self.tr(
+                        "La copie créerait un nœud aux mêmes coordonnées que N{tag} :\n"
+                        "({x:.3f}, {y:.3f}, {z:.3f}).\n\n"
                         "Modifiez la cible, le delta ou le nombre de copies."
+                    ).format(
+                        tag=conflict_tag,
+                        x=conflict_point[0],
+                        y=conflict_point[1],
+                        z=conflict_point[2],
                     ),
                 )
                 self._select_node_after_change(conflict_tag)
@@ -4317,11 +4650,15 @@ class MainWindow(QMainWindow):
             if conflict_kind == "planned" and conflict_point is not None:
                 QMessageBox.warning(
                     self,
-                    "Copies superposées",
-                    (
+                    self.tr("Copies superposées"),
+                    self.tr(
                         "La configuration saisie crée plusieurs nœuds copiés au même point :\n"
-                        f"({conflict_point[0]:.3f}, {conflict_point[1]:.3f}, {conflict_point[2]:.3f}).\n\n"
+                        "({x:.3f}, {y:.3f}, {z:.3f}).\n\n"
                         "Modifiez le delta ou réduisez le nombre de copies."
+                    ).format(
+                        x=conflict_point[0],
+                        y=conflict_point[1],
+                        z=conflict_point[2],
                     ),
                 )
                 return
@@ -4493,8 +4830,8 @@ class MainWindow(QMainWindow):
         if new_tag != original_tag and new_tag in self.project.nodes:
             QMessageBox.warning(
                 self,
-                "Nœud existant",
-                f"Le numéro N{new_tag} existe déjà. Choisissez un autre numéro.",
+                self.tr("Nœud existant"),
+                self.tr("Le numéro N{tag} existe déjà. Choisissez un autre numéro.").format(tag=new_tag),
             )
             return
 
@@ -4505,11 +4842,11 @@ class MainWindow(QMainWindow):
         if duplicate_tag is not None:
             QMessageBox.warning(
                 self,
-                "Coordonnées déjà utilisées",
-                (
-                    f"Les coordonnées saisies correspondent déjà au nœud N{duplicate_tag}.\n\n"
+                self.tr("Coordonnées déjà utilisées"),
+                self.tr(
+                    "Les coordonnées saisies correspondent déjà au nœud N{tag}.\n\n"
                     "Deux nœuds ne peuvent pas partager les mêmes coordonnées."
-                ),
+                ).format(tag=duplicate_tag),
             )
             self._select_node_after_change(duplicate_tag)
             return
@@ -4535,9 +4872,10 @@ class MainWindow(QMainWindow):
                 )
             ret = QMessageBox.warning(
                 self,
-                "Éléments connectés",
+                self.tr("Éléments connectés"),
                 "\n".join(extra_lines)
-                + "\n\nSi vous confirmez, ces éléments connectés seront supprimés.",
+                + "\n\n"
+                + self.tr("Si vous confirmez, ces éléments connectés seront supprimés."),
                 QMessageBox.Yes | QMessageBox.No,
                 QMessageBox.No,
             )
@@ -4664,8 +5002,9 @@ class MainWindow(QMainWindow):
 
         if not self.project.materials:
             QMessageBox.warning(
-                self, "Attention",
-                "Créez d'abord un matériau avant d'ajouter une section.",
+                self,
+                self.tr("Attention"),
+                self.tr("Créez d'abord un matériau avant d'ajouter une section."),
             )
             return
 
@@ -4776,8 +5115,8 @@ class MainWindow(QMainWindow):
                 details += f"\n- ... et {len(compatibility_issues) - 5} autre(s)."
             QMessageBox.warning(
                 self,
-                "Sections plaque incompatibles",
-                "Les modifications proposees rendent certaines plaques incompatibles :\n\n"
+                self.tr("Sections plaque incompatibles"),
+                self.tr("Les modifications proposées rendent certaines plaques incompatibles :\n\n")
                 + details,
             )
             self._select_surface_after_change(compatibility_issues[0][0])
@@ -4797,8 +5136,8 @@ class MainWindow(QMainWindow):
         """Edit section."""
         if tag is None:
             tag = self._choose_section_tag(
-                "Modifier une section",
-                "Section :",
+                self.tr("Modifier une section"),
+                self.tr("Section :"),
             )
         if tag is None:
             return
@@ -4850,11 +5189,17 @@ class MainWindow(QMainWindow):
             if incompatible_surfaces:
                 QMessageBox.warning(
                     self,
-                    "Formulation incompatible",
-                    (
-                        f"La formulation {new_formulation} attend {expected_count} nœud(s), "
-                        f"mais la surface S{incompatible_surfaces[0]} en a "
-                        f"{len(self.project.surface_elements[incompatible_surfaces[0]].node_tags)}."
+                    self.tr("Formulation incompatible"),
+                    self.tr(
+                        "La formulation {formulation} attend {expected_count} nœud(s), "
+                        "mais la surface S{tag} en a {actual_count}."
+                    ).format(
+                        formulation=new_formulation,
+                        expected_count=expected_count,
+                        tag=incompatible_surfaces[0],
+                        actual_count=len(
+                            self.project.surface_elements[incompatible_surfaces[0]].node_tags
+                        ),
                     ),
                 )
                 self._select_surface_after_change(incompatible_surfaces[0])
@@ -4876,15 +5221,17 @@ class MainWindow(QMainWindow):
         """Add element."""
         if len(self.project.nodes) < 2:
             QMessageBox.warning(
-                self, "Attention",
-                "Il faut au moins 2 nœuds pour créer un élément.",
+                self,
+                self.tr("Attention"),
+                self.tr("Il faut au moins 2 nœuds pour créer un élément."),
             )
             return
         line_sections = self._line_section_items()
         if not line_sections:
             QMessageBox.warning(
-                self, "Attention",
-                "Créez d'abord une section de barre avant d'ajouter un élément.",
+                self,
+                self.tr("Attention"),
+                self.tr("Créez d'abord une section de barre avant d'ajouter un élément."),
             )
             return
 
@@ -4892,7 +5239,7 @@ class MainWindow(QMainWindow):
         items_i = [f"N{t}" for t in node_tags]
 
         ni_str, ok = QInputDialog.getItem(
-            self, "Ajouter un élément", "Nœud de début :", items_i, 0, False,
+            self, self.tr("Ajouter un élément"), self.tr("Nœud de début :"), items_i, 0, False,
         )
         if not ok:
             return
@@ -4900,7 +5247,7 @@ class MainWindow(QMainWindow):
 
         items_j = [f"N{t}" for t in node_tags if t != ni_tag]
         nj_str, ok = QInputDialog.getItem(
-            self, "Ajouter un élément", "Nœud de fin :", items_j, 0, False,
+            self, self.tr("Ajouter un élément"), self.tr("Nœud de fin :"), items_j, 0, False,
         )
         if not ok:
             return
@@ -4909,7 +5256,7 @@ class MainWindow(QMainWindow):
         sec_tags = [tag for tag, _sec in line_sections]
         items_s = [f"{self.project.sections[t].name} (T{t})" for t in sec_tags]
         sec_str, ok = QInputDialog.getItem(
-            self, "Ajouter un élément", "Section :", items_s, 0, False,
+            self, self.tr("Ajouter un élément"), self.tr("Section :"), items_s, 0, False,
         )
         if not ok:
             return
@@ -4918,7 +5265,7 @@ class MainWindow(QMainWindow):
         try:
             elem = self.project.add_element(ni_tag, nj_tag, section_tag=sec_tag)
         except ValueError as exc:
-            QMessageBox.warning(self, "Barre invalide", str(exc))
+            QMessageBox.warning(self, self.tr("Barre invalide"), str(exc))
             return
         self._mark_project_modified()
         self._refresh(preserve_view=True)
@@ -4932,8 +5279,8 @@ class MainWindow(QMainWindow):
         if len(selected_node_tags) not in (3, 4):
             QMessageBox.information(
                 self,
-                "Création de surface",
-                "Sélectionnez d'abord 3 ou 4 nœuds d'une même file.",
+                self.tr("Création de surface"),
+                self.tr("Sélectionnez d'abord 3 ou 4 nœuds d'une même file."),
             )
             return
 
@@ -4950,8 +5297,8 @@ class MainWindow(QMainWindow):
         if existing_surface_tag is not None:
             QMessageBox.information(
                 self,
-                "Surface existante",
-                f"Une surface S{existing_surface_tag} utilise déjà ces nœuds.",
+                self.tr("Surface existante"),
+                self.tr("Une surface S{tag} utilise déjà ces nœuds.").format(tag=existing_surface_tag),
             )
             self._select_surface_after_change(existing_surface_tag)
             return
@@ -4959,8 +5306,8 @@ class MainWindow(QMainWindow):
         if existing_plate_tag is not None:
             QMessageBox.information(
                 self,
-                "Plaque existante",
-                f"Une plaque P{existing_plate_tag} utilise deja ces noeuds.",
+                self.tr("Plaque existante"),
+                self.tr("Une plaque P{tag} utilise déjà ces nœuds.").format(tag=existing_plate_tag),
             )
             return
 
@@ -4979,8 +5326,8 @@ class MainWindow(QMainWindow):
             if len(selected_element_tags) != 1:
                 QMessageBox.information(
                     self,
-                    "Modifier une barre",
-                    "Sélectionnez une seule barre avant de la modifier.",
+                    self.tr("Modifier une barre"),
+                    self.tr("Sélectionnez une seule barre avant de la modifier."),
                 )
                 return
             tag = selected_element_tags[0]
@@ -5066,8 +5413,8 @@ class MainWindow(QMainWindow):
             if len(selected_surface_tags) != 1:
                 QMessageBox.information(
                     self,
-                    "Modifier une surface",
-                    "Sélectionnez une seule surface avant de la modifier.",
+                    self.tr("Modifier une surface"),
+                    self.tr("Sélectionnez une seule surface avant de la modifier."),
                 )
                 return
             tag = selected_surface_tags[0]
@@ -5133,8 +5480,9 @@ class MainWindow(QMainWindow):
         label = name_map.get(kind, f"l'objet {tag}")
 
         reply = QMessageBox.question(
-            self, "Confirmer la suppression",
-            f"Supprimer {label} ?",
+            self,
+            self.tr("Confirmer la suppression"),
+            self.tr("Supprimer {label} ?").format(label=label),
             QMessageBox.Yes | QMessageBox.No,
             QMessageBox.No,
         )
@@ -5162,8 +5510,8 @@ class MainWindow(QMainWindow):
         """Delete material from menu."""
         if tag is None:
             tag = self._choose_material_tag(
-                "Supprimer un matériau",
-                "Matériau :",
+                self.tr("Supprimer un matériau"),
+                self.tr("Matériau :"),
             )
         if tag is None:
             return
@@ -5179,15 +5527,18 @@ class MainWindow(QMainWindow):
         if used_by:
             QMessageBox.warning(
                 self,
-                "Suppression impossible",
-                "Ce matériau est encore utilisé par une ou plusieurs sections.",
+                self.tr("Suppression impossible"),
+                self.tr("Ce matériau est encore utilisé par une ou plusieurs sections."),
             )
             return
 
         reply = QMessageBox.question(
             self,
-            "Confirmer la suppression",
-            f"Supprimer le matériau « {mat.name} » (T{tag}) ?",
+            self.tr("Confirmer la suppression"),
+            self.tr("Supprimer le matériau « {name} » (T{tag}) ?").format(
+                name=mat.name,
+                tag=tag,
+            ),
             QMessageBox.Yes | QMessageBox.No,
             QMessageBox.No,
         )
@@ -5204,8 +5555,8 @@ class MainWindow(QMainWindow):
         """Delete section from menu."""
         if tag is None:
             tag = self._choose_section_tag(
-                "Supprimer une section",
-                "Section :",
+                self.tr("Supprimer une section"),
+                self.tr("Section :"),
             )
         if tag is None:
             return
@@ -5229,15 +5580,18 @@ class MainWindow(QMainWindow):
         if used_by or used_by_surfaces:
             QMessageBox.warning(
                 self,
-                "Suppression impossible",
-                "Cette section est encore utilisée par un ou plusieurs éléments ou surfaces.",
+                self.tr("Suppression impossible"),
+                self.tr("Cette section est encore utilisée par un ou plusieurs éléments ou surfaces."),
             )
             return
 
         reply = QMessageBox.question(
             self,
-            "Confirmer la suppression",
-            f"Supprimer la section « {sec.name} » (T{tag}) ?",
+            self.tr("Confirmer la suppression"),
+            self.tr("Supprimer la section « {name} » (T{tag}) ?").format(
+                name=sec.name,
+                tag=tag,
+            ),
             QMessageBox.Yes | QMessageBox.No,
             QMessageBox.No,
         )
@@ -5255,8 +5609,8 @@ class MainWindow(QMainWindow):
         if tag is None:
             QMessageBox.information(
                 self,
-                "Supprimer une surface",
-                "Sélectionnez une surface dans l'arbre pour la supprimer.",
+                self.tr("Supprimer une surface"),
+                self.tr("Sélectionnez une surface dans l'arbre pour la supprimer."),
             )
             return
 
@@ -5268,8 +5622,8 @@ class MainWindow(QMainWindow):
 
         reply = QMessageBox.question(
             self,
-            "Confirmer la suppression",
-            f"Supprimer {label} ?",
+            self.tr("Confirmer la suppression"),
+            self.tr("Supprimer {label} ?").format(label=label),
             QMessageBox.Yes | QMessageBox.No,
             QMessageBox.No,
         )
@@ -5318,9 +5672,10 @@ class MainWindow(QMainWindow):
     def _on_open_project(self) -> None:
         """Handle open project."""
         path, _ = QFileDialog.getOpenFileName(
-            self, "Ouvrir un projet",
+            self,
+            self.tr("Ouvrir un projet"),
             self.settings.last_project_dir,
-            "Projets HEXA Structures (*.db);;Tous les fichiers (*)",
+            self.tr("Projets HEXA Structures (*.db);;Tous les fichiers (*)"),
         )
         if not path:
             return
@@ -5335,7 +5690,11 @@ class MainWindow(QMainWindow):
             self._log(f"Projet ouvert : {path}")
             self.settings.add_recent_project(path)
         except Exception as e:
-            QMessageBox.critical(self, "Erreur", f"Impossible d'ouvrir le projet :\n{e}")
+            QMessageBox.critical(
+                self,
+                self.tr("Erreur"),
+                self.tr("Impossible d'ouvrir le projet :\n{error}").format(error=e),
+            )
             self._log(f"ERREUR : {e}")
 
     def _on_save_project(self) -> None:
@@ -5348,9 +5707,10 @@ class MainWindow(QMainWindow):
     def _on_save_as(self) -> None:
         """Handle save as."""
         path, _ = QFileDialog.getSaveFileName(
-            self, "Enregistrer le projet",
+            self,
+            self.tr("Enregistrer le projet"),
             self.settings.last_project_dir,
-            "Projets HEXA Structures (*.db);;Tous les fichiers (*)",
+            self.tr("Projets HEXA Structures (*.db);;Tous les fichiers (*)"),
         )
         if not path:
             return
@@ -5372,7 +5732,11 @@ class MainWindow(QMainWindow):
             self._log(f"Projet sauvegardé : {path}")
             self.settings.add_recent_project(path)
         except Exception as e:
-            QMessageBox.critical(self, "Erreur", f"Impossible de sauvegarder :\n{e}")
+            QMessageBox.critical(
+                self,
+                self.tr("Erreur"),
+                self.tr("Impossible de sauvegarder :\n{error}").format(error=e),
+            )
             self._log(f"ERREUR : {e}")
 
     # -- View actions ---------------------------------------------------------
@@ -5424,12 +5788,14 @@ class MainWindow(QMainWindow):
         """Handle about."""
         QMessageBox.about(
             self,
-            f"À propos de {APP_NAME}",
-            f"<h2>{APP_NAME} v{APP_VERSION}</h2>"
-            "<p>Application open source de calcul de structures "
-            "par éléments finis avec OpenSeesPy.</p>"
-            "<p>Normes : Eurocodes + Annexes Nationales françaises.</p>"
-            "<p>Licence LGPL-3.0-only</p>",
+            self.tr("À propos de {app}").format(app=APP_NAME),
+            self.tr(
+                "<h2>{app} v{version}</h2>"
+                "<p>Application open source de calcul de structures "
+                "par éléments finis avec OpenSeesPy.</p>"
+                "<p>Normes : Eurocodes + Annexes Nationales françaises.</p>"
+                "<p>Licence LGPL-3.0-only</p>"
+            ).format(app=APP_NAME, version=APP_VERSION),
         )
 
     # -- Boundary conditions --------------------------------------------------
@@ -5440,14 +5806,14 @@ class MainWindow(QMainWindow):
         from core.boundary_conditions import BoundaryCondition, detect_boundary_type
 
         if not self.project.nodes:
-            QMessageBox.warning(self, "Attention", "Aucun nœud dans le modèle.")
+            QMessageBox.warning(self, self.tr("Attention"), self.tr("Aucun nœud dans le modèle."))
             return
 
         # Select the node
         node_tags = sorted(self.project.nodes.keys())
         items = [f"N{t}" for t in node_tags]
         sel, ok = QInputDialog.getItem(
-            self, "Conditions aux limites", "Nœud :", items, 0, False,
+            self, self.tr("Conditions aux limites"), self.tr("Nœud :"), items, 0, False,
         )
         if not ok:
             return
@@ -5516,9 +5882,11 @@ class MainWindow(QMainWindow):
             reply = QMessageBox.question(
                 self,
                 title,
-                "Aucun cas de charge manuel disponible. Créez d'abord un cas "
-                "de charge autre que 'Poids propre'.\n\n"
-                "Ouvrir le gestionnaire des cas de charge ?",
+                self.tr(
+                    "Aucun cas de charge manuel disponible. Créez d'abord un cas "
+                    "de charge autre que 'Poids propre'.\n\n"
+                    "Ouvrir le gestionnaire des cas de charge ?"
+                ),
                 QMessageBox.Yes | QMessageBox.No,
                 QMessageBox.Yes,
             )
@@ -5526,7 +5894,7 @@ class MainWindow(QMainWindow):
                 self._manage_load_cases()
             return None
 
-        items = [f"{lc.name} (T{tag})" for tag, lc in editable_loads]
+        items = [tagged_load_label(lc, tag) for tag, lc in editable_loads]
         tags = [tag for tag, _lc in editable_loads]
         choice, ok = QInputDialog.getItem(self, title, prompt, items, 0, False)
         if not ok:
@@ -5563,7 +5931,7 @@ class MainWindow(QMainWindow):
         from gui.dialogs.boundary_dlg import BoundaryDialog
 
         if not self.project.nodes:
-            QMessageBox.warning(self, "Attention", "Aucun nœud dans le modèle.")
+            QMessageBox.warning(self, self.tr("Attention"), self.tr("Aucun nœud dans le modèle."))
             return
 
         target_tags = self._selected_existing_node_tags()
@@ -5571,7 +5939,7 @@ class MainWindow(QMainWindow):
             node_tags = sorted(self.project.nodes.keys())
             items = [f"N{t}" for t in node_tags]
             sel, ok = QInputDialog.getItem(
-                self, "Conditions aux limites", "Nœud :", items, 0, False,
+                self, self.tr("Conditions aux limites"), self.tr("Nœud :"), items, 0, False,
             )
             if not ok:
                 return
@@ -5580,9 +5948,13 @@ class MainWindow(QMainWindow):
         current = self._common_boundary_condition(target_tags)
         dlg = BoundaryDialog(self, current=current)
         if len(target_tags) == 1:
-            dlg.setWindowTitle(f"Conditions aux limites - N{target_tags[0]}")
+            dlg.setWindowTitle(
+                self.tr("Conditions aux limites - N{tag}").format(tag=target_tags[0])
+            )
         else:
-            dlg.setWindowTitle(f"Conditions aux limites - {len(target_tags)} nœuds")
+            dlg.setWindowTitle(
+                self.tr("Conditions aux limites - {count} nœuds").format(count=len(target_tags))
+            )
         if dlg.exec() != BoundaryDialog.Accepted:
             return
 
@@ -5637,7 +6009,7 @@ class MainWindow(QMainWindow):
         self._mark_project_modified()
         self._refresh(preserve_view=True)
         lc = self.project.loads.get(tag)
-        name = lc.name if lc else f"T{tag}"
+        name = load_name_label(lc) if lc else f"T{tag}"
         self._log(f"Cas de charge '{name}' créé (T{tag}).")
 
     def _edit_load_case(self, load_tag: int) -> None:
@@ -5649,16 +6021,19 @@ class MainWindow(QMainWindow):
         if load_case is not None and is_self_weight_load(load_case):
             QMessageBox.information(
                 self,
-                "Poids propre automatique",
-                "Le cas 'Poids propre' est calculé automatiquement à partir "
-                "des sections et matériaux. Il ne se saisit pas manuellement.",
+                self.tr("Poids propre automatique"),
+                self.tr(
+                    "Le cas 'Poids propre' est calculé automatiquement à partir "
+                    "des sections et matériaux. Il ne se saisit pas manuellement."
+                ),
             )
             return
 
         if len(self.project.nodes) == 0:
             QMessageBox.warning(
-                self, "Attention",
-                "Ajoutez au moins un nœud avant de définir des charges.",
+                self,
+                self.tr("Attention"),
+                self.tr("Ajoutez au moins un nœud avant de définir des charges."),
             )
             return
 
@@ -5676,7 +6051,7 @@ class MainWindow(QMainWindow):
         self._mark_project_modified()
         self._refresh(preserve_view=True)
         lc = self.project.loads.get(load_tag)
-        name = lc.name if lc else f"T{load_tag}"
+        name = load_name_label(lc) if lc else f"T{load_tag}"
         self._log(f"Charges du cas '{name}' mises à jour.")
 
     def _define_loads(self) -> None:
@@ -5685,21 +6060,23 @@ class MainWindow(QMainWindow):
 
         if not self.project.loads:
             QMessageBox.warning(
-                self, "Attention",
-                "Créez d'abord un cas de charge (Modèle > Ajouter un cas de charge).",
+                self,
+                self.tr("Attention"),
+                self.tr("Créez d'abord un cas de charge (Modèle > Ajouter un cas de charge)."),
             )
             return
 
         if len(self.project.nodes) == 0:
             QMessageBox.warning(
-                self, "Attention",
-                "Ajoutez au moins un nœud avant de définir des charges.",
+                self,
+                self.tr("Attention"),
+                self.tr("Ajoutez au moins un nœud avant de définir des charges."),
             )
             return
 
         load_tag = self._choose_editable_load_case(
-            "Définir les charges",
-            "Cas de charge :",
+            self.tr("Définir les charges"),
+            self.tr("Cas de charge :"),
         )
         if load_tag is None:
             return
@@ -5718,7 +6095,7 @@ class MainWindow(QMainWindow):
         self._mark_project_modified()
         self._refresh(preserve_view=True)
         lc = self.project.loads.get(load_tag)
-        name = lc.name if lc else f"T{load_tag}"
+        name = load_name_label(lc) if lc else f"T{load_tag}"
         self._log(f"Charges du cas '{name}' mises à jour.")
 
     def _assign_loads_to_selection(self) -> None:
@@ -5731,22 +6108,22 @@ class MainWindow(QMainWindow):
         if not node_tags and not element_tags and not surface_tags:
             QMessageBox.information(
                 self,
-                "Affecter charges à la sélection",
-                "Sélectionnez d'abord un ou plusieurs nœuds, éléments ou surfaces.",
+                self.tr("Affecter charges à la sélection"),
+                self.tr("Sélectionnez d'abord un ou plusieurs nœuds, éléments ou surfaces."),
             )
             return
 
         if len(self.project.nodes) == 0:
             QMessageBox.warning(
                 self,
-                "Attention",
-                "Ajoutez au moins un nœud avant de définir des charges.",
+                self.tr("Attention"),
+                self.tr("Ajoutez au moins un nœud avant de définir des charges."),
             )
             return
 
         load_tag = self._choose_editable_load_case(
-            "Affecter charges à la sélection",
-            "Cas de charge :",
+            self.tr("Affecter charges à la sélection"),
+            self.tr("Cas de charge :"),
         )
         if load_tag is None:
             return
@@ -5766,7 +6143,7 @@ class MainWindow(QMainWindow):
         self._mark_project_modified()
         self._refresh(preserve_view=True)
         lc = self.project.loads.get(load_tag)
-        name = lc.name if lc else f"T{load_tag}"
+        name = load_name_label(lc) if lc else f"T{load_tag}"
         self._log(
             f"Charges du cas '{name}' affectées à la sélection "
             f"({len(node_tags)} nœud(s), {len(element_tags)} Élément(s), {len(surface_tags)} surface(s))."
@@ -5778,7 +6155,7 @@ class MainWindow(QMainWindow):
 
         dlg = EurocodeSettingsDialog(self)
         if dlg.exec() == EurocodeSettingsDialog.Accepted:
-            self._log("Paramètres Eurocodes mis à jour.")
+            self._log(self.tr("Paramètres Eurocodes mis à jour."))
 
     def _manage_combinations(self) -> None:
         """Handle manage combinations."""
@@ -5796,7 +6173,7 @@ class MainWindow(QMainWindow):
         self.project.ensure_self_weight_load_case()
         work_project = self.project.copy_for_load_editing()
         page = start_page
-        final_message = "Données de chargement mises à jour."
+        final_message = self.tr("Données de chargement mises à jour.")
 
         while True:
             if page == "loads":
@@ -5823,7 +6200,7 @@ class MainWindow(QMainWindow):
                     page = "combinations"
                     continue
 
-                final_message = "Cas de charge mis à jour."
+                final_message = self.tr("Cas de charge mis à jour.")
                 break
 
             dlg = CombinationManagerDialog(
@@ -5840,7 +6217,7 @@ class MainWindow(QMainWindow):
                 page = "loads"
                 continue
 
-            final_message = "Combinaisons mises à jour."
+            final_message = self.tr("Combinaisons mises à jour.")
             break
 
         self.project.loads = work_project.loads
@@ -5885,29 +6262,34 @@ class MainWindow(QMainWindow):
             and not self.project.surface_elements
             and not self.project.plate_regions
         ):
-            QMessageBox.warning(self, "Attention", "Le modèle est incomplet.")
+            QMessageBox.warning(self, self.tr("Attention"), self.tr("Le modèle est incomplet."))
             return
 
         has_supports = any(n.is_fixed for n in self.project.nodes.values())
         if not has_supports:
             QMessageBox.warning(
-                self, "Attention",
-                "Aucun appui défini. Ajoutez des conditions aux limites.",
+                self,
+                self.tr("Attention"),
+                self.tr("Aucun appui défini. Ajoutez des conditions aux limites."),
             )
             return
 
         # Analyze ALL cases and combinations
         if not self.project.loads and not self.project.combinations:
             QMessageBox.warning(
-                self, "Attention",
-                "Aucune charge ni combinaison définie.",
+                self,
+                self.tr("Attention"),
+                self.tr("Aucune charge ni combinaison définie."),
             )
             return
         if not self._has_meaningful_analysis_loading():
             QMessageBox.warning(
-                self, "Attention",
-                "Aucune charge affectée aux nœuds, aux éléments ou aux surfaces. "
-                "Définissez d'abord des charges avant de lancer l'analyse.",
+                self,
+                self.tr("Attention"),
+                self.tr(
+                    "Aucune charge affectée aux nœuds, aux éléments ou aux surfaces. "
+                    "Définissez d'abord des charges avant de lancer l'analyse."
+                ),
             )
             return
         if (
@@ -5915,10 +6297,10 @@ class MainWindow(QMainWindow):
         ) and not self._surface_features_enabled():
             QMessageBox.warning(
                 self,
-                "Plaques indisponibles",
+                self.tr("Plaques indisponibles"),
                 self._surface_features_disabled_reason()
                 + "\n\n"
-                + "Les éléments surfaciques ne peuvent être calculés qu'avec OpenSeesPy.",
+                + self.tr("Les éléments surfaciques ne peuvent être calculés qu'avec OpenSeesPy."),
             )
             return
 
@@ -5931,10 +6313,11 @@ class MainWindow(QMainWindow):
                 details += f"\n- ... et {len(element_issues) - 6} autre(s)."
             QMessageBox.warning(
                 self,
-                "Barres incompatibles",
-                "Certaines barres ne peuvent pas etre calculees :\n\n"
+                self.tr("Barres incompatibles"),
+                self.tr("Certaines barres ne peuvent pas être calculées :\n\n")
                 + details
-                + "\n\nCorrigez-les avec une section barre avant de relancer l'analyse.",
+                + "\n\n"
+                + self.tr("Corrigez-les avec une section barre avant de relancer l'analyse."),
             )
             self._log("ERREUR configuration barres : " + element_issues[0][1])
             self._select_element_for_context(element_issues[0][0])
@@ -5949,10 +6332,11 @@ class MainWindow(QMainWindow):
                 details += f"\n- ... et {len(compatibility_issues) - 6} autre(s)."
             QMessageBox.warning(
                 self,
-                "Plaques incompatibles",
-                "Certaines plaques ne peuvent pas etre maillees pour le calcul :\n\n"
+                self.tr("Plaques incompatibles"),
+                self.tr("Certaines plaques ne peuvent pas être maillées pour le calcul :\n\n")
                 + details
-                + "\n\nCorrigez-les avec une section plaque/surface avant de relancer l'analyse.",
+                + "\n\n"
+                + self.tr("Corrigez-les avec une section plaque/surface avant de relancer l'analyse."),
             )
             self._log("ERREUR configuration plaques : " + compatibility_issues[0][1])
             self._select_surface_after_change(compatibility_issues[0][0])
@@ -5972,13 +6356,21 @@ class MainWindow(QMainWindow):
 
             # Rebuild the map (case_name -> (load_tag, combo_tag))
             self._case_tags.clear()
+            raw_case_labels: dict[str, str] = {}
             for tag, lc in self.project.loads.items():
-                self._case_tags[f"{lc.name} (cas {tag})"] = (tag, None)
+                raw_name = f"{lc.name} (cas {tag})"
+                display_name = analysis_load_case_label(lc, tag)
+                raw_case_labels[raw_name] = display_name
+                self._case_tags[display_name] = (tag, None)
             for tag, combo in self.project.combinations.items():
-                self._case_tags[f"{combo.name} (combo {tag})"] = (None, tag)
+                raw_name = f"{combo.name} (combo {tag})"
+                display_name = analysis_combination_label(combo, tag)
+                raw_case_labels[raw_name] = display_name
+                self._case_tags[display_name] = (None, tag)
 
             def _on_progress(name, idx, total):
-                self._log(f"  [{idx + 1}/{total}] {name}...")
+                display_name = raw_case_labels.get(name, name)
+                self._log(f"  [{idx + 1}/{total}] {display_name}...")
 
             all_raw = runner.run_all(callback=_on_progress)
 
@@ -5987,12 +6379,13 @@ class MainWindow(QMainWindow):
             n_ok = 0
             n_fail = 0
             for name, (success, res) in all_raw.items():
+                display_name = raw_case_labels.get(name, name)
                 if success:
-                    self._all_results[name] = res
+                    self._all_results[display_name] = res
                     n_ok += 1
                 else:
                     err = res.get("error", "Inconnue")
-                    self._log(f"  ERREUR {name} : {err}")
+                    self._log(f"  ERREUR {display_name} : {err}")
                     n_fail += 1
 
             self._log(f"═══ Terminé : {n_ok} réussi(s), {n_fail} échoué(s) ═══")
@@ -6263,10 +6656,10 @@ class MainWindow(QMainWindow):
             self,
             width=self.settings.gui.diagram_window_width,
             height=self.settings.gui.diagram_window_height,
-            window_title="Cartes plaques",
-            case_label="Cas / combinaison :",
-            component_label="Composante :",
-            file_label="Plan :",
+            window_title=self.tr("Cartes plaques"),
+            case_label=self.tr("Cas / combinaison :"),
+            component_label=self.tr("Composante :"),
+            file_label=self.tr("Plan :"),
             export_basename="plaques",
         )
         if (
@@ -6366,7 +6759,7 @@ class MainWindow(QMainWindow):
             return None
 
         return {
-            "label": f"E{tag} seul (repère local)",
+            "label": self.tr("E{tag} seul (repère local)").format(tag=tag),
             "local_element": True,
             "element_tag": tag,
             "plane": None,
@@ -6384,10 +6777,10 @@ class MainWindow(QMainWindow):
             self,
             width=self.settings.gui.diagram_window_width,
             height=self.settings.gui.diagram_window_height,
-            window_title="Diagramme de barre",
-            case_label="Cas / combinaison :",
-            component_label="Diagramme :",
-            file_label="Barre :",
+            window_title=self.tr("Diagramme de barre"),
+            case_label=self.tr("Cas / combinaison :"),
+            component_label=self.tr("Diagramme :"),
+            file_label=self.tr("Barre :"),
             export_basename="diagramme_barre",
         )
         if (
@@ -6450,7 +6843,7 @@ class MainWindow(QMainWindow):
             ax.text(
                 0.5,
                 0.5,
-                "Aucune barre compatible pour ce diagramme.",
+                self.tr("Aucune barre compatible pour ce diagramme."),
                 ha="center",
                 va="center",
                 fontsize=11,
@@ -6460,7 +6853,7 @@ class MainWindow(QMainWindow):
                 fig,
                 component=component,
                 case_name=self._current_case,
-                file_label="Aucune barre compatible",
+                file_label=self.tr("Aucune barre compatible"),
             )
             return
 
@@ -6557,8 +6950,8 @@ class MainWindow(QMainWindow):
         if not self._element_diagram_available(tag):
             QMessageBox.information(
                 self,
-                "Diagrammes",
-                "Aucun résultat disponible.\nLancez d'abord une analyse (F5).",
+                self.tr("Diagrammes"),
+                self.tr("Aucun résultat disponible.\nLancez d'abord une analyse (F5)."),
             )
             return
 
@@ -6622,8 +7015,10 @@ class MainWindow(QMainWindow):
             ax.text(
                 0.5,
                 0.5,
-                "Aucune vue de diagramme compatible.\n\n"
-                "Les diagrammes actuels sont limites aux plans verticaux XZ et YZ.",
+                self.tr(
+                    "Aucune vue de diagramme compatible.\n\n"
+                    "Les diagrammes actuels sont limités aux plans verticaux XZ et YZ."
+                ),
                 ha="center",
                 va="center",
                 fontsize=11,
@@ -6633,7 +7028,7 @@ class MainWindow(QMainWindow):
                 fig,
                 component=self._current_diagram,
                 case_name=self._current_case,
-                file_label="Aucune vue compatible",
+                file_label=self.tr("Aucune vue compatible"),
             )
             return
 
@@ -6726,7 +7121,7 @@ class MainWindow(QMainWindow):
             self._current_surface_component or self._SURFACE_RESULT_COMPONENTS[0]
         )
         file_info = None
-        file_label = "Aucune vue compatible"
+        file_label = self.tr("Aucune vue compatible")
         if self._surface_result_files:
             idx = max(
                 0,
@@ -6937,15 +7332,15 @@ class MainWindow(QMainWindow):
         if not self._all_results:
             QMessageBox.information(
                 self,
-                "Résultats plaques",
-                "Aucun résultat disponible.\nLancez d'abord une analyse (F5).",
+                self.tr("Résultats plaques"),
+                self.tr("Aucun résultat disponible.\nLancez d'abord une analyse (F5)."),
             )
             return
         if not self._has_surface_results():
             QMessageBox.information(
                 self,
-                "Résultats plaques",
-                "Aucun résultat plaque exploitable n'est disponible pour le cas courant.",
+                self.tr("Résultats plaques"),
+                self.tr("Aucun résultat plaque exploitable n'est disponible pour le cas courant."),
             )
             return
 
@@ -6969,9 +7364,10 @@ class MainWindow(QMainWindow):
             if matching_case is None:
                 QMessageBox.information(
                     self,
-                    "Résultats plaques",
-                    "Aucun résultat exploitable n'est disponible pour "
-                    f"la surface S{self._current_surface_result_tag}.",
+                    self.tr("Résultats plaques"),
+                    self.tr(
+                        "Aucun résultat exploitable n'est disponible pour la surface S{tag}."
+                    ).format(tag=self._current_surface_result_tag),
                 )
                 return
             if (
@@ -7028,10 +7424,10 @@ class MainWindow(QMainWindow):
             self,
             width=self.settings.gui.diagram_window_width,
             height=self.settings.gui.diagram_window_height,
-            window_title="Charges affectées",
-            case_label="Cas de charge :",
-            component_label="Affichage :",
-            file_label="File / plan :",
+            window_title=self.tr("Charges affectées"),
+            case_label=self.tr("Cas de charge :"),
+            component_label=self.tr("Affichage :"),
+            file_label=self.tr("File / plan :"),
             export_basename="charges",
         )
         if (
@@ -7042,7 +7438,10 @@ class MainWindow(QMainWindow):
                 self.settings.gui.diagram_window_x,
                 self.settings.gui.diagram_window_y,
             )
-        self._load_diagram_window.set_components(["Charges"], "Charges")
+        self._load_diagram_window.set_components(
+            [self.tr("Charges")],
+            self.tr("Charges"),
+        )
         self._load_diagram_window.file_index_changed.connect(
             self._on_load_diagram_file_changed
         )
@@ -7056,7 +7455,7 @@ class MainWindow(QMainWindow):
             return
 
         self._load_case_labels = {
-            f"{load.name} (T{tag})": tag
+            tagged_load_label(load, tag): tag
             for tag, load in sorted(self.project.loads.items())
         }
         labels = list(self._load_case_labels.keys())
@@ -7095,7 +7494,7 @@ class MainWindow(QMainWindow):
         from gui.widgets.diagram_renderer import build_load_figure_2d
 
         file_info = None
-        file_label = "Aucune vue compatible"
+        file_label = self.tr("Aucune vue compatible")
         if self._load_diagram_files:
             idx = max(
                 0,
@@ -7112,7 +7511,7 @@ class MainWindow(QMainWindow):
         )
         self._load_diagram_window.set_figure(
             fig,
-            component="Charges",
+            component=self.tr("Charges"),
             case_name=self._current_load_case_label(),
             file_label=file_label,
         )
@@ -7175,8 +7574,8 @@ class MainWindow(QMainWindow):
         if not self.project.loads:
             QMessageBox.information(
                 self,
-                "Charges",
-                "Aucun cas de charge n'est disponible.",
+                self.tr("Charges"),
+                self.tr("Aucun cas de charge n'est disponible."),
             )
             return
 
@@ -7211,8 +7610,9 @@ class MainWindow(QMainWindow):
         """Show result table."""
         if not self._all_results:
             QMessageBox.information(
-                self, "Résultats",
-                "Aucun résultat disponible.\nLancez d'abord une analyse (F5).",
+                self,
+                self.tr("Résultats"),
+                self.tr("Aucun résultat disponible.\nLancez d'abord une analyse (F5)."),
             )
             return
 
@@ -7236,8 +7636,9 @@ class MainWindow(QMainWindow):
             return
         if not self._all_results:
             QMessageBox.information(
-                self, "Résultats",
-                "Aucun résultat disponible.\nLancez d'abord une analyse (F5).",
+                self,
+                self.tr("Résultats"),
+                self.tr("Aucun résultat disponible.\nLancez d'abord une analyse (F5)."),
             )
             self._set_deformed_visible(False)
             return
@@ -7253,7 +7654,7 @@ class MainWindow(QMainWindow):
 
         bar = self._view_controls_layout
 
-        self.lbl_plane = QLabel("Vue A :", self._view_controls_widget)
+        self.lbl_plane = QLabel(self.tr("Vue A :"), self._view_controls_widget)
         self.combo_plane = QComboBox(self._view_controls_widget)
         self.combo_plane.addItems(["3D", "XY", "XZ", "YZ"])
         self.combo_plane.currentTextChanged.connect(self._on_parallel_plane_changed)
@@ -7271,13 +7672,13 @@ class MainWindow(QMainWindow):
         self.btn_next_parallel.setFixedWidth(32)
         self.btn_next_parallel.clicked.connect(lambda: self._step_parallel_value(1))
 
-        self.lbl_draw_section = QLabel("Section :", self._view_controls_widget)
+        self.lbl_draw_section = QLabel(self.tr("Section :"), self._view_controls_widget)
         self.combo_draw_section = QComboBox(self._view_controls_widget)
         self.combo_draw_section.setMinimumWidth(180)
         self.lbl_draw_section.hide()
         self.combo_draw_section.hide()
 
-        self.lbl_secondary_plane = QLabel("Vue B :", self._view_controls_widget)
+        self.lbl_secondary_plane = QLabel(self.tr("Vue B :"), self._view_controls_widget)
         self.combo_secondary_plane = QComboBox(self._view_controls_widget)
         self.combo_secondary_plane.addItems(["3D", "XY", "XZ", "YZ"])
         self.combo_secondary_plane.setCurrentText("3D")
@@ -7302,11 +7703,11 @@ class MainWindow(QMainWindow):
             lambda: self._step_secondary_parallel_value(1)
         )
 
-        self.btn_undo_history = QPushButton("Annuler", self._view_controls_widget)
+        self.btn_undo_history = QPushButton(self.tr("Annuler"), self._view_controls_widget)
         self.btn_undo_history.clicked.connect(self._undo_last_action)
-        self.btn_redo_history = QPushButton("Rétablir", self._view_controls_widget)
+        self.btn_redo_history = QPushButton(self.tr("Rétablir"), self._view_controls_widget)
         self.btn_redo_history.clicked.connect(self._redo_last_action)
-        self.btn_copy_selection = QPushButton("Copier", self._view_controls_widget)
+        self.btn_copy_selection = QPushButton(self.tr("Copier"), self._view_controls_widget)
         self.btn_copy_selection.clicked.connect(self._copy_selected_objects)
         self.btn_copy_selection.setEnabled(False)
 
@@ -7370,7 +7771,7 @@ class MainWindow(QMainWindow):
 
         plane = self.combo_plane.currentText() or "3D"
         if plane == "3D":
-            self.lbl_file.setText("File =")
+            self.lbl_file.setText(self.tr("File ="))
             self.combo_parallel_value.blockSignals(True)
             self.combo_parallel_value.clear()
             self.combo_parallel_value.blockSignals(False)
@@ -7462,7 +7863,7 @@ class MainWindow(QMainWindow):
 
         plane = self.combo_secondary_plane.currentText() or "3D"
         if plane == "3D":
-            self.lbl_secondary_file.setText("File =")
+            self.lbl_secondary_file.setText(self.tr("File ="))
             self.combo_secondary_value.blockSignals(True)
             self.combo_secondary_value.clear()
             self.combo_secondary_value.blockSignals(False)
@@ -8128,7 +8529,7 @@ class MainWindow(QMainWindow):
             if file_stem:
                 return file_stem
 
-        return project_name or "Nouveau projet"
+        return project_name or self.tr("Nouveau projet")
 
     def _update_title(self) -> None:
         """Update title."""
@@ -8143,8 +8544,9 @@ class MainWindow(QMainWindow):
     def _confirm_discard(self) -> bool:
         """Handle confirm discard."""
         reply = QMessageBox.question(
-            self, "Modifications non enregistrées",
-            "Le projet a été modifié. Voulez-vous continuer sans enregistrer ?",
+            self,
+            self.tr("Modifications non enregistrées"),
+            self.tr("Le projet a été modifié. Voulez-vous continuer sans enregistrer ?"),
             QMessageBox.Yes | QMessageBox.No,
             QMessageBox.No,
         )

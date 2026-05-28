@@ -22,6 +22,7 @@ from PySide6.QtWidgets import (
 from core.model_data import ProjectModel, surface_expected_node_count
 from core.results import SURFACE_RESULTANT_COMPONENTS
 from gui.dialogs.element_properties_dlg import _fmt, _object_items
+from gui.i18n.display_labels import load_name_label
 
 
 class SurfacePropertiesDialog(QDialog):
@@ -44,7 +45,12 @@ class SurfacePropertiesDialog(QDialog):
         self.case_results = case_results or {}
 
         suffix = f" - {case_name}" if case_name else ""
-        self.setWindowTitle(f"Propriétés de la plaque S{self.surface_tag}{suffix}")
+        self.setWindowTitle(
+            self.tr("Propriétés de la plaque S{tag}{suffix}").format(
+                tag=self.surface_tag,
+                suffix=suffix,
+            )
+        )
         self.resize(820, 640)
         self._build_ui()
 
@@ -53,12 +59,12 @@ class SurfacePropertiesDialog(QDialog):
         self.tabs = QTabWidget(self)
         root.addWidget(self.tabs, 1)
 
-        self.tabs.addTab(self._build_geometry_tab(), "Géométrie")
-        self.tabs.addTab(self._build_properties_tab(), "Propriétés")
-        self.tabs.addTab(self._build_loads_tab(), "Charges")
-        self.tabs.addTab(self._build_ntm_tab(), "NTM")
-        self.tabs.addTab(self._build_displacements_tab(), "Déplacements")
-        self.tabs.addTab(self._build_check_tab(), "Vérification")
+        self.tabs.addTab(self._build_geometry_tab(), self.tr("Géométrie"))
+        self.tabs.addTab(self._build_properties_tab(), self.tr("Propriétés"))
+        self.tabs.addTab(self._build_loads_tab(), self.tr("Charges"))
+        self.tabs.addTab(self._build_ntm_tab(), self.tr("NTM"))
+        self.tabs.addTab(self._build_displacements_tab(), self.tr("Déplacements"))
+        self.tabs.addTab(self._build_check_tab(), self.tr("Vérification"))
 
         buttons = QDialogButtonBox(QDialogButtonBox.Close, self)
         buttons.rejected.connect(self.reject)
@@ -69,39 +75,39 @@ class SurfacePropertiesDialog(QDialog):
         layout = QVBoxLayout(tab)
 
         section = self.project.sections.get(self.surface.section_tag)
-        general = QGroupBox("Identification", tab)
+        general = QGroupBox(self.tr("Identification"), tab)
         form = QFormLayout(general)
-        form.addRow("Plaque :", QLabel(f"S{self.surface.tag}", general))
-        form.addRow("Type :", QLabel(self.surface.surface_type, general))
+        form.addRow(self.tr("Plaque :"), QLabel(f"S{self.surface.tag}", general))
+        form.addRow(self.tr("Type :"), QLabel(self.surface.surface_type, general))
         form.addRow(
-            "Noeuds :",
+            self.tr("Nœuds :"),
             QLabel(", ".join(f"N{tag}" for tag in self.surface.node_tags), general),
         )
         form.addRow(
-            "Section :",
+            self.tr("Section :"),
             QLabel(
                 f"{section.name} (T{section.tag})" if section is not None else "-",
                 general,
             ),
         )
         if self.case_name:
-            form.addRow("Cas courant :", QLabel(self.case_name, general))
+            form.addRow(self.tr("Cas courant :"), QLabel(self.case_name, general))
         layout.addWidget(general)
 
-        geometry = QGroupBox("Géométrie", tab)
+        geometry = QGroupBox(self.tr("Géométrie"), tab)
         geom_form = QFormLayout(geometry)
         centroid = self._centroid()
         normal = self._normal()
-        geom_form.addRow("Aire :", QLabel(f"{_fmt(self._area())} m2", geometry))
+        geom_form.addRow(self.tr("Aire :"), QLabel(f"{_fmt(self._area())} m2", geometry))
         geom_form.addRow(
-            "Centre :",
+            self.tr("Centre :"),
             QLabel(
                 f"({_fmt(centroid[0])}, {_fmt(centroid[1])}, {_fmt(centroid[2])}) m",
                 geometry,
             ),
         )
         geom_form.addRow(
-            "Normale locale :",
+            self.tr("Normale locale :"),
             QLabel(
                 "-"
                 if normal is None
@@ -110,12 +116,12 @@ class SurfacePropertiesDialog(QDialog):
             ),
         )
         geom_form.addRow(
-            "Ecart au plan :",
+            self.tr("Écart au plan :"),
             QLabel(f"{_fmt(self._max_plane_offset())} m", geometry),
         )
         layout.addWidget(geometry)
 
-        table = self._make_table(["Noeud", "X", "Y", "Z"])
+        table = self._make_table([self.tr("Nœud"), "X", "Y", "Z"])
         rows = []
         for tag in self.surface.node_tags:
             node = self.project.nodes.get(tag)
@@ -141,37 +147,37 @@ class SurfacePropertiesDialog(QDialog):
             else None
         )
 
-        section_group = QGroupBox("Section plaque", tab)
+        section_group = QGroupBox(self.tr("Section plaque"), tab)
         section_form = QFormLayout(section_group)
         if section is None:
-            section_form.addRow("Section :", QLabel("Section introuvable", section_group))
+            section_form.addRow(self.tr("Section :"), QLabel(self.tr("Section introuvable"), section_group))
         else:
             formulation = section.surface_formulation
-            section_form.addRow("Nom :", QLabel(section.name, section_group))
-            section_form.addRow("Type :", QLabel(section.section_type, section_group))
-            section_form.addRow("Formulation :", QLabel(formulation, section_group))
+            section_form.addRow(self.tr("Nom :"), QLabel(section.name, section_group))
+            section_form.addRow(self.tr("Type :"), QLabel(section.section_type, section_group))
+            section_form.addRow(self.tr("Formulation :"), QLabel(formulation, section_group))
             section_form.addRow(
-                "Noeuds attendus :",
+                self.tr("Nœuds attendus :"),
                 QLabel(str(surface_expected_node_count(formulation)), section_group),
             )
             section_form.addRow(
-                "Epaisseur :",
+                self.tr("Épaisseur :"),
                 QLabel(f"{_fmt(section.thickness)} m", section_group),
             )
-        section_form.addRow("Type solveur :", QLabel(self.surface.surface_type, section_group))
+        section_form.addRow(self.tr("Type solveur :"), QLabel(self.surface.surface_type, section_group))
         layout.addWidget(section_group)
 
-        material_group = QGroupBox("Matériau", tab)
+        material_group = QGroupBox(self.tr("Matériau"), tab)
         material_form = QFormLayout(material_group)
         if material is None:
-            material_form.addRow("Matériau :", QLabel("Matériau introuvable", material_group))
+            material_form.addRow(self.tr("Matériau :"), QLabel(self.tr("Matériau introuvable"), material_group))
         else:
-            material_form.addRow("Nom :", QLabel(material.name, material_group))
-            material_form.addRow("Type :", QLabel(material.material_type, material_group))
-            material_form.addRow("Nuance :", QLabel(material.grade, material_group))
+            material_form.addRow(self.tr("Nom :"), QLabel(material.name, material_group))
+            material_form.addRow(self.tr("Type :"), QLabel(material.material_type, material_group))
+            material_form.addRow(self.tr("Nuance :"), QLabel(material.grade, material_group))
         layout.addWidget(material_group)
 
-        table = self._make_table(["Propriété", "Valeur"])
+        table = self._make_table([self.tr("Propriété"), self.tr("Valeur")])
         rows: list[tuple[str, object]] = []
         if section is not None:
             rows.extend((f"section.{key}", value) for key, value in _object_items(section.properties))
@@ -184,14 +190,16 @@ class SurfacePropertiesDialog(QDialog):
     def _build_loads_tab(self) -> QWidget:
         tab = QWidget(self)
         layout = QVBoxLayout(tab)
-        table = self._make_table(["Cas", "Tag", "qX global", "qY global", "qZ global"])
+        table = self._make_table([self.tr("Cas"), "Tag", self.tr("qX global"), self.tr("qY global"), self.tr("qZ global")])
         rows = []
         for load in self.project.surface_loads:
             if int(load.surface_tag) != self.surface_tag:
                 continue
             load_case = self.project.loads.get(load.load_tag)
             rows.append([
-                load_case.name if load_case is not None else "Cas introuvable",
+                load_name_label(load_case)
+                if load_case is not None
+                else self.tr("Cas introuvable"),
                 f"T{load.load_tag}",
                 f"{_fmt(load.qx)} kN/m2",
                 f"{_fmt(load.qy)} kN/m2",
@@ -206,7 +214,7 @@ class SurfacePropertiesDialog(QDialog):
         layout = QVBoxLayout(tab)
         result = self._surface_result()
 
-        average_table = self._make_table(["Composante", "Valeur moyenne"])
+        average_table = self._make_table([self.tr("Composante"), self.tr("Valeur moyenne")])
         average_rows = []
         if result is not None:
             for key, label, unit in self._surface_components():
@@ -217,7 +225,7 @@ class SurfacePropertiesDialog(QDialog):
         self._fill_table(average_table, average_rows)
         layout.addWidget(average_table)
 
-        gauss_table = self._make_table(["Point", "Nxx", "Nyy", "Nxy", "Mxx", "Myy", "Mxy", "Qx", "Qy"])
+        gauss_table = self._make_table([self.tr("Point"), "Nxx", "Nyy", "Nxy", "Mxx", "Myy", "Mxy", "Qx", "Qy"])
         gauss_rows = []
         if result is not None:
             for idx, values in enumerate(result.gauss_resultants, start=1):
@@ -235,7 +243,7 @@ class SurfacePropertiesDialog(QDialog):
     def _build_displacements_tab(self) -> QWidget:
         tab = QWidget(self)
         layout = QVBoxLayout(tab)
-        table = self._make_table(["Noeud", "Ux", "Uy", "Uz", "Rx", "Ry", "Rz"])
+        table = self._make_table([self.tr("Nœud"), "Ux", "Uy", "Uz", "Rx", "Ry", "Rz"])
         displacements = self.case_results.get("displacements", {})
         rows = []
         for node_tag in self.surface.node_tags:
@@ -259,8 +267,10 @@ class SurfacePropertiesDialog(QDialog):
         tab = QWidget(self)
         layout = QVBoxLayout(tab)
         label = QLabel(
-            "La vérification réglementaire mono-plaque sera branchée ici "
-            "lorsque le module de dimensionnement des plaques sera disponible.",
+            self.tr(
+                "La vérification réglementaire mono-plaque sera branchée ici "
+                "lorsque le module de dimensionnement des plaques sera disponible."
+            ),
             tab,
         )
         label.setWordWrap(True)
@@ -386,8 +396,8 @@ class SurfacePropertiesDialog(QDialog):
         table.horizontalHeader().setSectionResizeMode(QHeaderView.Stretch)
         return table
 
-    @staticmethod
     def _fill_table(
+        self,
         table: QTableWidget,
         rows: list[list[object] | tuple[object, ...]],
     ) -> None:
@@ -397,6 +407,6 @@ class SurfacePropertiesDialog(QDialog):
                 table.setItem(row_idx, col_idx, QTableWidgetItem(str(value)))
         if not rows:
             table.setRowCount(1)
-            item = QTableWidgetItem("Aucune donnée")
+            item = QTableWidgetItem(self.tr("Aucune donnée"))
             table.setItem(0, 0, item)
             table.setSpan(0, 0, 1, table.columnCount())

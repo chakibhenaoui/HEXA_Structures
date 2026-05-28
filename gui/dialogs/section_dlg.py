@@ -13,12 +13,7 @@ from core.sections import (
 from gui.dialogs import load_dialog_ui
 
 
-_SECTION_TYPES = {
-    "rectangular": "Rectangulaire",
-    "T": "Section en T",
-    "I_profile": "Profilé acier (catalogue)",
-    "surface": "Section surfacique",
-}
+_SECTION_TYPE_KEYS = ("rectangular", "T", "I_profile", "surface")
 
 _PROFILE_FAMILIES = ["IPE", "HEA", "HEB"]
 
@@ -38,7 +33,7 @@ class SectionDialog(QDialog):
         self._init_type = section_type
         self._init_material_tag = material_tag
         self._init_properties = properties or {}
-        self._allowed_types = tuple(allowed_types or _SECTION_TYPES.keys())
+        self._allowed_types = tuple(allowed_types or _SECTION_TYPE_KEYS)
 
         self.ui = load_dialog_ui(self, "section_dlg.ui")
 
@@ -69,19 +64,45 @@ class SectionDialog(QDialog):
                 self._combo_type.setCurrentIndex(idx)
         self._on_type_changed()
         self._apply_initial_values()
+        self.retranslate_ui()
+
+    def retranslate_ui(self) -> None:
+        """Refresh persistent dialog labels after a language change."""
+        self.setWindowTitle(self.tr("Section"))
+        self._refresh_type_labels()
+        self._update_summary()
+
+    def _section_type_label(self, section_type: str) -> str:
+        labels = {
+            "rectangular": self.tr("Rectangulaire"),
+            "T": self.tr("Section en T"),
+            "I_profile": self.tr("Profilé acier (catalogue)"),
+            "surface": self.tr("Section surfacique"),
+        }
+        return labels.get(section_type, section_type)
+
+    def _refresh_type_labels(self) -> None:
+        current = self._combo_type.currentData()
+        self._combo_type.blockSignals(True)
+        for index in range(self._combo_type.count()):
+            key = str(self._combo_type.itemData(index) or "")
+            self._combo_type.setItemText(index, self._section_type_label(key))
+        idx = self._combo_type.findData(current)
+        if idx >= 0:
+            self._combo_type.setCurrentIndex(idx)
+        self._combo_type.blockSignals(False)
 
     def _populate_combos(self) -> None:
         """Populate type and material combo boxes."""
         for key in self._allowed_types:
-            label = _SECTION_TYPES.get(key)
-            if label is None:
+            if key not in _SECTION_TYPE_KEYS:
                 continue
-            self._combo_type.addItem(label, key)
+            self._combo_type.addItem(self._section_type_label(key), key)
 
         for tag, mat in self._materials.items():
             self._combo_material.addItem(f"{mat.name} ({mat.grade})", tag)
         if not self._materials:
-            self._combo_material.addItem("(aucun matériau)", 0)
+            self._combo_material.addItem(self.tr("(aucun matériau)"), 0)
 
     def _connect_signals(self) -> None:
         """Wire up all signals."""
@@ -165,9 +186,15 @@ class SectionDialog(QDialog):
         try:
             p = get_profile(name)
             self._lbl_profile_info.setText(
-                f"h = {p.h*1000:.0f} mm, b = {p.b*1000:.0f} mm\n"
-                f"A = {p.area*1e4:.1f} cm², Iy = {p.inertia_y*1e8:.0f} cm⁴\n"
-                f"Masse = {p.mass:.1f} kg/m"
+                self.tr("h = {h:.0f} mm, b = {b:.0f} mm\n").format(
+                    h=p.h * 1000,
+                    b=p.b * 1000,
+                )
+                + self.tr("A = {area:.1f} cm², Iy = {iy:.0f} cm⁴\n").format(
+                    area=p.area * 1e4,
+                    iy=p.inertia_y * 1e8,
+                )
+                + self.tr("Masse = {mass:.1f} kg/m").format(mass=p.mass)
             )
         except KeyError:
             self._lbl_profile_info.setText("")
@@ -217,7 +244,9 @@ class SectionDialog(QDialog):
         elif sec_type == "surface":
             thickness = self._spin_thickness.value()
             self._lbl_summary.setText(
-                f"e = {thickness*100:.1f} cm  |  Section surfacique"
+                self.tr("e = {thickness:.1f} cm  |  Section surfacique").format(
+                    thickness=thickness * 100,
+                )
             )
 
     def _validate(self) -> None:

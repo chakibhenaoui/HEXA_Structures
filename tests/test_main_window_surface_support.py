@@ -700,10 +700,10 @@ def test_surface_context_menu_lists_expected_actions(monkeypatch) -> None:
         "Maillage automatique",
         "Nombre de mailles...",
         "Maillage retenu : 1 x 1",
-        "Integrer une barre diagonale...",
-        "Creer un noeud a l'intersection...",
-        "Decouper une barre traversante...",
-        "Maillage non structure...",
+        "Intégrer une barre diagonale...",
+        "Créer un nœud à l'intersection...",
+        "Découper une barre traversante...",
+        "Maillage non structuré...",
     ]
     assert plate_actions[0].enabled is False
     assert plate_actions[1].enabled is False
@@ -743,16 +743,16 @@ def test_macro_plate_context_menu_exposes_mesh_choice_and_disabled_future_action
         "Maillage automatique",
         "Nombre de mailles...",
         "Maillage retenu : 20 x 16",
-        "Integrer une barre diagonale...",
-        "Creer un noeud a l'intersection...",
-        "Decouper une barre traversante...",
-        "Maillage non structure...",
+        "Intégrer une barre diagonale...",
+        "Créer un nœud à l'intersection...",
+        "Découper une barre traversante...",
+        "Maillage non structuré...",
     ]
     assert macro_actions[0].enabled is True
     assert macro_actions[1].enabled is True
     assert macro_actions[2].enabled is False
     assert all(action.enabled is False for action in macro_actions[3:])
-    assert all(action.tooltip == "Fonction a venir." for action in macro_actions[3:])
+    assert all(action.tooltip == "Fonction à venir." for action in macro_actions[3:])
 
 
 def test_surface_context_menu_copy_uses_clicked_surface(monkeypatch) -> None:

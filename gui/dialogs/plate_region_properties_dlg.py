@@ -27,6 +27,7 @@ from core.model_data import (
 )
 from core.plate_mesh_settings import effective_plate_mesh_divisions
 from gui.dialogs.element_properties_dlg import _fmt, _object_items
+from gui.i18n.display_labels import load_name_label
 
 
 class PlateRegionPropertiesDialog(QDialog):
@@ -49,7 +50,12 @@ class PlateRegionPropertiesDialog(QDialog):
         self.case_results = case_results or {}
 
         suffix = f" - {case_name}" if case_name else ""
-        self.setWindowTitle(f"Proprietes de la plaque macro P{self.plate_tag}{suffix}")
+        self.setWindowTitle(
+            self.tr("Propriétés de la plaque macro P{tag}{suffix}").format(
+                tag=self.plate_tag,
+                suffix=suffix,
+            )
+        )
         self.resize(820, 640)
         self._build_ui()
 
@@ -58,10 +64,10 @@ class PlateRegionPropertiesDialog(QDialog):
         self.tabs = QTabWidget(self)
         root.addWidget(self.tabs, 1)
 
-        self.tabs.addTab(self._build_geometry_tab(), "Geometrie")
-        self.tabs.addTab(self._build_mesh_tab(), "Maillage")
-        self.tabs.addTab(self._build_diagnostics_tab(), "Intersections")
-        self.tabs.addTab(self._build_loads_tab(), "Charges")
+        self.tabs.addTab(self._build_geometry_tab(), self.tr("Géométrie"))
+        self.tabs.addTab(self._build_mesh_tab(), self.tr("Maillage"))
+        self.tabs.addTab(self._build_diagnostics_tab(), self.tr("Intersections"))
+        self.tabs.addTab(self._build_loads_tab(), self.tr("Charges"))
 
         buttons = QDialogButtonBox(QDialogButtonBox.Close, self)
         buttons.rejected.connect(self.reject)
@@ -72,43 +78,43 @@ class PlateRegionPropertiesDialog(QDialog):
         layout = QVBoxLayout(tab)
         section = self.project.sections.get(self.plate.section_tag)
 
-        general = QGroupBox("Identification", tab)
+        general = QGroupBox(self.tr("Identification"), tab)
         form = QFormLayout(general)
-        form.addRow("Plaque :", QLabel(f"P{self.plate.tag}", general))
-        form.addRow("Type :", QLabel("Plaque macro", general))
+        form.addRow(self.tr("Plaque :"), QLabel(f"P{self.plate.tag}", general))
+        form.addRow(self.tr("Type :"), QLabel(self.tr("Plaque macro"), general))
         form.addRow(
-            "Noeuds :",
+            self.tr("Nœuds :"),
             QLabel(
                 ", ".join(f"N{tag}" for tag in self.plate.corner_node_tags),
                 general,
             ),
         )
         form.addRow(
-            "Section :",
+            self.tr("Section :"),
             QLabel(
                 f"{section.name} (T{section.tag})" if section is not None else "-",
                 general,
             ),
         )
-        form.addRow("Formulation :", QLabel(self.plate.formulation, general))
+        form.addRow(self.tr("Formulation :"), QLabel(self.plate.formulation, general))
         if self.case_name:
-            form.addRow("Cas courant :", QLabel(self.case_name, general))
+            form.addRow(self.tr("Cas courant :"), QLabel(self.case_name, general))
         layout.addWidget(general)
 
-        geometry = QGroupBox("Geometrie", tab)
+        geometry = QGroupBox(self.tr("Géométrie"), tab)
         geom_form = QFormLayout(geometry)
         centroid = self._centroid()
         normal = self._normal()
-        geom_form.addRow("Aire :", QLabel(f"{_fmt(self._area())} m2", geometry))
+        geom_form.addRow(self.tr("Aire :"), QLabel(f"{_fmt(self._area())} m2", geometry))
         geom_form.addRow(
-            "Centre :",
+            self.tr("Centre :"),
             QLabel(
                 f"({_fmt(centroid[0])}, {_fmt(centroid[1])}, {_fmt(centroid[2])}) m",
                 geometry,
             ),
         )
         geom_form.addRow(
-            "Normale locale :",
+            self.tr("Normale locale :"),
             QLabel(
                 "-"
                 if normal is None
@@ -118,7 +124,7 @@ class PlateRegionPropertiesDialog(QDialog):
         )
         layout.addWidget(geometry)
 
-        table = self._make_table(["Noeud", "X", "Y", "Z"])
+        table = self._make_table([self.tr("Nœud"), "X", "Y", "Z"])
         rows = []
         for tag in self.plate.corner_node_tags:
             node = self.project.nodes.get(int(tag))
@@ -140,20 +146,20 @@ class PlateRegionPropertiesDialog(QDialog):
         mesh_nx, mesh_ny = effective_plate_mesh_divisions(self.project, self.plate)
         mode = normalize_plate_mesh_mode(getattr(self.plate, "mesh_mode", None))
 
-        group = QGroupBox("Maillage structure", tab)
+        group = QGroupBox(self.tr("Maillage structure"), tab)
         form = QFormLayout(group)
         form.addRow(
-            "Mode :",
-            QLabel("Automatique" if mode == PLATE_MESH_MODE_AUTO else "Utilisateur", group),
+            self.tr("Mode :"),
+            QLabel(self.tr("Automatique") if mode == PLATE_MESH_MODE_AUTO else self.tr("Utilisateur"), group),
         )
-        form.addRow("Demande X :", QLabel(str(int(self.plate.mesh_nx)), group))
-        form.addRow("Demande Y :", QLabel(str(int(self.plate.mesh_ny)), group))
-        form.addRow("Retenu X :", QLabel(str(mesh_nx), group))
-        form.addRow("Retenu Y :", QLabel(str(mesh_ny), group))
+        form.addRow(self.tr("Demande X :"), QLabel(str(int(self.plate.mesh_nx)), group))
+        form.addRow(self.tr("Demande Y :"), QLabel(str(int(self.plate.mesh_ny)), group))
+        form.addRow(self.tr("Retenu X :"), QLabel(str(mesh_nx), group))
+        form.addRow(self.tr("Retenu Y :"), QLabel(str(mesh_ny), group))
         layout.addWidget(group)
 
         section = self.project.sections.get(self.plate.section_tag)
-        table = self._make_table(["Propriete", "Valeur"])
+        table = self._make_table([self.tr("Propriété"), self.tr("Valeur")])
         rows: list[tuple[str, object]] = []
         if section is not None:
             rows.extend((f"section.{key}", value) for key, value in _object_items(section.properties))
@@ -167,12 +173,12 @@ class PlateRegionPropertiesDialog(QDialog):
         try:
             report = detect_plate_intersections(self.project, self.plate)
         except ValueError as exc:
-            label = QLabel(f"Diagnostic indisponible : {exc}", tab)
+            label = QLabel(self.tr("Diagnostic indisponible : {error}").format(error=exc), tab)
             label.setWordWrap(True)
             layout.addWidget(label)
             return tab
 
-        node_table = self._make_table(["Noeud", "Position", "u", "v", "Distance"])
+        node_table = self._make_table([self.tr("Nœud"), self.tr("Position"), "u", "v", self.tr("Distance")])
         node_rows = [
             [
                 f"N{hit.node_tag}",
@@ -186,7 +192,7 @@ class PlateRegionPropertiesDialog(QDialog):
         self._fill_table(node_table, node_rows)
         layout.addWidget(node_table)
 
-        bar_table = self._make_table(["Barre", "Diagnostic", "u", "v", "Message"])
+        bar_table = self._make_table([self.tr("Barre"), self.tr("Diagnostic"), "u", "v", self.tr("Message")])
         bar_rows = [
             [
                 f"E{hit.element_tag}",
@@ -205,14 +211,16 @@ class PlateRegionPropertiesDialog(QDialog):
         tab = QWidget(self)
         layout = QVBoxLayout(tab)
 
-        surface_load_table = self._make_table(["Cas", "Tag", "qX", "qY", "qZ"])
+        surface_load_table = self._make_table([self.tr("Cas"), "Tag", "qX", "qY", "qZ"])
         surface_rows = []
         for load in self.project.plate_surface_loads:
             if int(load.plate_tag) != self.plate_tag:
                 continue
             load_case = self.project.loads.get(int(load.load_tag))
             surface_rows.append([
-                load_case.name if load_case is not None else "Cas introuvable",
+                load_name_label(load_case)
+                if load_case is not None
+                else self.tr("Cas introuvable"),
                 f"T{load.load_tag}",
                 f"{_fmt(load.qx)} kN/m2",
                 f"{_fmt(load.qy)} kN/m2",
@@ -221,7 +229,7 @@ class PlateRegionPropertiesDialog(QDialog):
         self._fill_table(surface_load_table, surface_rows)
         layout.addWidget(surface_load_table)
 
-        edge_table = self._make_table(["Bord", "Ux", "Uy", "Uz", "Rx", "Ry", "Rz"])
+        edge_table = self._make_table([self.tr("Bord"), "Ux", "Uy", "Uz", "Rx", "Ry", "Rz"])
         edge_rows = []
         for support in self.project.plate_edge_supports:
             if int(support.plate_tag) != self.plate_tag:
@@ -285,8 +293,8 @@ class PlateRegionPropertiesDialog(QDialog):
         table.horizontalHeader().setSectionResizeMode(QHeaderView.Stretch)
         return table
 
-    @staticmethod
     def _fill_table(
+        self,
         table: QTableWidget,
         rows: list[list[object] | tuple[object, ...]],
     ) -> None:
@@ -296,7 +304,7 @@ class PlateRegionPropertiesDialog(QDialog):
                 table.setItem(row_idx, col_idx, QTableWidgetItem(str(value)))
         if not rows:
             table.setRowCount(1)
-            item = QTableWidgetItem("Aucune donnee")
+            item = QTableWidgetItem(self.tr("Aucune donnée"))
             table.setItem(0, 0, item)
             table.setSpan(0, 0, 1, table.columnCount())
 

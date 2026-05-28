@@ -48,27 +48,33 @@ class CopySelectionDialog(QDialog):
         dz = float(initial.get("dz", target_z - self._base_point[2]))
         copies = int(initial.get("copies", 1))
 
-        self.setWindowTitle("Copier la sélection")
+        self.setWindowTitle(self.tr("Copier la sélection"))
 
         layout = QVBoxLayout(self)
 
         info = QLabel(
             (
-                f"Sélection à copier : {node_count} nœud(s), "
-                f"{element_count} barre(s), {surface_count} surface(s).\n\n"
-                "L'origine de reference correspond au point bas-gauche de la sélection "
-                "(Z minimum, puis X minimum, puis Y minimum)."
+                self.tr(
+                    "Sélection à copier : {nodes} nœud(s), {elements} barre(s), "
+                    "{surfaces} surface(s).\n\n"
+                    "L'origine de référence correspond au point bas-gauche de la sélection "
+                    "(Z minimum, puis X minimum, puis Y minimum)."
+                ).format(
+                    nodes=node_count,
+                    elements=element_count,
+                    surfaces=surface_count,
+                )
             ),
             self,
         )
         info.setWordWrap(True)
         layout.addWidget(info)
 
-        group_base = QGroupBox("Origine de reference de la sélection", self)
+        group_base = QGroupBox(self.tr("Origine de référence de la sélection"), self)
         base_form = QFormLayout(group_base)
-        base_form.addRow("X (m)", QLabel(f"{self._base_point[0]:.6f}", group_base))
-        base_form.addRow("Y (m)", QLabel(f"{self._base_point[1]:.6f}", group_base))
-        base_form.addRow("Z (m)", QLabel(f"{self._base_point[2]:.6f}", group_base))
+        base_form.addRow(self.tr("X (m)"), QLabel(f"{self._base_point[0]:.6f}", group_base))
+        base_form.addRow(self.tr("Y (m)"), QLabel(f"{self._base_point[1]:.6f}", group_base))
+        base_form.addRow(self.tr("Z (m)"), QLabel(f"{self._base_point[2]:.6f}", group_base))
         layout.addWidget(group_base)
 
         self._tabs = QTabWidget(self)
@@ -81,17 +87,17 @@ class CopySelectionDialog(QDialog):
         self._spn_target_x = self._make_coord_spin(target_x)
         self._spn_target_y = self._make_coord_spin(target_y)
         self._spn_target_z = self._make_coord_spin(target_z)
-        coordinates_form.addRow("X point d'arrivee (m)", self._spn_target_x)
-        coordinates_form.addRow("Y point d'arrivee (m)", self._spn_target_y)
-        coordinates_form.addRow("Z point d'arrivee (m)", self._spn_target_z)
+        coordinates_form.addRow(self.tr("X point d'arrivée (m)"), self._spn_target_x)
+        coordinates_form.addRow(self.tr("Y point d'arrivée (m)"), self._spn_target_y)
+        coordinates_form.addRow(self.tr("Z point d'arrivée (m)"), self._spn_target_z)
         coordinates_layout.addLayout(coordinates_form)
         pick_row = QHBoxLayout()
         pick_row.addStretch(1)
-        self._btn_pick_origin = QPushButton("Choisir arrivee", tab_coordinates)
+        self._btn_pick_origin = QPushButton(self.tr("Choisir arrivée"), tab_coordinates)
         self._btn_pick_origin.clicked.connect(self._request_pick_origin)
         pick_row.addWidget(self._btn_pick_origin)
         coordinates_layout.addLayout(pick_row)
-        self._tabs.addTab(tab_coordinates, "Coordonnées")
+        self._tabs.addTab(tab_coordinates, self.tr("Coordonnées"))
 
         tab_delta = QWidget(self)
         delta_layout = QVBoxLayout(tab_delta)
@@ -100,34 +106,36 @@ class CopySelectionDialog(QDialog):
         self._spn_dx = self._make_coord_spin(dx)
         self._spn_dy = self._make_coord_spin(dy)
         self._spn_dz = self._make_coord_spin(dz)
-        delta_form.addRow("Delta X (m)", self._spn_dx)
-        delta_form.addRow("Delta Y (m)", self._spn_dy)
-        delta_form.addRow("Delta Z (m)", self._spn_dz)
+        delta_form.addRow(self.tr("Delta X (m)"), self._spn_dx)
+        delta_form.addRow(self.tr("Delta Y (m)"), self._spn_dy)
+        delta_form.addRow(self.tr("Delta Z (m)"), self._spn_dz)
         delta_layout.addLayout(delta_form)
         delta_note = QLabel(
             (
-                "Le delta est applique depuis l'origine de reference bas-gauche, "
-                "puis répété entre chaque copie successive."
+                self.tr(
+                    "Le delta est appliqué depuis l'origine de référence bas-gauche, "
+                    "puis répété entre chaque copie successive."
+                )
             ),
             tab_delta,
         )
         delta_note.setWordWrap(True)
         delta_layout.addWidget(delta_note)
-        self._tabs.addTab(tab_delta, "Delta")
+        self._tabs.addTab(tab_delta, self.tr("Delta"))
 
-        copies_group = QGroupBox("Copies", self)
+        copies_group = QGroupBox(self.tr("Copies"), self)
         copies_form = QFormLayout(copies_group)
         self._spn_count = QSpinBox(self)
         self._spn_count.setRange(1, 1000)
         self._spn_count.setValue(max(1, copies))
-        copies_form.addRow("Nombre de copies", self._spn_count)
+        copies_form.addRow(self.tr("Nombre de copies"), self._spn_count)
         layout.addWidget(copies_group)
 
         self._buttons = QDialogButtonBox(
             QDialogButtonBox.Ok | QDialogButtonBox.Cancel,
             parent=self,
         )
-        self._buttons.button(QDialogButtonBox.Ok).setText("Copier")
+        self._buttons.button(QDialogButtonBox.Ok).setText(self.tr("Copier"))
         self._buttons.accepted.connect(self._validate)
         self._buttons.rejected.connect(self.reject)
         layout.addWidget(self._buttons)
@@ -206,16 +214,18 @@ class CopySelectionDialog(QDialog):
         if abs(dx) <= 1e-12 and abs(dy) <= 1e-12 and abs(dz) <= 1e-12:
             if self._mode() == "coordinates":
                 message = (
-                    "Choisissez une origine de copie différente de l'origine "
-                    "de reference, ou changez d'onglet vers Delta."
+                    self.tr(
+                        "Choisissez une origine de copie différente de l'origine "
+                        "de référence, ou changez d'onglet vers Delta."
+                    )
                 )
                 self._spn_target_x.setFocus()
                 self._spn_target_x.selectAll()
             else:
-                message = "Saisissez un delta different de zero."
+                message = self.tr("Saisissez un delta différent de zéro.")
                 self._spn_dx.setFocus()
                 self._spn_dx.selectAll()
-            QMessageBox.warning(self, "Deplacement nul", message)
+            QMessageBox.warning(self, self.tr("Déplacement nul"), message)
             return
         self.accept()
 

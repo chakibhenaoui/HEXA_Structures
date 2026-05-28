@@ -33,7 +33,7 @@ class PlateSectionManagerDialog(QDialog):
         used_section_tags: set[int] | None = None,
     ):
         super().__init__(parent)
-        self.setWindowTitle("Définir les sections plaque")
+        self.setWindowTitle(self.tr("Définir les sections plaque"))
         self.resize(820, 520)
 
         self._sections = {
@@ -46,6 +46,7 @@ class PlateSectionManagerDialog(QDialog):
         self._used_section_tags = set(used_section_tags or set())
 
         self._build_ui()
+        self.retranslate_ui()
         self._refresh_list()
 
     def _build_ui(self) -> None:
@@ -54,34 +55,34 @@ class PlateSectionManagerDialog(QDialog):
         content = QHBoxLayout()
         root.addLayout(content, 1)
 
-        grp_list = QGroupBox("Sections plaque", self)
-        grp_list_lay = QVBoxLayout(grp_list)
-        self.list_items = QListWidget(grp_list)
+        self.grp_list = QGroupBox(self.tr("Sections plaque"), self)
+        grp_list_lay = QVBoxLayout(self.grp_list)
+        self.list_items = QListWidget(self.grp_list)
         self.list_items.itemDoubleClicked.connect(lambda _item: self._edit_section())
         grp_list_lay.addWidget(self.list_items)
-        content.addWidget(grp_list, 1)
+        content.addWidget(self.grp_list, 1)
 
-        grp_actions = QGroupBox("Cliquer pour :", self)
-        grp_actions_lay = QVBoxLayout(grp_actions)
+        self.grp_actions = QGroupBox(self.tr("Cliquer pour :"), self)
+        grp_actions_lay = QVBoxLayout(self.grp_actions)
 
-        self.btn_add = QPushButton("Ajouter section plaque...", grp_actions)
+        self.btn_add = QPushButton(self.tr("Ajouter section plaque..."), self.grp_actions)
         self.btn_add.clicked.connect(self._add_section)
         grp_actions_lay.addWidget(self.btn_add)
 
-        self.btn_copy = QPushButton("Ajouter copie de plaque...", grp_actions)
+        self.btn_copy = QPushButton(self.tr("Ajouter copie de plaque..."), self.grp_actions)
         self.btn_copy.clicked.connect(self._copy_section)
         grp_actions_lay.addWidget(self.btn_copy)
 
-        self.btn_edit = QPushButton("Modifier / Voir plaque...", grp_actions)
+        self.btn_edit = QPushButton(self.tr("Modifier / Voir plaque..."), self.grp_actions)
         self.btn_edit.clicked.connect(self._edit_section)
         grp_actions_lay.addWidget(self.btn_edit)
 
-        self.btn_delete = QPushButton("Supprimer section plaque", grp_actions)
+        self.btn_delete = QPushButton(self.tr("Supprimer section plaque"), self.grp_actions)
         self.btn_delete.clicked.connect(self._delete_section)
         grp_actions_lay.addWidget(self.btn_delete)
 
         grp_actions_lay.addStretch(1)
-        content.addWidget(grp_actions)
+        content.addWidget(self.grp_actions)
 
         buttons = QDialogButtonBox(
             QDialogButtonBox.Ok | QDialogButtonBox.Cancel,
@@ -91,6 +92,16 @@ class PlateSectionManagerDialog(QDialog):
         buttons.accepted.connect(self.accept)
         buttons.rejected.connect(self.reject)
         root.addWidget(buttons)
+
+    def retranslate_ui(self) -> None:
+        """Refresh persistent labels after a language change."""
+        self.setWindowTitle(self.tr("Définir les sections plaque"))
+        self.grp_list.setTitle(self.tr("Sections plaque"))
+        self.grp_actions.setTitle(self.tr("Cliquer pour :"))
+        self.btn_add.setText(self.tr("Ajouter section plaque..."))
+        self.btn_copy.setText(self.tr("Ajouter copie de plaque..."))
+        self.btn_edit.setText(self.tr("Modifier / Voir plaque..."))
+        self.btn_delete.setText(self.tr("Supprimer section plaque"))
 
     def _refresh_list(self) -> None:
         current_tag = self.current_tag()
@@ -229,15 +240,15 @@ class PlateSectionManagerDialog(QDialog):
         if tag in self._used_section_tags:
             QMessageBox.warning(
                 self,
-                "Suppression impossible",
-                "Cette section plaque est encore utilisée par une ou plusieurs surfaces.",
+                self.tr("Suppression impossible"),
+                self.tr("Cette section plaque est encore utilisée par une ou plusieurs surfaces."),
             )
             return
 
         reply = QMessageBox.question(
             self,
-            "Confirmer la suppression",
-            f"Supprimer la section plaque « {sec.name} » ?",
+            self.tr("Confirmer la suppression"),
+            self.tr("Supprimer la section plaque « {name} » ?").format(name=sec.name),
             QMessageBox.Yes | QMessageBox.No,
             QMessageBox.No,
         )

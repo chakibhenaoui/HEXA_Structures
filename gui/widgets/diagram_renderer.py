@@ -4,10 +4,12 @@ from __future__ import annotations
 
 import numpy as np
 from matplotlib.figure import Figure
+from PySide6.QtCore import QCoreApplication
 
 from config.settings import DisplayUnits
 from core.optional_imports import ensure_external_module_search_paths
 from core import section_force_convention as _force_convention
+from gui.i18n.display_labels import tagged_load_label
 from utils.units import INTERNAL_UNITS, Quantity, find_unit
 
 
@@ -149,7 +151,10 @@ def _detect_files_from_project(project: ProjectModel) -> list[dict]:
     files: list[dict] = []
     if _is_supported_diagram_plane(global_plane):
         files.append({
-            "label": f"Ensemble (plan {global_plane})",
+            "label": QCoreApplication.translate(
+                "DiagramRenderer",
+                "Ensemble (plan {plane})",
+            ).format(plane=global_plane),
             "plane": global_plane,
             "ele_tags": ele_tags,
             "axis": None,
@@ -183,8 +188,14 @@ def _detect_files_from_project(project: ProjectModel) -> list[dict]:
 
             files.append({
                 "label": (
-                    f"File {_AXIS_NAMES[axis_idx]} = {value:.3g} m "
-                    f"({len(ele_in_file)} él.)"
+                    QCoreApplication.translate(
+                        "DiagramRenderer",
+                        "File {axis} = {value:.3g} m ({count} él.)",
+                    ).format(
+                        axis=_AXIS_NAMES[axis_idx],
+                        value=value,
+                        count=len(ele_in_file),
+                    )
                 ),
                 "plane": plane,
                 "ele_tags": ele_in_file,
@@ -226,7 +237,10 @@ def detect_files(project: ProjectModel | None = None) -> list[dict]:
     files: list[dict] = []
     if _is_supported_diagram_plane(global_plane):
         files.append({
-            "label": f"Ensemble (plan {global_plane})",
+            "label": QCoreApplication.translate(
+                "DiagramRenderer",
+                "Ensemble (plan {plane})",
+            ).format(plane=global_plane),
             "plane": global_plane,
             "ele_tags": ele_tags,
             "axis": None,
@@ -262,8 +276,14 @@ def detect_files(project: ProjectModel | None = None) -> list[dict]:
 
             files.append({
                 "label": (
-                    f"File {_AXIS_NAMES[axis_idx]} = {v:.3g} m "
-                    f"({len(ele_in_file)} él.)"
+                    QCoreApplication.translate(
+                        "DiagramRenderer",
+                        "File {axis} = {value:.3g} m ({count} él.)",
+                    ).format(
+                        axis=_AXIS_NAMES[axis_idx],
+                        value=v,
+                        count=len(ele_in_file),
+                    )
                 ),
                 "plane": plane,
                 "ele_tags": ele_in_file,
@@ -301,7 +321,10 @@ def detect_load_files(project: ProjectModel) -> list[dict]:
     all_ele_tags = sorted(project.elements.keys())
     if global_plane is not None:
         return [{
-            "label": f"Ensemble (plan {global_plane})",
+            "label": QCoreApplication.translate(
+                "DiagramRenderer",
+                "Ensemble (plan {plane})",
+            ).format(plane=global_plane),
             "plane": global_plane,
             "ele_tags": all_ele_tags,
             "node_tags": all_node_tags,
@@ -336,8 +359,15 @@ def detect_load_files(project: ProjectModel) -> list[dict]:
 
             files.append({
                 "label": (
-                    f"Plan {axis_name} = {value:.3g} m "
-                    f"({len(ele_tags)} el., {len(node_tags)} nd.)"
+                    QCoreApplication.translate(
+                        "DiagramRenderer",
+                        "Plan {axis} = {value:.3g} m ({elements} él., {nodes} nd.)",
+                    ).format(
+                        axis=axis_name,
+                        value=value,
+                        elements=len(ele_tags),
+                        nodes=len(node_tags),
+                    )
                 ),
                 "plane": plane,
                 "ele_tags": sorted(ele_tags),
@@ -1704,17 +1734,28 @@ def _component_unit_label(component: str) -> str:
 def _diagram_component_title(component: str, plane: str | None) -> str:
     """Handle diagram component title."""
     if component == "My" and plane == "YZ":
-        return "Moment de flexion dans le plan (kN.m)"
-    return _COMP_TITLES.get(component, component)
+        return QCoreApplication.translate(
+            "DiagramRenderer",
+            "Moment de flexion dans le plan (kN.m)",
+        )
+    labels = {
+        "N": QCoreApplication.translate("DiagramRenderer", "Effort normal N (kN)"),
+        "Vy": QCoreApplication.translate("DiagramRenderer", "Effort tranchant Vy (kN)"),
+        "Vz": QCoreApplication.translate("DiagramRenderer", "Effort tranchant Vz (kN)"),
+        "T": QCoreApplication.translate("DiagramRenderer", "Moment de torsion T (kN.m)"),
+        "My": QCoreApplication.translate("DiagramRenderer", "Moment de flexion My (kN.m)"),
+        "Mz": QCoreApplication.translate("DiagramRenderer", "Moment de flexion Mz (kN.m)"),
+    }
+    return labels.get(component, component)
 
 
 def _component_local_plane_label(component: str) -> str:
     """Handle component local plane label."""
     if component in {"Vz", "My"}:
-        return "plan local x-z"
+        return QCoreApplication.translate("DiagramRenderer", "plan local x-z")
     if component in {"Vy", "Mz"}:
-        return "plan local x-y"
-    return "repère local"
+        return QCoreApplication.translate("DiagramRenderer", "plan local x-y")
+    return QCoreApplication.translate("DiagramRenderer", "repère local")
 
 
 def _plot_local_member_axis(
@@ -1760,7 +1801,10 @@ def _build_single_element_local_figure(
         ax.text(
             0.5,
             0.5,
-            "Sélectionnez une seule barre pour le diagramme local.",
+            QCoreApplication.translate(
+                "DiagramRenderer",
+                "Sélectionnez une seule barre pour le diagramme local.",
+            ),
             ha="center",
             va="center",
             fontsize=11,
@@ -1788,7 +1832,10 @@ def _build_single_element_local_figure(
         ax.text(
             0.5,
             0.5,
-            "Aucun résultat de barre disponible pour ce diagramme.",
+            QCoreApplication.translate(
+                "DiagramRenderer",
+                "Aucun résultat de barre disponible pour ce diagramme.",
+            ),
             ha="center",
             va="center",
             fontsize=11,
@@ -1822,15 +1869,22 @@ def _build_single_element_local_figure(
 
     ax.set_aspect("equal", adjustable="datalim")
     ax.grid(True, alpha=0.25, linestyle="--")
-    ax.set_xlabel("x local (m)")
+    ax.set_xlabel(QCoreApplication.translate("DiagramRenderer", "x local (m)"))
     unit = _component_unit_label(component)
     unit_suffix = f" ({unit})" if unit else ""
     ax.set_ylabel(f"{component} local{unit_suffix}")
 
-    title = _COMP_TITLES.get(component, component)
+    title = _diagram_component_title(component, None)
     label = file_info.get("label") or f"E{ele_tag}"
     ax.set_title(
-        f"{title} - {label} - {_component_local_plane_label(component)}",
+        QCoreApplication.translate(
+            "DiagramRenderer",
+            "{title} - {label} - {plane}",
+        ).format(
+            title=title,
+            label=label,
+            plane=_component_local_plane_label(component),
+        ),
         fontsize=12,
     )
     ax.margins(0.08, 0.2)
@@ -1854,7 +1908,9 @@ def build_figure_2d(
         if not files:
             fig = Figure(figsize=(10, 7))
             fig.add_subplot(111).text(
-                0.5, 0.5, "Aucun élément à afficher.",
+                0.5,
+                0.5,
+                QCoreApplication.translate("DiagramRenderer", "Aucun élément à afficher."),
                 ha="center", va="center",
         )
             return fig
@@ -1911,8 +1967,11 @@ def build_figure_2d(
         ax = fig.add_subplot(111)
         ax.text(
             0.5, 0.5,
-            "Structure non planaire — sélectionnez une file pour afficher\n"
-            "un diagramme 2D.",
+            QCoreApplication.translate(
+                "DiagramRenderer",
+                "Structure non planaire — sélectionnez une file pour afficher\n"
+                "un diagramme 2D.",
+            ),
             ha="center", va="center", fontsize=11,
         )
         ax.axis("off")
@@ -2051,7 +2110,10 @@ def build_figure_2d(
     title = _diagram_component_title(component, plane)
     label = file_info.get("label", "")
     if label:
-        title = f"{title} — {label}"
+        title = QCoreApplication.translate(
+            "DiagramRenderer",
+            "{title} — {label}",
+        ).format(title=title, label=label)
     ax.set_title(title, fontsize=12)
 
     # Small padding around the data to leave room for labels
@@ -2079,7 +2141,10 @@ def build_load_figure_2d(
         ax.text(
             0.5,
             0.5,
-            "Aucun cas de charge n'est disponible.",
+            QCoreApplication.translate(
+                "DiagramRenderer",
+                "Aucun cas de charge n'est disponible.",
+            ),
             ha="center",
             va="center",
             fontsize=11,
@@ -2095,7 +2160,10 @@ def build_load_figure_2d(
             ax.text(
                 0.5,
                 0.5,
-                "Aucune vue de charge compatible n'est disponible.",
+                QCoreApplication.translate(
+                    "DiagramRenderer",
+                    "Aucune vue de charge compatible n'est disponible.",
+                ),
                 ha="center",
                 va="center",
                 fontsize=11,
@@ -2113,7 +2181,10 @@ def build_load_figure_2d(
         ax.text(
             0.5,
             0.5,
-            "Sélectionnez une file ou un plan pour afficher les charges.",
+            QCoreApplication.translate(
+                "DiagramRenderer",
+                "Sélectionnez une file ou un plan pour afficher les charges.",
+            ),
             ha="center",
             va="center",
             fontsize=11,
@@ -2160,7 +2231,10 @@ def build_load_figure_2d(
         ax.text(
             0.5,
             0.5,
-            "Aucune charge affectée dans cette vue.",
+            QCoreApplication.translate(
+                "DiagramRenderer",
+                "Aucune charge affectée dans cette vue.",
+            ),
             transform=ax.transAxes,
             ha="center",
             va="center",
@@ -2179,12 +2253,21 @@ def build_load_figure_2d(
     ax.set_ylabel(f"{plane[1]} (m)")
 
     load_case = project.loads.get(load_tag)
-    title = "Charges affectées"
+    title = QCoreApplication.translate("DiagramRenderer", "Charges affectées")
     if load_case is not None:
-        title = f"{title} - {load_case.name} (T{load_tag})"
+        title = QCoreApplication.translate(
+            "DiagramRenderer",
+            "{title} - {load}",
+        ).format(
+            title=title,
+            load=tagged_load_label(load_case, load_tag),
+        )
     label = file_info.get("label", "")
     if label:
-        title = f"{title} - {label}"
+        title = QCoreApplication.translate(
+            "DiagramRenderer",
+            "{title} - {label}",
+        ).format(title=title, label=label)
     ax.set_title(title, fontsize=12)
     ax.margins(0.12, 0.18)
     fig.tight_layout()

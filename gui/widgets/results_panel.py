@@ -71,6 +71,7 @@ class ResultsPanel(QWidget):
         layout.setContentsMargins(0, 0, 0, 0)
         layout.addWidget(self.ui)
 
+        self._case_label = self.ui.findChild(QLabel, "lbl_case")
         self._tabs = self.ui.findChild(QTabWidget, "tabs")
         self._table_by_result_type = {
             "displacements": self.ui.tbl_displacements,
@@ -94,6 +95,7 @@ class ResultsPanel(QWidget):
         self.ui.case_combo.currentTextChanged.connect(self._on_case_changed)
         if self._tabs is not None:
             self._tabs.currentChanged.connect(lambda _index: self._apply_current_filter())
+        self.retranslate_ui()
 
     # -- Public API -----------------------------------------------------------
 
@@ -162,14 +164,42 @@ class ResultsPanel(QWidget):
             self._tabs.setCurrentIndex(idx)
         self._apply_current_filter()
 
+    def retranslate_ui(self) -> None:
+        """Refresh persistent labels after a language change."""
+        if self._case_label is not None:
+            self._case_label.setText(self.tr("Cas / Combinaison :"))
+        if hasattr(self, "_filter_label"):
+            self._filter_label.setText(self.tr("Filtre :"))
+        if hasattr(self, "_filter_edit"):
+            self._filter_edit.setPlaceholderText(
+                self.tr("Texte, nœud, élément, cas...")
+            )
+        if self._tabs is not None:
+            tab_titles = {
+                "displacements": self.tr("Déplacements"),
+                "reactions": self.tr("Réactions"),
+                "element_forces": self.tr("Efforts internes"),
+                "surface_results": self.tr("Plaques"),
+                "envelopes": self.tr("Enveloppes"),
+            }
+            for result_type, tab in self._tab_by_result_type.items():
+                idx = self._tabs.indexOf(tab)
+                if idx >= 0:
+                    self._tabs.setTabText(idx, tab_titles[result_type])
+        current_case = self.current_case()
+        if current_case and current_case in self._all_results:
+            self._fill_tables(self._all_results[current_case])
+        if self._envelopes:
+            self._fill_envelopes(self._envelopes)
+
     # -- Internal UI setup ----------------------------------------------------
 
     def _inject_filter_bar(self) -> None:
         """Add a lightweight filter row next to the case selector."""
-        self._filter_label = QLabel("Filtre :", self)
+        self._filter_label = QLabel(self.tr("Filtre :"), self)
         self._filter_edit = QLineEdit(self)
         self._filter_edit.setClearButtonEnabled(True)
-        self._filter_edit.setPlaceholderText("Texte, nœud, element, cas...")
+        self._filter_edit.setPlaceholderText(self.tr("Texte, nœud, élément, cas..."))
         self._filter_edit.textChanged.connect(self._apply_current_filter)
 
         top_bar = self.ui.findChild(QHBoxLayout, "top_bar")
@@ -230,7 +260,7 @@ class ResultsPanel(QWidget):
     def _fill_displacements(self, disps: dict) -> None:
         table = self.ui.tbl_displacements
         headers = [
-            "Nœud", "Ux (m)", "Uy (m)", "Uz (m)",
+            self.tr("Nœud"), "Ux (m)", "Uy (m)", "Uz (m)",
             "Rx (rad)", "Ry (rad)", "Rz (rad)",
         ]
         self._prepare_table(table, headers, len(disps))
@@ -246,7 +276,7 @@ class ResultsPanel(QWidget):
     def _fill_reactions(self, reacts: dict) -> None:
         table = self.ui.tbl_reactions
         headers = [
-            "Nœud", "Fx (kN)", "Fy (kN)", "Fz (kN)",
+            self.tr("Nœud"), "Fx (kN)", "Fy (kN)", "Fz (kN)",
             "Mx (kN.m)", "My (kN.m)", "Mz (kN.m)",
         ]
         self._prepare_table(table, headers, len(reacts))
@@ -269,7 +299,7 @@ class ResultsPanel(QWidget):
     def _fill_forces(self, forces: dict) -> None:
         table = self.ui.tbl_forces
         headers = [
-            "Élément", "Extrémité", "N (kN)", "Vy (kN)", "Vz (kN)",
+            self.tr("Élément"), self.tr("Extrémité"), "N (kN)", "Vy (kN)", "Vz (kN)",
             "T (kN.m)", "My (kN.m)", "Mz (kN.m)",
         ]
         self._prepare_table(table, headers, len(forces) * 2)
@@ -308,7 +338,7 @@ class ResultsPanel(QWidget):
     def _fill_surface_results(self, surface_results: dict[int, SurfaceResult]) -> None:
         table = self.ui.tbl_surface_results
         headers = [
-            "Surface",
+            self.tr("Surface"),
             "Nxx (kN/m)",
             "Nyy (kN/m)",
             "Nxy (kN/m)",
@@ -340,7 +370,7 @@ class ResultsPanel(QWidget):
     def _fill_plate_results(self, plate_results: dict[int, "PlateRegionResult"]) -> None:
         table = self.ui.tbl_surface_results
         headers = [
-            "Plaque",
+            self.tr("Plaque"),
             "Uz min (m)",
             "Uz max (m)",
             "Mxx min/max extrap. (kN.m/m)",
@@ -370,10 +400,10 @@ class ResultsPanel(QWidget):
     def _fill_envelopes(self, envelopes: dict[int, ElementEnvelope]) -> None:
         table = self.ui.tbl_envelopes
         headers = [
-            "Élément",
-            "N min (kN)", "Cas", "N max (kN)", "Cas",
-            "Vz min (kN)", "Cas", "Vz max (kN)", "Cas",
-            "My min (kN.m)", "Cas", "My max (kN.m)", "Cas",
+            self.tr("Élément"),
+            "N min (kN)", self.tr("Cas"), "N max (kN)", self.tr("Cas"),
+            "Vz min (kN)", self.tr("Cas"), "Vz max (kN)", self.tr("Cas"),
+            "My min (kN.m)", self.tr("Cas"), "My max (kN.m)", self.tr("Cas"),
         ]
         self._prepare_table(table, headers, len(envelopes))
         for row, (tag, env) in enumerate(sorted(envelopes.items())):
@@ -434,19 +464,29 @@ class ResultsPanel(QWidget):
         surface_results_available = bool(context.get("surface_results_available", False))
         if plate_region_count > 0:
             messages.append(
-                "Les resultats des plaques utilisateur sont agreges depuis le maillage de calcul interne."
+                self.tr(
+                    "Les résultats des plaques utilisateur sont agrégés depuis le "
+                    "maillage de calcul interne."
+                )
             )
         if surface_count > 0 and not surface_results_available:
             messages.append(
-                "Les efforts et contraintes de plaques ne sont pas encore affiches dans ce panneau."
+                self.tr(
+                    "Les efforts et contraintes de plaques ne sont pas encore affichés "
+                    "dans ce panneau."
+                )
             )
         elif surface_count > 0:
             messages.append(
-                "Les résultats plaques sont disponibles dans l'onglet Plaques."
+                self.tr("Les résultats plaques sont disponibles dans l'onglet Plaques.")
             )
         if surface_count > 0 and bool(context.get("all_nodes_fixed", False)):
             messages.append(
-                "Tous les nœuds du modèle sont bloqués : les déplacements nodaux peuvent donc être nuls, même si les réactions d'appui sont non nulles."
+                self.tr(
+                    "Tous les nœuds du modèle sont bloqués : les déplacements nodaux "
+                    "peuvent donc être nuls, même si les réactions d'appui sont non "
+                    "nulles."
+                )
             )
 
         if messages:

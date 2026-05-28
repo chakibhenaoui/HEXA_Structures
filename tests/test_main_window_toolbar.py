@@ -152,6 +152,7 @@ def test_menu_bar_order_and_model_boundary_action() -> None:
     window.menu_charges = None
     window.menu_analysis = QMenu("Analyse", menubar)
     window.menu_results = QMenu("Resultats", menubar)
+    window.menu_settings = None
     window.menu_help = QMenu("Aide", menubar)
 
     for menu in (
@@ -201,6 +202,7 @@ def test_menu_bar_order_and_model_boundary_action() -> None:
         "charges",
         "analyse",
         "resultats",
+        "parametres",
         "aide",
     ]
 
