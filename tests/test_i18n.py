@@ -2,10 +2,11 @@ from __future__ import annotations
 
 import logging
 import os
+from pathlib import Path
 
 os.environ.setdefault("QT_QPA_PLATFORM", "offscreen")
 
-from PySide6.QtCore import QSettings
+from PySide6.QtCore import QCoreApplication, QSettings
 from PySide6.QtWidgets import QApplication
 
 from gui.i18n.language_manager import LanguageManager
@@ -65,3 +66,70 @@ def test_default_language_list_hides_unfinished_translations(tmp_path) -> None:
 
 def test_main_window_exposes_retranslate_ui() -> None:
     assert callable(getattr(MainWindow, "retranslate_ui", None))
+
+
+def test_english_catalog_has_no_unfinished_entries() -> None:
+    catalog = Path(__file__).resolve().parents[1] / "i18n" / "hexa_en.ts"
+
+    text = catalog.read_text(encoding="utf-8")
+
+    assert 'type="unfinished"' not in text
+    assert "<translation></translation>" not in text
+
+
+def test_english_catalog_translates_high_visibility_labels(tmp_path) -> None:
+    _app()
+    manager = LanguageManager(
+        i18n_dir=Path(__file__).resolve().parents[1] / "i18n",
+        settings=_settings(tmp_path),
+    )
+
+    try:
+        assert manager.load_language("en") is True
+        assert QCoreApplication.translate("MainWindow", "&Fichier") == "&File"
+        assert QCoreApplication.translate("MainWindow", "&Vue") == "&View"
+        assert (
+            QCoreApplication.translate("DiagramWindow", "Diagramme de barre")
+            == "Bar diagram"
+        )
+        assert QCoreApplication.translate("DiagramWindow", "Diagramme :") == "Diagram:"
+        assert (
+            QCoreApplication.translate("EurocodeSettingsDialog", "B — Bureaux")
+            == "B - Offices"
+        )
+        assert (
+            QCoreApplication.translate("LoadCaseManagerDialog", "Cliquer pour :")
+            == "Click to:"
+        )
+    finally:
+        manager.reset_to_default_language(save=False)
+
+
+def test_english_catalog_rejects_known_residual_translations(tmp_path) -> None:
+    _app()
+    manager = LanguageManager(
+        i18n_dir=Path(__file__).resolve().parents[1] / "i18n",
+        settings=_settings(tmp_path),
+    )
+
+    try:
+        assert manager.load_language("en") is True
+        translated = {
+            QCoreApplication.translate(
+                "DiagramWindow",
+                "Aucun diagramme n'est disponible pour l'export.",
+            ),
+            QCoreApplication.translate(
+                "MainWindow",
+                "Aucune barre compatible pour ce diagramme.",
+            ),
+            QCoreApplication.translate("MainWindow", "Aucune vue compatible"),
+            QCoreApplication.translate("PropertyPanel", "Calcul :"),
+        }
+    finally:
+        manager.reset_to_default_language(save=False)
+
+    assert "No diagramme n'est available pour l'export." not in translated
+    assert "Noe bar compatible pour ce diagramme." not in translated
+    assert "Noe vue compatible" not in translated
+    assert "Calcul :" not in translated

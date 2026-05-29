@@ -337,7 +337,7 @@
         <message>
             <location filename="../gui/dialogs/combo_dlg.py" line="398" />
             <source>{name} - Copie</source>
-            <translation>{name} - Copie</translation>
+            <translation>{name} - Copy</translation>
         </message>
         <message>
             <location filename="../gui/dialogs/combo_dlg.py" line="429" />
@@ -688,12 +688,12 @@ a 2D diagram.</translation>
         <message>
             <location filename="../gui/widgets/diagram_window.py" line="145" />
             <source>Cartes plaques</source>
-            <translation>Cartes plates</translation>
+            <translation>Plate maps</translation>
         </message>
         <message>
             <location filename="../gui/widgets/diagram_window.py" line="146" />
             <source>Diagramme de barre</source>
-            <translation>Diagramme de bar</translation>
+            <translation>Bar diagram</translation>
         </message>
         <message>
             <location filename="../gui/widgets/diagram_window.py" line="147" />
@@ -713,17 +713,17 @@ a 2D diagram.</translation>
         <message>
             <location filename="../gui/widgets/diagram_window.py" line="150" />
             <source>Diagramme :</source>
-            <translation>Diagramme :</translation>
+            <translation>Diagram:</translation>
         </message>
         <message>
             <location filename="../gui/widgets/diagram_window.py" line="151" />
             <source>Composante :</source>
-            <translation>Composante :</translation>
+            <translation>Component:</translation>
         </message>
         <message>
             <location filename="../gui/widgets/diagram_window.py" line="152" />
             <source>Affichage :</source>
-            <translation>Affichage :</translation>
+            <translation>Display:</translation>
         </message>
         <message>
             <location filename="../gui/widgets/diagram_window.py" line="153" />
@@ -733,7 +733,7 @@ a 2D diagram.</translation>
         <message>
             <location filename="../gui/widgets/diagram_window.py" line="154" />
             <source>Plan :</source>
-            <translation>Plan :</translation>
+            <translation>Plane:</translation>
         </message>
         <message>
             <location filename="../gui/widgets/diagram_window.py" line="155" />
@@ -743,7 +743,7 @@ a 2D diagram.</translation>
         <message>
             <location filename="../gui/widgets/diagram_window.py" line="269" />
             <source>Aucun diagramme n'est disponible pour l'export.</source>
-            <translation>No diagramme n'est available pour l'export.</translation>
+            <translation>No diagram is available for export.</translation>
         </message>
         <message>
             <location filename="../gui/widgets/diagram_window.py" line="274" />
@@ -763,7 +763,7 @@ a 2D diagram.</translation>
         <message>
             <location filename="../gui/widgets/diagram_window.py" line="293" />
             <source>Export impossible</source>
-            <translation>Export impossible</translation>
+            <translation>Cannot export</translation>
         </message>
         <message>
             <location filename="../gui/widgets/diagram_window.py" line="294" />
@@ -780,12 +780,12 @@ a 2D diagram.</translation>
         <message>
             <location filename="../gui/widgets/diagram_window.py" line="309" />
             <source>sans cas</source>
-            <translation>sans cas</translation>
+            <translation>no case</translation>
         </message>
         <message>
             <location filename="../gui/widgets/diagram_window.py" line="313" />
             <source>sans file</source>
-            <translation>sans file</translation>
+            <translation>no grid line</translation>
         </message>
     </context>
     <context>
@@ -923,7 +923,7 @@ a 2D diagram.</translation>
         <message>
             <location filename="../gui/dialogs/element_properties_dlg.py" line="93" />
             <source>NTM</source>
-            <translation>NTM</translation>
+            <translation>N-T-M</translation>
         </message>
         <message>
             <location filename="../gui/dialogs/element_properties_dlg.py" line="95" />
@@ -991,12 +991,12 @@ a 2D diagram.</translation>
         <message>
             <location filename="../gui/dialogs/element_properties_dlg.py" line="138" />
             <source>Delta X / Y / Z :</source>
-            <translation>Delta X / Y / Z :</translation>
+            <translation>Delta X / Y / Z:</translation>
         </message>
         <message>
             <location filename="../gui/dialogs/element_properties_dlg.py" line="139" />
             <source>Axe local x :</source>
-            <translation>Axe local x :</translation>
+            <translation>Local x axis:</translation>
         </message>
         <message>
             <location filename="../gui/dialogs/element_properties_dlg.py" line="154" />
@@ -1017,17 +1017,17 @@ a 2D diagram.</translation>
         <message>
             <location filename="../gui/dialogs/element_properties_dlg.py" line="161" />
             <source>Aire A :</source>
-            <translation>Aire A :</translation>
+            <translation>Area A:</translation>
         </message>
         <message>
             <location filename="../gui/dialogs/element_properties_dlg.py" line="162" />
             <source>Inertie Iy :</source>
-            <translation>Inertie Iy :</translation>
+            <translation>Inertia Iy:</translation>
         </message>
         <message>
             <location filename="../gui/dialogs/element_properties_dlg.py" line="163" />
             <source>Inertie Iz :</source>
-            <translation>Inertie Iz :</translation>
+            <translation>Inertia Iz:</translation>
         </message>
         <message>
             <location filename="../gui/dialogs/element_properties_dlg.py" line="166" />
@@ -1120,47 +1120,47 @@ a 2D diagram.</translation>
         <message>
             <location filename="../gui/ui/eurocode_dlg.ui" line="38" />
             <source>Coefficients partiels</source>
-            <translation>Coefficients partiels</translation>
+            <translation>Partial factors</translation>
         </message>
         <message>
             <location filename="../gui/ui/eurocode_dlg.ui" line="45" />
             <source>ELU fondamental (EC0 §6.4.3.2, tableau A1.2(B))</source>
-            <translation>ELU fondamental (EC0 §6.4.3.2, tableau A1.2(B))</translation>
+            <translation>Fundamental ULS (EC0 §6.4.3.2, Table A1.2(B))</translation>
         </message>
         <message>
             <location filename="../gui/ui/eurocode_dlg.ui" line="53" />
             <source>gamma_G,sup (permanent defavorable) :</source>
-            <translation>gamma_G,sup (permanent defavorable) :</translation>
+            <translation>gamma_G,sup (unfavourable permanent):</translation>
         </message>
         <message>
             <location filename="../gui/ui/eurocode_dlg.ui" line="86" />
             <source>gamma_G,inf (permanent favorable) :</source>
-            <translation>gamma_G,inf (permanent favorable) :</translation>
+            <translation>gamma_G,inf (favourable permanent):</translation>
         </message>
         <message>
             <location filename="../gui/ui/eurocode_dlg.ui" line="119" />
             <source>gamma_Q (variable) :</source>
-            <translation>gamma_Q (variable) :</translation>
+            <translation>gamma_Q (variable):</translation>
         </message>
         <message>
             <location filename="../gui/ui/eurocode_dlg.ui" line="154" />
             <source>ELU accidentel / sismique (EC0 §6.4.3.3-4)</source>
-            <translation>ELU accidentel / sismique (EC0 §6.4.3.3-4)</translation>
+            <translation>Accidental / seismic ULS (EC0 §6.4.3.3-4)</translation>
         </message>
         <message>
             <location filename="../gui/ui/eurocode_dlg.ui" line="162" />
             <source>gamma_G,accidentel :</source>
-            <translation>gamma_G,accidentel :</translation>
+            <translation>gamma_G,accidental:</translation>
         </message>
         <message>
             <location filename="../gui/ui/eurocode_dlg.ui" line="195" />
             <source>gamma_Q,accidentel :</source>
-            <translation>gamma_Q,accidentel :</translation>
+            <translation>gamma_Q,accidental:</translation>
         </message>
         <message>
             <location filename="../gui/ui/eurocode_dlg.ui" line="245" />
             <source>Coefficients psi</source>
-            <translation>Coefficients psi</translation>
+            <translation>Psi coefficients</translation>
         </message>
         <message>
             <location filename="../gui/ui/eurocode_dlg.ui" line="251" />
@@ -1205,7 +1205,7 @@ a 2D diagram.</translation>
         <message>
             <location filename="../gui/ui/eurocode_dlg.ui" line="338" />
             <source>alpha_cc :</source>
-            <translation>alpha_cc :</translation>
+            <translation>alpha_cc:</translation>
         </message>
         <message>
             <location filename="../gui/ui/eurocode_dlg.ui" line="371" />
@@ -1258,12 +1258,12 @@ Confirm the modification?</translation>
         <message>
             <location filename="../gui/dialogs/eurocode_dlg.py" line="220" />
             <source>A — Habitation</source>
-            <translation>A — Habitation</translation>
+            <translation>A - Residential</translation>
         </message>
         <message>
             <location filename="../gui/dialogs/eurocode_dlg.py" line="221" />
             <source>B — Bureaux</source>
-            <translation>B — Bureaux</translation>
+            <translation>B - Offices</translation>
         </message>
         <message>
             <location filename="../gui/dialogs/eurocode_dlg.py" line="222" />
@@ -1273,12 +1273,12 @@ Confirm the modification?</translation>
         <message>
             <location filename="../gui/dialogs/eurocode_dlg.py" line="223" />
             <source>D — Commerces</source>
-            <translation>D — Commerces</translation>
+            <translation>D - Retail areas</translation>
         </message>
         <message>
             <location filename="../gui/dialogs/eurocode_dlg.py" line="224" />
             <source>E — Stockage</source>
-            <translation>E — Stockage</translation>
+            <translation>E - Storage</translation>
         </message>
         <message>
             <location filename="../gui/dialogs/eurocode_dlg.py" line="225" />
@@ -1293,17 +1293,17 @@ Confirm the modification?</translation>
         <message>
             <location filename="../gui/dialogs/eurocode_dlg.py" line="227" />
             <source>H — Toitures</source>
-            <translation>H — Toitures</translation>
+            <translation>H - Roofs</translation>
         </message>
         <message>
             <location filename="../gui/dialogs/eurocode_dlg.py" line="228" />
             <source>Neige (alt. &lt;= 1000 m)</source>
-            <translation>Neige (alt. &lt;= 1000 m)</translation>
+            <translation>Snow (alt. &lt;= 1000 m)</translation>
         </message>
         <message>
             <location filename="../gui/dialogs/eurocode_dlg.py" line="229" />
             <source>Neige (alt. &gt; 1000 m)</source>
-            <translation>Neige (alt. &gt; 1000 m)</translation>
+            <translation>Snow (alt. &gt; 1000 m)</translation>
         </message>
         <message>
             <location filename="../gui/dialogs/eurocode_dlg.py" line="230" />
@@ -1500,7 +1500,7 @@ Confirm the modification?</translation>
         <message>
             <location filename="../gui/dialogs/load_dlg.py" line="533" />
             <source>B — Bureaux</source>
-            <translation>B — Bureaux</translation>
+            <translation>B - Offices</translation>
         </message>
         <message>
             <location filename="../gui/dialogs/load_dlg.py" line="534" />
@@ -1535,22 +1535,22 @@ Confirm the modification?</translation>
         <message>
             <location filename="../gui/dialogs/load_dlg.py" line="540" />
             <source>D2 — Grands magasins</source>
-            <translation>D2 — Grands magasins</translation>
+            <translation>D2 - Department stores</translation>
         </message>
         <message>
             <location filename="../gui/dialogs/load_dlg.py" line="541" />
             <source>E1 — Stockage (entrepôts)</source>
-            <translation>E1 — Stockage (entrepôts)</translation>
+            <translation>E1 - Storage (warehouses)</translation>
         </message>
         <message>
             <location filename="../gui/dialogs/load_dlg.py" line="542" />
             <source>E2 — Usage industriel</source>
-            <translation>E2 — Usage industriel</translation>
+            <translation>E2 - Industrial use</translation>
         </message>
         <message>
             <location filename="../gui/dialogs/load_dlg.py" line="543" />
             <source>H — Toitures inaccessibles</source>
-            <translation>H — Toitures inaccessibles</translation>
+            <translation>H - Inaccessible roofs</translation>
         </message>
         <message>
             <location filename="../gui/ui/load_case_dlg.ui" line="18" />
@@ -1596,7 +1596,7 @@ Confirm the modification?</translation>
             <location filename="../gui/dialogs/load_dlg.py" line="120" />
             <location filename="../gui/dialogs/load_dlg.py" line="173" />
             <source>Cliquer pour :</source>
-            <translation>Cliquer pour :</translation>
+            <translation>Click to:</translation>
         </message>
         <message>
             <location filename="../gui/dialogs/load_dlg.py" line="123" />
@@ -1662,7 +1662,7 @@ Confirm the modification?</translation>
         <message>
             <location filename="../gui/dialogs/load_dlg.py" line="289" />
             <source>{name} - Copie</source>
-            <translation>{name} - Copie</translation>
+            <translation>{name} - Copy</translation>
         </message>
         <message>
             <source>Permanente (G)</source>
@@ -1750,7 +1750,7 @@ Confirm the modification?</translation>
         <message>
             <location filename="../gui/widgets/load_editor.py" line="83" />
             <source>B — Bureaux</source>
-            <translation>B — Bureaux</translation>
+            <translation>B - Offices</translation>
         </message>
         <message>
             <location filename="../gui/widgets/load_editor.py" line="84" />
@@ -1760,12 +1760,12 @@ Confirm the modification?</translation>
         <message>
             <location filename="../gui/widgets/load_editor.py" line="85" />
             <source>D — Commerces</source>
-            <translation>D — Commerces</translation>
+            <translation>D - Retail areas</translation>
         </message>
         <message>
             <location filename="../gui/widgets/load_editor.py" line="86" />
             <source>E — Stockage</source>
-            <translation>E — Stockage</translation>
+            <translation>E - Storage</translation>
         </message>
         <message>
             <location filename="../gui/widgets/load_editor.py" line="87" />
@@ -1780,7 +1780,7 @@ Confirm the modification?</translation>
         <message>
             <location filename="../gui/widgets/load_editor.py" line="89" />
             <source>H — Toitures</source>
-            <translation>H — Toitures</translation>
+            <translation>H - Roofs</translation>
         </message>
         <message>
             <location filename="../gui/widgets/load_editor.py" line="116" />
@@ -1808,12 +1808,12 @@ Confirm the modification?</translation>
         <message>
             <location filename="../gui/ui/load_editor.ui" line="32" />
             <source>+ Cas</source>
-            <translation>+ Cas</translation>
+            <translation>+ Case</translation>
         </message>
         <message>
             <location filename="../gui/ui/load_editor.ui" line="39" />
             <source>- Cas</source>
-            <translation>- Cas</translation>
+            <translation>- Case</translation>
         </message>
         <message>
             <location filename="../gui/ui/load_editor.ui" line="54" />
@@ -1992,7 +1992,7 @@ Confirm the modification?</translation>
         <message>
             <location filename="../gui/dialogs/load_dlg.py" line="706" />
             <source>Force nodale globale positive suivant l'axe +X.</source>
-            <translation>Force nodale globale positive suivant l'axe +X.</translation>
+            <translation>Positive global nodal force along the +X axis.</translation>
         </message>
         <message>
             <location filename="../gui/dialogs/load_dlg.py" line="707" />
@@ -2002,7 +2002,7 @@ Confirm the modification?</translation>
         <message>
             <location filename="../gui/dialogs/load_dlg.py" line="711" />
             <source>Force nodale globale positive suivant l'axe +Y.</source>
-            <translation>Force nodale globale positive suivant l'axe +Y.</translation>
+            <translation>Positive global nodal force along the +Y axis.</translation>
         </message>
         <message>
             <location filename="../gui/dialogs/load_dlg.py" line="712" />
@@ -2012,7 +2012,7 @@ Confirm the modification?</translation>
         <message>
             <location filename="../gui/dialogs/load_dlg.py" line="716" />
             <source>Force nodale globale positive suivant l'axe +Z.</source>
-            <translation>Force nodale globale positive suivant l'axe +Z.</translation>
+            <translation>Positive global nodal force along the +Z axis.</translation>
         </message>
         <message>
             <location filename="../gui/dialogs/load_dlg.py" line="717" />
@@ -2027,7 +2027,7 @@ Confirm the modification?</translation>
         <message>
             <location filename="../gui/dialogs/load_dlg.py" line="730" />
             <source>Mx (+ autour X)</source>
-            <translation>Mx (+ autour X)</translation>
+            <translation>Mx (+ about X)</translation>
         </message>
         <message>
             <location filename="../gui/dialogs/load_dlg.py" line="735" />
@@ -2037,7 +2037,7 @@ Confirm the modification?</translation>
         <message>
             <location filename="../gui/dialogs/load_dlg.py" line="737" />
             <source>My (+ autour Y)</source>
-            <translation>My (+ autour Y)</translation>
+            <translation>My (+ about Y)</translation>
         </message>
         <message>
             <location filename="../gui/dialogs/load_dlg.py" line="742" />
@@ -2047,14 +2047,14 @@ Confirm the modification?</translation>
         <message>
             <location filename="../gui/dialogs/load_dlg.py" line="744" />
             <source>Mz (+ autour Z)</source>
-            <translation>Mz (+ autour Z)</translation>
+            <translation>Mz (+ about Z)</translation>
         </message>
         <message>
             <location filename="../gui/dialogs/load_dlg.py" line="748" />
             <location filename="../gui/dialogs/load_dlg.py" line="842" />
             <location filename="../gui/dialogs/load_dlg.py" line="923" />
             <source>+ Affecter</source>
-            <translation>+ Affecter</translation>
+            <translation>+ Assign</translation>
         </message>
         <message>
             <location filename="../gui/dialogs/load_dlg.py" line="748" />
@@ -2101,7 +2101,7 @@ Confirm the modification?</translation>
         <message>
             <location filename="../gui/dialogs/load_dlg.py" line="777" />
             <source>Nodales</source>
-            <translation>Nodales</translation>
+            <translation>Nodal</translation>
         </message>
         <message>
             <location filename="../gui/dialogs/load_dlg.py" line="782" />
@@ -2356,10 +2356,10 @@ Confirm the modification?</translation>
         <message>
             <location filename="../gui/main_window.py" line="622" />
             <location filename="../gui/main_window.py" line="633" />
-            <location filename="../gui/main_window.py" line="7442" />
-            <location filename="../gui/main_window.py" line="7443" />
-            <location filename="../gui/main_window.py" line="7514" />
-            <location filename="../gui/main_window.py" line="7577" />
+            <location filename="../gui/main_window.py" line="7455" />
+            <location filename="../gui/main_window.py" line="7456" />
+            <location filename="../gui/main_window.py" line="7527" />
+            <location filename="../gui/main_window.py" line="7590" />
             <source>Charges</source>
             <translation>Loads</translation>
         </message>
@@ -2372,9 +2372,9 @@ Confirm the modification?</translation>
             <location filename="../gui/ui/main_window.ui" line="200" />
             <location filename="../gui/main_window.py" line="323" />
             <location filename="../gui/main_window.py" line="635" />
-            <location filename="../gui/main_window.py" line="1376" />
-            <location filename="../gui/main_window.py" line="7614" />
-            <location filename="../gui/main_window.py" line="7640" />
+            <location filename="../gui/main_window.py" line="1389" />
+            <location filename="../gui/main_window.py" line="7627" />
+            <location filename="../gui/main_window.py" line="7653" />
             <source>Résultats</source>
             <translation>Results</translation>
         </message>
@@ -2390,97 +2390,97 @@ Confirm the modification?</translation>
             <translation>Help</translation>
         </message>
         <message>
-            <location filename="../gui/main_window.py" line="1299" />
+            <location filename="../gui/main_window.py" line="1312" />
             <source>Langue</source>
             <translation>Language</translation>
         </message>
         <message>
-            <location filename="../gui/main_window.py" line="1394" />
-            <location filename="../gui/main_window.py" line="8532" />
+            <location filename="../gui/main_window.py" line="1407" />
+            <location filename="../gui/main_window.py" line="8545" />
             <source>Nouveau projet</source>
             <translation>New project</translation>
         </message>
         <message>
-            <location filename="../gui/main_window.py" line="1395" />
+            <location filename="../gui/main_window.py" line="1408" />
             <source>Ouvrir...</source>
             <translation>Open...</translation>
         </message>
         <message>
-            <location filename="../gui/main_window.py" line="1396" />
+            <location filename="../gui/main_window.py" line="1409" />
             <source>Enregistrer</source>
             <translation>Save</translation>
         </message>
         <message>
-            <location filename="../gui/main_window.py" line="1397" />
+            <location filename="../gui/main_window.py" line="1410" />
             <source>Enregistrer sous...</source>
             <translation>Save as...</translation>
         </message>
         <message>
-            <location filename="../gui/main_window.py" line="1398" />
+            <location filename="../gui/main_window.py" line="1411" />
             <source>Quitter</source>
             <translation>Quit</translation>
         </message>
         <message>
             <location filename="../gui/main_window.py" line="234" />
-            <location filename="../gui/main_window.py" line="1456" />
-            <location filename="../gui/main_window.py" line="1526" />
-            <location filename="../gui/main_window.py" line="7706" />
+            <location filename="../gui/main_window.py" line="1469" />
+            <location filename="../gui/main_window.py" line="1539" />
+            <location filename="../gui/main_window.py" line="7719" />
             <source>Annuler</source>
             <translation>Cancel</translation>
         </message>
         <message>
             <location filename="../gui/main_window.py" line="236" />
-            <location filename="../gui/main_window.py" line="1457" />
-            <location filename="../gui/main_window.py" line="1528" />
-            <location filename="../gui/main_window.py" line="7708" />
+            <location filename="../gui/main_window.py" line="1470" />
+            <location filename="../gui/main_window.py" line="1541" />
+            <location filename="../gui/main_window.py" line="7721" />
             <source>Rétablir</source>
             <translation>Redo</translation>
         </message>
         <message>
             <location filename="../gui/main_window.py" line="238" />
-            <location filename="../gui/main_window.py" line="1458" />
+            <location filename="../gui/main_window.py" line="1471" />
             <source>Copier...</source>
             <translation>Copy...</translation>
         </message>
         <message>
             <location filename="../gui/main_window.py" line="662" />
-            <location filename="../gui/main_window.py" line="1460" />
+            <location filename="../gui/main_window.py" line="1473" />
             <source>Définir la grille 3D...</source>
             <translation>Define 3D grid...</translation>
         </message>
         <message>
             <location filename="../gui/main_window.py" line="664" />
-            <location filename="../gui/main_window.py" line="1461" />
+            <location filename="../gui/main_window.py" line="1474" />
             <source>Sélection</source>
             <translation>Select</translation>
         </message>
         <message>
             <location filename="../gui/main_window.py" line="668" />
-            <location filename="../gui/main_window.py" line="1462" />
+            <location filename="../gui/main_window.py" line="1475" />
             <source>Dessiner un nœud</source>
             <translation>Draw node</translation>
         </message>
         <message>
             <location filename="../gui/main_window.py" line="671" />
-            <location filename="../gui/main_window.py" line="1463" />
+            <location filename="../gui/main_window.py" line="1476" />
             <source>Dessiner des barres</source>
             <translation>Draw bars</translation>
         </message>
         <message>
             <location filename="../gui/main_window.py" line="674" />
-            <location filename="../gui/main_window.py" line="1464" />
+            <location filename="../gui/main_window.py" line="1477" />
             <source>Dessiner une surface</source>
             <translation>Draw surface</translation>
         </message>
         <message>
             <location filename="../gui/main_window.py" line="677" />
-            <location filename="../gui/main_window.py" line="1465" />
+            <location filename="../gui/main_window.py" line="1478" />
             <source>Tracé orthogonal</source>
             <translation>Orthogonal drawing</translation>
         </message>
         <message>
             <location filename="../gui/main_window.py" line="680" />
-            <location filename="../gui/main_window.py" line="1466" />
+            <location filename="../gui/main_window.py" line="1479" />
             <source>Annuler le dessin</source>
             <translation>Cancel drawing</translation>
         </message>
@@ -2496,8 +2496,8 @@ Confirm the modification?</translation>
         </message>
         <message>
             <location filename="../gui/main_window.py" line="914" />
-            <location filename="../gui/main_window.py" line="4541" />
-            <location filename="../gui/main_window.py" line="6300" />
+            <location filename="../gui/main_window.py" line="4554" />
+            <location filename="../gui/main_window.py" line="6313" />
             <source>Plaques indisponibles</source>
             <translation>Plates unavailable</translation>
         </message>
@@ -2565,12 +2565,12 @@ OpenSeesPy remains available as an optional advanced engine.
         <message>
             <location filename="../gui/main_window.py" line="1021" />
             <source>Orientation cible :</source>
-            <translation>Orientation cible :</translation>
+            <translation>Target orientation:</translation>
         </message>
         <message>
             <location filename="../gui/main_window.py" line="1022" />
             <source>- Calcul courant : {engine} si disponible</source>
-            <translation>- Calcul courant : {engine} si available</translation>
+            <translation>- Current analysis: {engine} if available</translation>
         </message>
         <message>
             <location filename="../gui/main_window.py" line="1025" />
@@ -2588,104 +2588,104 @@ OpenSeesPy remains available as an optional advanced engine.
             <translation>Engine capabilities</translation>
         </message>
         <message>
-            <location filename="../gui/main_window.py" line="1399" />
+            <location filename="../gui/main_window.py" line="1412" />
             <source>Ajouter un nœud...</source>
             <translation>Add node...</translation>
         </message>
         <message>
-            <location filename="../gui/main_window.py" line="1400" />
+            <location filename="../gui/main_window.py" line="1413" />
             <source>Ajouter un matériau...</source>
             <translation>Add material...</translation>
         </message>
         <message>
-            <location filename="../gui/main_window.py" line="1401" />
+            <location filename="../gui/main_window.py" line="1414" />
             <source>Ajouter une section...</source>
             <translation>Add section...</translation>
         </message>
         <message>
-            <location filename="../gui/main_window.py" line="1402" />
+            <location filename="../gui/main_window.py" line="1415" />
             <source>Ajouter un élément...</source>
             <translation>Add element...</translation>
         </message>
         <message>
             <location filename="../gui/main_window.py" line="683" />
-            <location filename="../gui/main_window.py" line="1469" />
+            <location filename="../gui/main_window.py" line="1482" />
             <source>Ajouter une surface depuis la sélection</source>
             <translation>Add surface from selection</translation>
         </message>
         <message>
             <location filename="../gui/main_window.py" line="687" />
-            <location filename="../gui/main_window.py" line="1473" />
-            <location filename="../gui/main_window.py" line="1997" />
+            <location filename="../gui/main_window.py" line="1486" />
+            <location filename="../gui/main_window.py" line="2010" />
             <source>Modifier la surface sélectionnée...</source>
             <translation>Edit selected surface...</translation>
         </message>
         <message>
             <location filename="../gui/main_window.py" line="689" />
-            <location filename="../gui/main_window.py" line="1477" />
+            <location filename="../gui/main_window.py" line="1490" />
             <source>Nouvelle section plaque...</source>
             <translation>New plate section...</translation>
         </message>
         <message>
             <location filename="../gui/main_window.py" line="692" />
-            <location filename="../gui/main_window.py" line="1479" />
+            <location filename="../gui/main_window.py" line="1492" />
             <source>Matériaux...</source>
             <translation>Materials...</translation>
         </message>
         <message>
             <location filename="../gui/main_window.py" line="694" />
-            <location filename="../gui/main_window.py" line="1480" />
+            <location filename="../gui/main_window.py" line="1493" />
             <source>Sections...</source>
             <translation>Sections...</translation>
         </message>
         <message>
             <location filename="../gui/main_window.py" line="696" />
-            <location filename="../gui/main_window.py" line="1483" />
+            <location filename="../gui/main_window.py" line="1496" />
             <source>Sections plaque...</source>
             <translation>Plate sections...</translation>
         </message>
         <message>
-            <location filename="../gui/main_window.py" line="1403" />
+            <location filename="../gui/main_window.py" line="1416" />
             <source>Conditions aux limites...</source>
             <translation>Boundary conditions...</translation>
         </message>
         <message>
             <location filename="../gui/main_window.py" line="188" />
-            <location filename="../gui/main_window.py" line="1404" />
+            <location filename="../gui/main_window.py" line="1417" />
             <source>Cas de charge...</source>
             <translation>Load case...</translation>
         </message>
         <message>
-            <location filename="../gui/main_window.py" line="1405" />
+            <location filename="../gui/main_window.py" line="1418" />
             <source>Définir les charges...</source>
             <translation>Define loads...</translation>
         </message>
         <message>
             <location filename="../gui/main_window.py" line="699" />
-            <location filename="../gui/main_window.py" line="1487" />
-            <location filename="../gui/main_window.py" line="1968" />
+            <location filename="../gui/main_window.py" line="1500" />
+            <location filename="../gui/main_window.py" line="1981" />
             <source>Affecter charges à la sélection...</source>
             <translation>Assign loads to selection...</translation>
         </message>
         <message>
             <location filename="../gui/main_window.py" line="222" />
-            <location filename="../gui/main_window.py" line="1454" />
+            <location filename="../gui/main_window.py" line="1467" />
             <source>Afficher charges...</source>
             <translation>Show loads...</translation>
         </message>
         <message>
             <location filename="../gui/main_window.py" line="190" />
-            <location filename="../gui/main_window.py" line="1406" />
+            <location filename="../gui/main_window.py" line="1419" />
             <source>Combinaisons...</source>
             <translation>Combinations...</translation>
         </message>
         <message>
-            <location filename="../gui/main_window.py" line="1407" />
+            <location filename="../gui/main_window.py" line="1420" />
             <source>Lancer l'analyse</source>
             <translation>Run analysis</translation>
         </message>
         <message>
-            <location filename="../gui/main_window.py" line="1410" />
+            <location filename="../gui/main_window.py" line="1423" />
             <source>Paramètres Eurocodes...</source>
             <translation>Eurocode settings...</translation>
         </message>
@@ -2696,13 +2696,13 @@ OpenSeesPy remains available as an optional advanced engine.
         </message>
         <message>
             <location filename="../gui/main_window.py" line="808" />
-            <location filename="../gui/main_window.py" line="1491" />
+            <location filename="../gui/main_window.py" line="1504" />
             <source>Aide installation des solveurs...</source>
             <translation>Solver installation help...</translation>
         </message>
         <message>
             <location filename="../gui/main_window.py" line="811" />
-            <location filename="../gui/main_window.py" line="1495" />
+            <location filename="../gui/main_window.py" line="1508" />
             <source>Capacités des moteurs...</source>
             <translation>Solver capabilities...</translation>
         </message>
@@ -2713,7 +2713,7 @@ OpenSeesPy remains available as an optional advanced engine.
         </message>
         <message>
             <location filename="../gui/main_window.py" line="761" />
-            <location filename="../gui/main_window.py" line="6953" />
+            <location filename="../gui/main_window.py" line="6966" />
             <source>Diagrammes</source>
             <translation>Diagrams</translation>
         </message>
@@ -2724,40 +2724,40 @@ OpenSeesPy remains available as an optional advanced engine.
         </message>
         <message>
             <location filename="../gui/ui/main_window.ui" line="313" />
-            <location filename="../gui/main_window.py" line="1414" />
+            <location filename="../gui/main_window.py" line="1427" />
             <source>Déplacements nodaux</source>
             <translation>Nodal displacements</translation>
         </message>
         <message>
             <location filename="../gui/ui/main_window.ui" line="318" />
-            <location filename="../gui/main_window.py" line="1416" />
+            <location filename="../gui/main_window.py" line="1429" />
             <source>Réactions d'appui</source>
             <translation>Support reactions</translation>
         </message>
         <message>
             <location filename="../gui/ui/main_window.ui" line="323" />
-            <location filename="../gui/main_window.py" line="1417" />
+            <location filename="../gui/main_window.py" line="1430" />
             <source>Efforts internes</source>
             <translation>Internal forces</translation>
         </message>
         <message>
             <location filename="../gui/ui/main_window.ui" line="328" />
-            <location filename="../gui/main_window.py" line="1418" />
+            <location filename="../gui/main_window.py" line="1431" />
             <source>Déformée</source>
             <translation>Deformed shape</translation>
         </message>
         <message>
             <location filename="../gui/main_window.py" line="211" />
-            <location filename="../gui/main_window.py" line="1442" />
-            <location filename="../gui/main_window.py" line="7335" />
-            <location filename="../gui/main_window.py" line="7342" />
-            <location filename="../gui/main_window.py" line="7367" />
+            <location filename="../gui/main_window.py" line="1455" />
+            <location filename="../gui/main_window.py" line="7348" />
+            <location filename="../gui/main_window.py" line="7355" />
+            <location filename="../gui/main_window.py" line="7380" />
             <source>Résultats plaques</source>
             <translation>Plate results</translation>
         </message>
         <message>
             <location filename="../gui/main_window.py" line="212" />
-            <location filename="../gui/main_window.py" line="1443" />
+            <location filename="../gui/main_window.py" line="1456" />
             <source>Cartes plaques...</source>
             <translation>Plate maps...</translation>
         </message>
@@ -2769,7 +2769,7 @@ OpenSeesPy remains available as an optional advanced engine.
         <message>
             <location filename="../gui/ui/main_window.ui" line="30" />
             <source>&amp;Fichier</source>
-            <translation>&amp;Fichier</translation>
+            <translation>&amp;File</translation>
         </message>
         <message>
             <location filename="../gui/ui/main_window.ui" line="41" />
@@ -2779,7 +2779,7 @@ OpenSeesPy remains available as an optional advanced engine.
         <message>
             <location filename="../gui/ui/main_window.ui" line="56" />
             <source>&amp;Analyse</source>
-            <translation>&amp;Analyse</translation>
+            <translation>&amp;Analysis</translation>
         </message>
         <message>
             <location filename="../gui/ui/main_window.ui" line="64" />
@@ -2789,29 +2789,29 @@ OpenSeesPy remains available as an optional advanced engine.
         <message>
             <location filename="../gui/ui/main_window.ui" line="84" />
             <source>&amp;Vue</source>
-            <translation>&amp;Vue</translation>
+            <translation>&amp;View</translation>
         </message>
         <message>
             <location filename="../gui/ui/main_window.ui" line="97" />
             <source>&amp;Aide</source>
-            <translation>&amp;Aide</translation>
+            <translation>&amp;Help</translation>
         </message>
         <message>
             <location filename="../gui/ui/main_window.ui" line="110" />
             <source>Principal</source>
-            <translation>Principal</translation>
+            <translation>Main</translation>
         </message>
         <message>
             <location filename="../gui/ui/main_window.ui" line="210" />
             <location filename="../gui/main_window.py" line="341" />
-            <location filename="../gui/main_window.py" line="1381" />
+            <location filename="../gui/main_window.py" line="1394" />
             <source>Combinaisons</source>
             <translation>Combinations</translation>
         </message>
         <message>
             <location filename="../gui/ui/main_window.ui" line="217" />
             <source>&amp;Nouveau projet</source>
-            <translation>&amp;Nouveau projet</translation>
+            <translation>&amp;New project</translation>
         </message>
         <message>
             <location filename="../gui/ui/main_window.ui" line="220" />
@@ -2821,7 +2821,7 @@ OpenSeesPy remains available as an optional advanced engine.
         <message>
             <location filename="../gui/ui/main_window.ui" line="225" />
             <source>&amp;Ouvrir...</source>
-            <translation>&amp;Ouvrir...</translation>
+            <translation>&amp;Open...</translation>
         </message>
         <message>
             <location filename="../gui/ui/main_window.ui" line="228" />
@@ -2831,7 +2831,7 @@ OpenSeesPy remains available as an optional advanced engine.
         <message>
             <location filename="../gui/ui/main_window.ui" line="233" />
             <source>&amp;Enregistrer</source>
-            <translation>&amp;Enregistrer</translation>
+            <translation>&amp;Save</translation>
         </message>
         <message>
             <location filename="../gui/ui/main_window.ui" line="236" />
@@ -2841,7 +2841,7 @@ OpenSeesPy remains available as an optional advanced engine.
         <message>
             <location filename="../gui/ui/main_window.ui" line="241" />
             <source>Enregistrer &amp;sous...</source>
-            <translation>Enregistrer &amp;sous...</translation>
+            <translation>Save &amp;as...</translation>
         </message>
         <message>
             <location filename="../gui/ui/main_window.ui" line="244" />
@@ -2851,7 +2851,7 @@ OpenSeesPy remains available as an optional advanced engine.
         <message>
             <location filename="../gui/ui/main_window.ui" line="249" />
             <source>&amp;Quitter</source>
-            <translation>&amp;Quitter</translation>
+            <translation>&amp;Quit</translation>
         </message>
         <message>
             <location filename="../gui/ui/main_window.ui" line="252" />
@@ -2901,7 +2901,7 @@ OpenSeesPy remains available as an optional advanced engine.
         <message>
             <location filename="../gui/ui/main_window.ui" line="297" />
             <source>&amp;Lancer l'analyse</source>
-            <translation>&amp;Lancer l'analyse</translation>
+            <translation>Run &amp;analysis</translation>
         </message>
         <message>
             <location filename="../gui/ui/main_window.ui" line="300" />
@@ -2915,49 +2915,49 @@ OpenSeesPy remains available as an optional advanced engine.
         </message>
         <message>
             <location filename="../gui/ui/main_window.ui" line="333" />
-            <location filename="../gui/main_window.py" line="1421" />
+            <location filename="../gui/main_window.py" line="1434" />
             <source>Diagramme N (effort normal)</source>
             <translation>N diagram (axial force)</translation>
         </message>
         <message>
             <location filename="../gui/ui/main_window.ui" line="338" />
-            <location filename="../gui/main_window.py" line="1425" />
+            <location filename="../gui/main_window.py" line="1438" />
             <source>Diagramme Vy (tranchant horizontal)</source>
             <translation>Vy diagram (horizontal shear)</translation>
         </message>
         <message>
             <location filename="../gui/ui/main_window.ui" line="343" />
-            <location filename="../gui/main_window.py" line="1429" />
+            <location filename="../gui/main_window.py" line="1442" />
             <source>Diagramme Vz (tranchant vertical/gravité)</source>
             <translation>Vz diagram (vertical/gravity shear)</translation>
         </message>
         <message>
             <location filename="../gui/ui/main_window.ui" line="348" />
-            <location filename="../gui/main_window.py" line="1433" />
+            <location filename="../gui/main_window.py" line="1446" />
             <source>Diagramme My (moment gravitaire)</source>
             <translation>My diagram (gravity moment)</translation>
         </message>
         <message>
             <location filename="../gui/ui/main_window.ui" line="353" />
-            <location filename="../gui/main_window.py" line="1437" />
+            <location filename="../gui/main_window.py" line="1450" />
             <source>Diagramme Mz (moment latéral)</source>
             <translation>Mz diagram (lateral moment)</translation>
         </message>
         <message>
             <location filename="../gui/ui/main_window.ui" line="358" />
-            <location filename="../gui/main_window.py" line="1439" />
+            <location filename="../gui/main_window.py" line="1452" />
             <source>Diagramme T (torsion)</source>
             <translation>T diagram (torsion)</translation>
         </message>
         <message>
             <location filename="../gui/ui/main_window.ui" line="363" />
-            <location filename="../gui/main_window.py" line="1440" />
+            <location filename="../gui/main_window.py" line="1453" />
             <source>Masquer diagrammes</source>
             <translation>Hide diagrams</translation>
         </message>
         <message>
             <location filename="../gui/ui/main_window.ui" line="368" />
-            <location filename="../gui/main_window.py" line="1441" />
+            <location filename="../gui/main_window.py" line="1454" />
             <source>Enveloppes</source>
             <translation>Envelopes</translation>
         </message>
@@ -2967,106 +2967,106 @@ OpenSeesPy remains available as an optional advanced engine.
             <translation>&amp;About...</translation>
         </message>
         <message>
-            <location filename="../gui/main_window.py" line="1274" />
+            <location filename="../gui/main_window.py" line="1287" />
             <source>Orientation</source>
             <translation>Orientation</translation>
         </message>
         <message>
-            <location filename="../gui/main_window.py" line="1280" />
+            <location filename="../gui/main_window.py" line="1293" />
             <source>Affichage</source>
             <translation>Display</translation>
         </message>
         <message>
-            <location filename="../gui/main_window.py" line="1285" />
+            <location filename="../gui/main_window.py" line="1298" />
             <source>Fenêtres</source>
             <translation>Windows</translation>
         </message>
         <message>
             <location filename="../gui/main_window.py" line="353" />
-            <location filename="../gui/main_window.py" line="1459" />
+            <location filename="../gui/main_window.py" line="1472" />
             <source>Afficher 2 fenêtres</source>
             <translation>Show 2 views</translation>
         </message>
         <message>
             <location filename="../gui/ui/main_window.ui" line="373" />
-            <location filename="../gui/main_window.py" line="1444" />
+            <location filename="../gui/main_window.py" line="1457" />
             <source>Vue XY (dessus)</source>
             <translation>XY view (top)</translation>
         </message>
         <message>
             <location filename="../gui/ui/main_window.ui" line="378" />
-            <location filename="../gui/main_window.py" line="1445" />
+            <location filename="../gui/main_window.py" line="1458" />
             <source>Vue XZ (face)</source>
             <translation>XZ view (front)</translation>
         </message>
         <message>
             <location filename="../gui/ui/main_window.ui" line="383" />
-            <location filename="../gui/main_window.py" line="1446" />
+            <location filename="../gui/main_window.py" line="1459" />
             <source>Vue YZ (côté)</source>
             <translation>YZ view (side)</translation>
         </message>
         <message>
             <location filename="../gui/ui/main_window.ui" line="388" />
-            <location filename="../gui/main_window.py" line="1447" />
+            <location filename="../gui/main_window.py" line="1460" />
             <source>Vue isométrique</source>
             <translation>Isometric view</translation>
         </message>
         <message>
             <location filename="../gui/ui/main_window.ui" line="393" />
-            <location filename="../gui/main_window.py" line="1448" />
+            <location filename="../gui/main_window.py" line="1461" />
             <source>Numéros des nœuds</source>
             <translation>Node numbers</translation>
         </message>
         <message>
             <location filename="../gui/ui/main_window.ui" line="401" />
-            <location filename="../gui/main_window.py" line="1449" />
+            <location filename="../gui/main_window.py" line="1462" />
             <source>Noms des sections</source>
             <translation>Section names</translation>
         </message>
         <message>
             <location filename="../gui/main_window.py" line="220" />
-            <location filename="../gui/main_window.py" line="1452" />
+            <location filename="../gui/main_window.py" line="1465" />
             <source>Sections 3D extrudées</source>
             <translation>Extruded 3D sections</translation>
         </message>
         <message>
-            <location filename="../gui/main_window.py" line="1455" />
+            <location filename="../gui/main_window.py" line="1468" />
             <source>À propos...</source>
             <translation>About...</translation>
         </message>
         <message>
             <location filename="../gui/ui/main_window.ui" line="145" />
             <location filename="../gui/main_window.py" line="290" />
-            <location filename="../gui/main_window.py" line="1367" />
+            <location filename="../gui/main_window.py" line="1380" />
             <source>Arbre du modèle</source>
             <translation>Model tree</translation>
         </message>
         <message>
             <location filename="../gui/ui/main_window.ui" line="157" />
             <location filename="../gui/main_window.py" line="298" />
-            <location filename="../gui/main_window.py" line="1369" />
-            <location filename="../gui/main_window.py" line="3823" />
-            <location filename="../gui/main_window.py" line="3866" />
+            <location filename="../gui/main_window.py" line="1382" />
+            <location filename="../gui/main_window.py" line="3836" />
+            <location filename="../gui/main_window.py" line="3879" />
             <source>Propriétés</source>
             <translation>Properties</translation>
         </message>
         <message>
             <location filename="../gui/ui/main_window.ui" line="169" />
             <location filename="../gui/main_window.py" line="306" />
-            <location filename="../gui/main_window.py" line="1371" />
+            <location filename="../gui/main_window.py" line="1384" />
             <source>Informations</source>
             <translation>Information</translation>
         </message>
         <message>
             <location filename="../gui/ui/main_window.ui" line="183" />
-            <location filename="../gui/main_window.py" line="1373" />
+            <location filename="../gui/main_window.py" line="1386" />
             <source>Console</source>
             <translation>Console</translation>
         </message>
         <message>
             <location filename="../gui/ui/main_window.ui" line="205" />
             <location filename="../gui/main_window.py" line="332" />
-            <location filename="../gui/main_window.py" line="1378" />
+            <location filename="../gui/main_window.py" line="1391" />
             <source>Nœuds</source>
             <translation>Nodes</translation>
         </message>
@@ -3076,165 +3076,257 @@ OpenSeesPy remains available as an optional advanced engine.
             <translation>HEXA Structures initialized. Ready.</translation>
         </message>
         <message>
-            <location filename="../gui/main_window.py" line="1323" />
+            <location filename="../gui/main_window.py" line="1101" />
+            <source>Afficher les résultats du cas courant.</source>
+            <translation>Show results for the current case.</translation>
+        </message>
+        <message>
+            <location filename="../gui/main_window.py" line="1103" />
+            <location filename="../gui/main_window.py" line="1127" />
+            <location filename="../gui/main_window.py" line="1259" />
+            <source>Aucun résultat disponible. Lancez d'abord une analyse (F5).</source>
+            <translation>No results available. Run an analysis first (F5).</translation>
+        </message>
+        <message>
+            <location filename="../gui/main_window.py" line="1129" />
+            <source>Masquer la déformée du cas courant.</source>
+            <translation>Hide the deformed shape for the current case.</translation>
+        </message>
+        <message>
+            <location filename="../gui/main_window.py" line="1131" />
+            <source>Afficher la déformée du cas courant.</source>
+            <translation>Show the deformed shape for the current case.</translation>
+        </message>
+        <message>
+            <location filename="../gui/main_window.py" line="1139" />
+            <source>Aucun élément n'est disponible dans le modèle.</source>
+            <translation>No element is available in the model.</translation>
+        </message>
+        <message>
+            <location filename="../gui/main_window.py" line="1146" />
+            <source>Le moteur de rendu des diagrammes n'a pas pu être chargé : {error}</source>
+            <translation>The diagram rendering engine could not be loaded: {error}</translation>
+        </message>
+        <message>
+            <location filename="../gui/main_window.py" line="1156" />
+            <source>La détection des files de diagrammes a échoué : {error}</source>
+            <translation>Diagram grid-line detection failed: {error}</translation>
+        </message>
+        <message>
+            <location filename="../gui/main_window.py" line="1167" />
+            <source>Les diagrammes actuels sont disponibles uniquement sur les plans verticaux XZ et YZ.</source>
+            <translation>Current diagrams are available only on vertical XZ and YZ planes.</translation>
+        </message>
+        <message>
+            <location filename="../gui/main_window.py" line="1179" />
+            <source>Aucun élément surfacique n'est disponible dans le modèle.</source>
+            <translation>No surface element is available in the model.</translation>
+        </message>
+        <message>
+            <location filename="../gui/main_window.py" line="1186" />
+            <source>matplotlib est indisponible pour les cartes plaques : {error}</source>
+            <translation>matplotlib is unavailable for plate maps: {error}</translation>
+        </message>
+        <message>
+            <location filename="../gui/main_window.py" line="1195" />
+            <source>Le moteur de rendu des cartes plaques n'a pas pu être chargé : {error}</source>
+            <translation>The plate map rendering engine could not be loaded: {error}</translation>
+        </message>
+        <message>
+            <location filename="../gui/main_window.py" line="1205" />
+            <source>La détection des plans de plaques a échoué : {error}</source>
+            <translation>Plate plane detection failed: {error}</translation>
+        </message>
+        <message>
+            <location filename="../gui/main_window.py" line="1216" />
+            <source>Les cartes plaques nécessitent des surfaces coplanaires XY, XZ ou YZ.</source>
+            <translation>Plate maps require coplanar XY, XZ or YZ surfaces.</translation>
+        </message>
+        <message>
+            <location filename="../gui/main_window.py" line="1227" />
+            <source>Aucun résultat plaque disponible. Lancez d'abord une analyse de plaques.</source>
+            <translation>No plate result available. Run a plate analysis first.</translation>
+        </message>
+        <message>
+            <location filename="../gui/main_window.py" line="1231" />
+            <source>Afficher les résultats plaques du cas courant.</source>
+            <translation>Show plate results for the current case.</translation>
+        </message>
+        <message>
+            <location filename="../gui/main_window.py" line="1233" />
+            <source>Afficher une carte de contours des résultats plaques.</source>
+            <translation>Show a contour map of plate results.</translation>
+        </message>
+        <message>
+            <location filename="../gui/main_window.py" line="1262" />
+            <source>Afficher les diagrammes d'efforts internes pour le cas courant.</source>
+            <translation>Show internal force diagrams for the current case.</translation>
+        </message>
+        <message>
+            <location filename="../gui/main_window.py" line="1267" />
+            <source>Afficher les diagrammes. Si aucune vue compatible n'est disponible, la fenêtre l'indiquera.</source>
+            <translation>Show diagrams. If no compatible view is available, the window will indicate it.</translation>
+        </message>
+        <message>
+            <location filename="../gui/main_window.py" line="1336" />
             <source>Langue de l'interface : {language}</source>
             <translation>Interface language: {language}</translation>
         </message>
         <message>
-            <location filename="../gui/main_window.py" line="1328" />
+            <location filename="../gui/main_window.py" line="1341" />
             <source>Traduction indisponible pour cette langue.</source>
             <translation>Translation unavailable for this language.</translation>
         </message>
         <message>
-            <location filename="../gui/main_window.py" line="1506" />
-            <location filename="../gui/main_window.py" line="1543" />
+            <location filename="../gui/main_window.py" line="1519" />
+            <location filename="../gui/main_window.py" line="1556" />
             <source>Outils principaux</source>
             <translation>Main tools</translation>
         </message>
         <message>
-            <location filename="../gui/main_window.py" line="2047" />
-            <location filename="../gui/main_window.py" line="2178" />
-            <location filename="../gui/main_window.py" line="7774" />
-            <location filename="../gui/main_window.py" line="7866" />
+            <location filename="../gui/main_window.py" line="2060" />
+            <location filename="../gui/main_window.py" line="2191" />
+            <location filename="../gui/main_window.py" line="7787" />
+            <location filename="../gui/main_window.py" line="7879" />
             <source>File =</source>
             <translation>Grid line =</translation>
         </message>
         <message>
-            <location filename="../gui/main_window.py" line="4082" />
+            <location filename="../gui/main_window.py" line="4095" />
             <source>Supprimer la sélection courante ?</source>
             <translation>Delete the current selection?</translation>
         </message>
         <message>
-            <location filename="../gui/main_window.py" line="4084" />
+            <location filename="../gui/main_window.py" line="4097" />
             <source>- Nœuds : {count}</source>
             <translation>- Nodes : {count}</translation>
         </message>
         <message>
-            <location filename="../gui/main_window.py" line="4086" />
+            <location filename="../gui/main_window.py" line="4099" />
             <source>- Éléments : {count}</source>
             <translation>- Elements : {count}</translation>
         </message>
         <message>
-            <location filename="../gui/main_window.py" line="4088" />
+            <location filename="../gui/main_window.py" line="4101" />
             <source>- Surfaces : {count}</source>
-            <translation>- Surfaces : {count}</translation>
+            <translation>- Surfaces: {count}</translation>
         </message>
         <message>
-            <location filename="../gui/main_window.py" line="4094" />
+            <location filename="../gui/main_window.py" line="4107" />
             <source>{count} élément(s) connecté(s) aux nœuds sélectionnés seront aussi supprimé(s).</source>
             <translation>{count} element(s) connected to the selected nodes will also be deleted.</translation>
         </message>
         <message>
-            <location filename="../gui/main_window.py" line="4101" />
+            <location filename="../gui/main_window.py" line="4114" />
             <source>{count} surface(s) connectée(s) aux nœuds sélectionnés seront aussi supprimée(s).</source>
             <translation>{count} surface(s) connected to the selected nodes will also be deleted.</translation>
         </message>
         <message>
-            <location filename="../gui/main_window.py" line="4107" />
-            <location filename="../gui/main_window.py" line="5484" />
-            <location filename="../gui/main_window.py" line="5537" />
-            <location filename="../gui/main_window.py" line="5590" />
-            <location filename="../gui/main_window.py" line="5625" />
+            <location filename="../gui/main_window.py" line="4120" />
+            <location filename="../gui/main_window.py" line="5497" />
+            <location filename="../gui/main_window.py" line="5550" />
+            <location filename="../gui/main_window.py" line="5603" />
+            <location filename="../gui/main_window.py" line="5638" />
             <source>Confirmer la suppression</source>
             <translation>Confirm deletion</translation>
         </message>
         <message>
-            <location filename="../gui/main_window.py" line="4167" />
+            <location filename="../gui/main_window.py" line="4180" />
             <source>Moteur : {engine}</source>
             <translation>Engine: {engine}</translation>
         </message>
         <message>
-            <location filename="../gui/main_window.py" line="4169" />
+            <location filename="../gui/main_window.py" line="4182" />
             <source> (repli depuis {engine})</source>
-            <translation> (repli depuis {engine})</translation>
+            <translation>(fallback from {engine})</translation>
         </message>
         <message>
-            <location filename="../gui/main_window.py" line="4173" />
+            <location filename="../gui/main_window.py" line="4186" />
             <source>Nœuds : {count}</source>
             <translation>Nodes: {count}</translation>
         </message>
         <message>
-            <location filename="../gui/main_window.py" line="4175" />
+            <location filename="../gui/main_window.py" line="4188" />
             <source>Éléments : {count}</source>
             <translation>Elements: {count}</translation>
         </message>
         <message>
-            <location filename="../gui/main_window.py" line="4177" />
+            <location filename="../gui/main_window.py" line="4190" />
             <source>Surfaces : {count}</source>
             <translation>Surfaces: {count}</translation>
         </message>
         <message>
-            <location filename="../gui/main_window.py" line="4179" />
+            <location filename="../gui/main_window.py" line="4192" />
             <source>Matériaux : {count}</source>
             <translation>Materials: {count}</translation>
         </message>
         <message>
-            <location filename="../gui/main_window.py" line="4181" />
+            <location filename="../gui/main_window.py" line="4194" />
             <source>Sections : {count}</source>
             <translation>Sections: {count}</translation>
         </message>
         <message>
-            <location filename="../gui/main_window.py" line="4183" />
+            <location filename="../gui/main_window.py" line="4196" />
             <source>Charges : {count}</source>
             <translation>Loads: {count}</translation>
         </message>
         <message>
-            <location filename="../gui/main_window.py" line="4185" />
+            <location filename="../gui/main_window.py" line="4198" />
             <source>Combinaisons : {count}</source>
             <translation>Combinations: {count}</translation>
         </message>
         <message>
-            <location filename="../gui/main_window.py" line="4229" />
-            <location filename="../gui/main_window.py" line="4636" />
-            <location filename="../gui/main_window.py" line="4845" />
+            <location filename="../gui/main_window.py" line="4242" />
+            <location filename="../gui/main_window.py" line="4649" />
+            <location filename="../gui/main_window.py" line="4858" />
             <source>Coordonnées déjà utilisées</source>
             <translation>Coordinates already used</translation>
         </message>
         <message>
-            <location filename="../gui/main_window.py" line="4230" />
+            <location filename="../gui/main_window.py" line="4243" />
             <source>Un nœud N{tag} existe déjà en ({x:.3f}, {y:.3f}, {z:.3f}).</source>
             <translation>A node N{tag} already exists at ({x:.3f}, {y:.3f}, {z:.3f}).</translation>
         </message>
         <message>
-            <location filename="../gui/main_window.py" line="4249" />
-            <location filename="../gui/main_window.py" line="4833" />
+            <location filename="../gui/main_window.py" line="4262" />
+            <location filename="../gui/main_window.py" line="4846" />
             <source>Nœud existant</source>
             <translation>Existing node</translation>
         </message>
         <message>
-            <location filename="../gui/main_window.py" line="4250" />
-            <location filename="../gui/main_window.py" line="4834" />
+            <location filename="../gui/main_window.py" line="4263" />
+            <location filename="../gui/main_window.py" line="4847" />
             <source>Le numéro N{tag} existe déjà. Choisissez un autre numéro.</source>
             <translation>Number N{tag} already exists. Choose another number.</translation>
         </message>
         <message>
-            <location filename="../gui/main_window.py" line="4495" />
+            <location filename="../gui/main_window.py" line="4508" />
             <source>Choisissez l'origine de copie dans une vue. Échap pour annuler.</source>
             <translation>Choose the copy origin in a view. Esc to cancel.</translation>
         </message>
         <message>
-            <location filename="../gui/main_window.py" line="4497" />
+            <location filename="../gui/main_window.py" line="4510" />
             <source>Choix d'origine de copie : cliquez dans une vue. Échap pour annuler.</source>
             <translation>Copy origin selection: click in a view. Esc to cancel.</translation>
         </message>
         <message>
-            <location filename="../gui/main_window.py" line="4551" />
             <location filename="../gui/main_window.py" line="4564" />
+            <location filename="../gui/main_window.py" line="4577" />
             <source>Copier la sélection</source>
             <translation>Copy selection</translation>
         </message>
         <message>
-            <location filename="../gui/main_window.py" line="4552" />
+            <location filename="../gui/main_window.py" line="4565" />
             <source>Sélectionnez au moins un nœud, une barre ou une surface avant de copier.</source>
             <translation>Select at least one node, bar or surface before copying.</translation>
         </message>
         <message>
-            <location filename="../gui/main_window.py" line="4565" />
+            <location filename="../gui/main_window.py" line="4578" />
             <source>Impossible de déterminer les nœuds à copier.</source>
             <translation>Unable to determine the nodes to copy.</translation>
         </message>
         <message>
-            <location filename="../gui/main_window.py" line="4638" />
+            <location filename="../gui/main_window.py" line="4651" />
             <source>La copie créerait un nœud aux mêmes coordonnées que N{tag} :
 ({x:.3f}, {y:.3f}, {z:.3f}).
 
@@ -3245,12 +3337,12 @@ Modifiez la cible, le delta ou le nombre de copies.</source>
 Change the target, delta, or number of copies.</translation>
         </message>
         <message>
-            <location filename="../gui/main_window.py" line="4653" />
+            <location filename="../gui/main_window.py" line="4666" />
             <source>Copies superposées</source>
             <translation>Overlapping copies</translation>
         </message>
         <message>
-            <location filename="../gui/main_window.py" line="4655" />
+            <location filename="../gui/main_window.py" line="4668" />
             <source>La configuration saisie crée plusieurs nœuds copiés au même point :
 ({x:.3f}, {y:.3f}, {z:.3f}).
 
@@ -3261,7 +3353,7 @@ Modifiez le delta ou réduisez le nombre de copies.</source>
 Change the delta or reduce the number of copies.</translation>
         </message>
         <message>
-            <location filename="../gui/main_window.py" line="4847" />
+            <location filename="../gui/main_window.py" line="4860" />
             <source>Les coordonnées saisies correspondent déjà au nœud N{tag}.
 
 Deux nœuds ne peuvent pas partager les mêmes coordonnées.</source>
@@ -3270,241 +3362,241 @@ Deux nœuds ne peuvent pas partager les mêmes coordonnées.</source>
 Two nodes cannot share the same coordinates.</translation>
         </message>
         <message>
-            <location filename="../gui/main_window.py" line="4875" />
+            <location filename="../gui/main_window.py" line="4888" />
             <source>Éléments connectés</source>
             <translation>Connected elements</translation>
         </message>
         <message>
-            <location filename="../gui/main_window.py" line="4878" />
+            <location filename="../gui/main_window.py" line="4891" />
             <source>Si vous confirmez, ces éléments connectés seront supprimés.</source>
             <translation>If you confirm, these connected elements will be deleted.</translation>
         </message>
         <message>
-            <location filename="../gui/main_window.py" line="5006" />
-            <location filename="../gui/main_window.py" line="5225" />
-            <location filename="../gui/main_window.py" line="5233" />
-            <location filename="../gui/main_window.py" line="5809" />
-            <location filename="../gui/main_window.py" line="5934" />
-            <location filename="../gui/main_window.py" line="6035" />
-            <location filename="../gui/main_window.py" line="6064" />
-            <location filename="../gui/main_window.py" line="6072" />
-            <location filename="../gui/main_window.py" line="6119" />
-            <location filename="../gui/main_window.py" line="6265" />
-            <location filename="../gui/main_window.py" line="6272" />
-            <location filename="../gui/main_window.py" line="6281" />
-            <location filename="../gui/main_window.py" line="6288" />
+            <location filename="../gui/main_window.py" line="5019" />
+            <location filename="../gui/main_window.py" line="5238" />
+            <location filename="../gui/main_window.py" line="5246" />
+            <location filename="../gui/main_window.py" line="5822" />
+            <location filename="../gui/main_window.py" line="5947" />
+            <location filename="../gui/main_window.py" line="6048" />
+            <location filename="../gui/main_window.py" line="6077" />
+            <location filename="../gui/main_window.py" line="6085" />
+            <location filename="../gui/main_window.py" line="6132" />
+            <location filename="../gui/main_window.py" line="6278" />
+            <location filename="../gui/main_window.py" line="6285" />
+            <location filename="../gui/main_window.py" line="6294" />
+            <location filename="../gui/main_window.py" line="6301" />
             <source>Attention</source>
             <translation>Warning</translation>
         </message>
         <message>
-            <location filename="../gui/main_window.py" line="5007" />
+            <location filename="../gui/main_window.py" line="5020" />
             <source>Créez d'abord un matériau avant d'ajouter une section.</source>
             <translation>Create a material before adding a section.</translation>
         </message>
         <message>
-            <location filename="../gui/main_window.py" line="5118" />
+            <location filename="../gui/main_window.py" line="5131" />
             <source>Sections plaque incompatibles</source>
-            <translation>Sections plate incompatibles</translation>
+            <translation>Incompatible plate sections</translation>
         </message>
         <message>
-            <location filename="../gui/main_window.py" line="5119" />
+            <location filename="../gui/main_window.py" line="5132" />
             <source>Les modifications proposées rendent certaines plaques incompatibles :
 
-</source>
+            </source>
             <translation>The proposed changes make some plates incompatible:
 
-</translation>
+            </translation>
         </message>
         <message>
-            <location filename="../gui/main_window.py" line="5139" />
+            <location filename="../gui/main_window.py" line="5152" />
             <source>Modifier une section</source>
             <translation>Edit section</translation>
         </message>
         <message>
-            <location filename="../gui/main_window.py" line="5194" />
+            <location filename="../gui/main_window.py" line="5207" />
             <source>La formulation {formulation} attend {expected_count} nœud(s), mais la surface S{tag} en a {actual_count}.</source>
             <translation>Formulation {formulation} expects {expected_count} node(s), but surface S{tag} has {actual_count}.</translation>
         </message>
         <message>
-            <location filename="../gui/main_window.py" line="5226" />
+            <location filename="../gui/main_window.py" line="5239" />
             <source>Il faut au moins 2 nœuds pour créer un élément.</source>
             <translation>At least 2 nodes are required to create an element.</translation>
         </message>
         <message>
-            <location filename="../gui/main_window.py" line="5234" />
+            <location filename="../gui/main_window.py" line="5247" />
             <source>Créez d'abord une section de barre avant d'ajouter un élément.</source>
             <translation>Create a bar section before adding an element.</translation>
         </message>
         <message>
-            <location filename="../gui/main_window.py" line="5242" />
-            <location filename="../gui/main_window.py" line="5250" />
-            <location filename="../gui/main_window.py" line="5259" />
+            <location filename="../gui/main_window.py" line="5255" />
+            <location filename="../gui/main_window.py" line="5263" />
+            <location filename="../gui/main_window.py" line="5272" />
             <source>Ajouter un élément</source>
             <translation>Add element</translation>
         </message>
         <message>
-            <location filename="../gui/main_window.py" line="5242" />
+            <location filename="../gui/main_window.py" line="5255" />
             <source>Nœud de début :</source>
             <translation>Start node:</translation>
         </message>
         <message>
-            <location filename="../gui/main_window.py" line="5250" />
+            <location filename="../gui/main_window.py" line="5263" />
             <source>Nœud de fin :</source>
             <translation>End node:</translation>
         </message>
         <message>
-            <location filename="../gui/main_window.py" line="5282" />
+            <location filename="../gui/main_window.py" line="5295" />
             <source>Création de surface</source>
             <translation>Surface creation</translation>
         </message>
         <message>
-            <location filename="../gui/main_window.py" line="5283" />
+            <location filename="../gui/main_window.py" line="5296" />
             <source>Sélectionnez d'abord 3 ou 4 nœuds d'une même file.</source>
-            <translation>Select d'abord 3 ou 4 nodes d'une même file.</translation>
+            <translation>First select 3 or 4 nodes on the same grid line.</translation>
         </message>
         <message>
-            <location filename="../gui/main_window.py" line="5329" />
+            <location filename="../gui/main_window.py" line="5342" />
             <source>Modifier une barre</source>
             <translation>Edit bar</translation>
         </message>
         <message>
-            <location filename="../gui/main_window.py" line="5330" />
+            <location filename="../gui/main_window.py" line="5343" />
             <source>Sélectionnez une seule barre avant de la modifier.</source>
             <translation>Select a single bar before editing it.</translation>
         </message>
         <message>
-            <location filename="../gui/main_window.py" line="5416" />
+            <location filename="../gui/main_window.py" line="5429" />
             <source>Modifier une surface</source>
             <translation>Edit surface</translation>
         </message>
         <message>
-            <location filename="../gui/main_window.py" line="5417" />
+            <location filename="../gui/main_window.py" line="5430" />
             <source>Sélectionnez une seule surface avant de la modifier.</source>
             <translation>Select a single surface before editing it.</translation>
         </message>
         <message>
-            <location filename="../gui/main_window.py" line="5485" />
-            <location filename="../gui/main_window.py" line="5626" />
+            <location filename="../gui/main_window.py" line="5498" />
+            <location filename="../gui/main_window.py" line="5639" />
             <source>Supprimer {label} ?</source>
-            <translation>Delete {label} ?</translation>
+            <translation>Delete {label}?</translation>
         </message>
         <message>
-            <location filename="../gui/main_window.py" line="5513" />
+            <location filename="../gui/main_window.py" line="5526" />
             <source>Supprimer un matériau</source>
             <translation>Delete material</translation>
         </message>
         <message>
-            <location filename="../gui/main_window.py" line="5514" />
+            <location filename="../gui/main_window.py" line="5527" />
             <source>Matériau :</source>
             <translation>Material:</translation>
         </message>
         <message>
-            <location filename="../gui/main_window.py" line="5530" />
-            <location filename="../gui/main_window.py" line="5583" />
+            <location filename="../gui/main_window.py" line="5543" />
+            <location filename="../gui/main_window.py" line="5596" />
             <source>Suppression impossible</source>
             <translation>Deletion impossible</translation>
         </message>
         <message>
-            <location filename="../gui/main_window.py" line="5531" />
+            <location filename="../gui/main_window.py" line="5544" />
             <source>Ce matériau est encore utilisé par une ou plusieurs sections.</source>
             <translation>This material is still used by one or more sections.</translation>
         </message>
         <message>
-            <location filename="../gui/main_window.py" line="5538" />
+            <location filename="../gui/main_window.py" line="5551" />
             <source>Supprimer le matériau « {name} » (T{tag}) ?</source>
-            <translation>Delete material "{name}" (T{tag})?</translation>
+            <translation>Delete material &quot;{name}&quot; (T{tag})?</translation>
         </message>
         <message>
-            <location filename="../gui/main_window.py" line="5558" />
+            <location filename="../gui/main_window.py" line="5571" />
             <source>Supprimer une section</source>
             <translation>Delete section</translation>
         </message>
         <message>
-            <location filename="../gui/main_window.py" line="5584" />
+            <location filename="../gui/main_window.py" line="5597" />
             <source>Cette section est encore utilisée par un ou plusieurs éléments ou surfaces.</source>
             <translation>This section is still used by one or more elements or surfaces.</translation>
         </message>
         <message>
-            <location filename="../gui/main_window.py" line="5591" />
+            <location filename="../gui/main_window.py" line="5604" />
             <source>Supprimer la section « {name} » (T{tag}) ?</source>
-            <translation>Delete section "{name}" (T{tag})?</translation>
+            <translation>Delete section &quot;{name}&quot; (T{tag})?</translation>
         </message>
         <message>
-            <location filename="../gui/main_window.py" line="5612" />
+            <location filename="../gui/main_window.py" line="5625" />
             <source>Supprimer une surface</source>
             <translation>Delete surface</translation>
         </message>
         <message>
-            <location filename="../gui/main_window.py" line="5613" />
+            <location filename="../gui/main_window.py" line="5626" />
             <source>Sélectionnez une surface dans l'arbre pour la supprimer.</source>
             <translation>Select a surface in the tree to delete it.</translation>
         </message>
         <message>
-            <location filename="../gui/main_window.py" line="5676" />
+            <location filename="../gui/main_window.py" line="5689" />
             <source>Ouvrir un projet</source>
             <translation>Open project</translation>
         </message>
         <message>
-            <location filename="../gui/main_window.py" line="5678" />
-            <location filename="../gui/main_window.py" line="5713" />
+            <location filename="../gui/main_window.py" line="5691" />
+            <location filename="../gui/main_window.py" line="5726" />
             <source>Projets HEXA Structures (*.db);;Tous les fichiers (*)</source>
             <translation>HEXA Structures projects (*.db);;All files (*)</translation>
         </message>
         <message>
-            <location filename="../gui/main_window.py" line="5695" />
-            <location filename="../gui/main_window.py" line="5737" />
+            <location filename="../gui/main_window.py" line="5708" />
+            <location filename="../gui/main_window.py" line="5750" />
             <source>Erreur</source>
             <translation>Error</translation>
         </message>
         <message>
-            <location filename="../gui/main_window.py" line="5696" />
+            <location filename="../gui/main_window.py" line="5709" />
             <source>Impossible d'ouvrir le projet :
 {error}</source>
             <translation>Unable to open project:
 {error}</translation>
         </message>
         <message>
-            <location filename="../gui/main_window.py" line="5711" />
+            <location filename="../gui/main_window.py" line="5724" />
             <source>Enregistrer le projet</source>
             <translation>Save project</translation>
         </message>
         <message>
-            <location filename="../gui/main_window.py" line="5738" />
+            <location filename="../gui/main_window.py" line="5751" />
             <source>Impossible de sauvegarder :
 {error}</source>
             <translation>Unable to save:
 {error}</translation>
         </message>
         <message>
-            <location filename="../gui/main_window.py" line="5791" />
+            <location filename="../gui/main_window.py" line="5804" />
             <source>À propos de {app}</source>
             <translation>About {app}</translation>
         </message>
         <message>
-            <location filename="../gui/main_window.py" line="5793" />
+            <location filename="../gui/main_window.py" line="5806" />
             <source>&lt;h2&gt;{app} v{version}&lt;/h2&gt;&lt;p&gt;Application open source de calcul de structures par éléments finis avec OpenSeesPy.&lt;/p&gt;&lt;p&gt;Normes : Eurocodes + Annexes Nationales françaises.&lt;/p&gt;&lt;p&gt;Licence LGPL-3.0-only&lt;/p&gt;</source>
             <translation>&lt;h2&gt;{app} v{version}&lt;/h2&gt;&lt;p&gt;Open-source structural finite element analysis application with OpenSeesPy.&lt;/p&gt;&lt;p&gt;Standards: Eurocodes + French National Annexes.&lt;/p&gt;&lt;p&gt;License LGPL-3.0-only&lt;/p&gt;</translation>
         </message>
         <message>
-            <location filename="../gui/main_window.py" line="5809" />
-            <location filename="../gui/main_window.py" line="5934" />
+            <location filename="../gui/main_window.py" line="5822" />
+            <location filename="../gui/main_window.py" line="5947" />
             <source>Aucun nœud dans le modèle.</source>
             <translation>No nodes in the model.</translation>
         </message>
         <message>
-            <location filename="../gui/main_window.py" line="5816" />
-            <location filename="../gui/main_window.py" line="5942" />
+            <location filename="../gui/main_window.py" line="5829" />
+            <location filename="../gui/main_window.py" line="5955" />
             <source>Conditions aux limites</source>
             <translation>Boundary conditions</translation>
         </message>
         <message>
-            <location filename="../gui/main_window.py" line="5816" />
-            <location filename="../gui/main_window.py" line="5942" />
+            <location filename="../gui/main_window.py" line="5829" />
+            <location filename="../gui/main_window.py" line="5955" />
             <source>Nœud :</source>
             <translation>Node:</translation>
         </message>
         <message>
-            <location filename="../gui/main_window.py" line="5886" />
+            <location filename="../gui/main_window.py" line="5899" />
             <source>Aucun cas de charge manuel disponible. Créez d'abord un cas de charge autre que 'Poids propre'.
 
 Ouvrir le gestionnaire des cas de charge ?</source>
@@ -3513,303 +3605,303 @@ Ouvrir le gestionnaire des cas de charge ?</source>
 Open the load case manager?</translation>
         </message>
         <message>
-            <location filename="../gui/main_window.py" line="5952" />
+            <location filename="../gui/main_window.py" line="5965" />
             <source>Conditions aux limites - N{tag}</source>
             <translation>Boundary conditions - N{tag}</translation>
         </message>
         <message>
-            <location filename="../gui/main_window.py" line="5956" />
+            <location filename="../gui/main_window.py" line="5969" />
             <source>Conditions aux limites - {count} nœuds</source>
             <translation>Boundary conditions - {count} nodes</translation>
         </message>
         <message>
-            <location filename="../gui/main_window.py" line="6024" />
+            <location filename="../gui/main_window.py" line="6037" />
             <source>Poids propre automatique</source>
             <translation>Automatic self weight</translation>
         </message>
         <message>
-            <location filename="../gui/main_window.py" line="6026" />
+            <location filename="../gui/main_window.py" line="6039" />
             <source>Le cas 'Poids propre' est calculé automatiquement à partir des sections et matériaux. Il ne se saisit pas manuellement.</source>
             <translation>The 'Self weight' case is calculated automatically from sections and materials. It is not entered manually.</translation>
         </message>
         <message>
-            <location filename="../gui/main_window.py" line="6036" />
-            <location filename="../gui/main_window.py" line="6073" />
-            <location filename="../gui/main_window.py" line="6120" />
+            <location filename="../gui/main_window.py" line="6049" />
+            <location filename="../gui/main_window.py" line="6086" />
+            <location filename="../gui/main_window.py" line="6133" />
             <source>Ajoutez au moins un nœud avant de définir des charges.</source>
             <translation>Add at least one node before defining loads.</translation>
         </message>
         <message>
-            <location filename="../gui/main_window.py" line="6065" />
+            <location filename="../gui/main_window.py" line="6078" />
             <source>Créez d'abord un cas de charge (Modèle &gt; Ajouter un cas de charge).</source>
             <translation>Create a load case first (Model &gt; Add load case).</translation>
         </message>
         <message>
-            <location filename="../gui/main_window.py" line="6078" />
+            <location filename="../gui/main_window.py" line="6091" />
             <source>Définir les charges</source>
             <translation>Define loads</translation>
         </message>
         <message>
-            <location filename="../gui/main_window.py" line="6079" />
-            <location filename="../gui/main_window.py" line="6126" />
-            <location filename="../gui/main_window.py" line="7428" />
+            <location filename="../gui/main_window.py" line="6092" />
+            <location filename="../gui/main_window.py" line="6139" />
+            <location filename="../gui/main_window.py" line="7441" />
             <source>Cas de charge :</source>
             <translation>Load case:</translation>
         </message>
         <message>
-            <location filename="../gui/main_window.py" line="6111" />
-            <location filename="../gui/main_window.py" line="6125" />
+            <location filename="../gui/main_window.py" line="6124" />
+            <location filename="../gui/main_window.py" line="6138" />
             <source>Affecter charges à la sélection</source>
             <translation>Assign loads to selection</translation>
         </message>
         <message>
-            <location filename="../gui/main_window.py" line="6112" />
+            <location filename="../gui/main_window.py" line="6125" />
             <source>Sélectionnez d'abord un ou plusieurs nœuds, éléments ou surfaces.</source>
             <translation>First select one or more nodes, elements or surfaces.</translation>
         </message>
         <message>
-            <location filename="../gui/main_window.py" line="6158" />
+            <location filename="../gui/main_window.py" line="6171" />
             <source>Paramètres Eurocodes mis à jour.</source>
             <translation>Eurocode settings updated.</translation>
         </message>
         <message>
-            <location filename="../gui/main_window.py" line="6176" />
+            <location filename="../gui/main_window.py" line="6189" />
             <source>Données de chargement mises à jour.</source>
             <translation>Load data updated.</translation>
         </message>
         <message>
-            <location filename="../gui/main_window.py" line="6203" />
+            <location filename="../gui/main_window.py" line="6216" />
             <source>Cas de charge mis à jour.</source>
             <translation>Load case updated.</translation>
         </message>
         <message>
-            <location filename="../gui/main_window.py" line="6220" />
+            <location filename="../gui/main_window.py" line="6233" />
             <source>Combinaisons mises à jour.</source>
             <translation>Combinations updated.</translation>
         </message>
         <message>
-            <location filename="../gui/main_window.py" line="6265" />
+            <location filename="../gui/main_window.py" line="6278" />
             <source>Le modèle est incomplet.</source>
             <translation>The model is incomplete.</translation>
         </message>
         <message>
-            <location filename="../gui/main_window.py" line="6273" />
+            <location filename="../gui/main_window.py" line="6286" />
             <source>Aucun appui défini. Ajoutez des conditions aux limites.</source>
             <translation>No support is defined. Add boundary conditions.</translation>
         </message>
         <message>
-            <location filename="../gui/main_window.py" line="6282" />
+            <location filename="../gui/main_window.py" line="6295" />
             <source>Aucune charge ni combinaison définie.</source>
             <translation>No load or combination is defined.</translation>
         </message>
         <message>
-            <location filename="../gui/main_window.py" line="6290" />
+            <location filename="../gui/main_window.py" line="6303" />
             <source>Aucune charge affectée aux nœuds, aux éléments ou aux surfaces. Définissez d'abord des charges avant de lancer l'analyse.</source>
             <translation>No load is assigned to nodes, elements or surfaces. Define loads before running the analysis.</translation>
         </message>
         <message>
-            <location filename="../gui/main_window.py" line="6303" />
+            <location filename="../gui/main_window.py" line="6316" />
             <source>Les éléments surfaciques ne peuvent être calculés qu'avec OpenSeesPy.</source>
             <translation>Surface elements can only be calculated with OpenSeesPy.</translation>
         </message>
         <message>
-            <location filename="../gui/main_window.py" line="6316" />
+            <location filename="../gui/main_window.py" line="6329" />
             <source>Barres incompatibles</source>
-            <translation>Bars incompatibles</translation>
+            <translation>Incompatible bars</translation>
         </message>
         <message>
-            <location filename="../gui/main_window.py" line="6317" />
+            <location filename="../gui/main_window.py" line="6330" />
             <source>Certaines barres ne peuvent pas être calculées :
 
-</source>
-            <translation>Certaines bars ne peuvent pas être calculées :
+            </source>
+            <translation>Some bars cannot be calculated:
 
-</translation>
+            </translation>
         </message>
         <message>
-            <location filename="../gui/main_window.py" line="6320" />
+            <location filename="../gui/main_window.py" line="6333" />
             <source>Corrigez-les avec une section barre avant de relancer l'analyse.</source>
             <translation>Fix them with a bar section before running the analysis again.</translation>
         </message>
         <message>
-            <location filename="../gui/main_window.py" line="6335" />
+            <location filename="../gui/main_window.py" line="6348" />
             <source>Plaques incompatibles</source>
-            <translation>Plates incompatibles</translation>
+            <translation>Incompatible plates</translation>
         </message>
         <message>
-            <location filename="../gui/main_window.py" line="6336" />
+            <location filename="../gui/main_window.py" line="6349" />
             <source>Certaines plaques ne peuvent pas être maillées pour le calcul :
 
-</source>
+            </source>
             <translation>Some plates cannot be meshed for analysis:
 
-</translation>
+            </translation>
         </message>
         <message>
-            <location filename="../gui/main_window.py" line="6339" />
+            <location filename="../gui/main_window.py" line="6352" />
             <source>Corrigez-les avec une section plaque/surface avant de relancer l'analyse.</source>
             <translation>Fix them with a plate/surface section before running the analysis again.</translation>
         </message>
         <message>
-            <location filename="../gui/main_window.py" line="6659" />
+            <location filename="../gui/main_window.py" line="6672" />
             <source>Cartes plaques</source>
-            <translation>Cartes plates</translation>
+            <translation>Plate maps</translation>
         </message>
         <message>
-            <location filename="../gui/main_window.py" line="6660" />
-            <location filename="../gui/main_window.py" line="6781" />
+            <location filename="../gui/main_window.py" line="6673" />
+            <location filename="../gui/main_window.py" line="6794" />
             <source>Cas / combinaison :</source>
             <translation>Case / combination:</translation>
         </message>
         <message>
-            <location filename="../gui/main_window.py" line="6661" />
+            <location filename="../gui/main_window.py" line="6674" />
             <source>Composante :</source>
-            <translation>Composante :</translation>
+            <translation>Component:</translation>
         </message>
         <message>
-            <location filename="../gui/main_window.py" line="6662" />
+            <location filename="../gui/main_window.py" line="6675" />
             <source>Plan :</source>
-            <translation>Plan :</translation>
+            <translation>Plane:</translation>
         </message>
         <message>
-            <location filename="../gui/main_window.py" line="6762" />
+            <location filename="../gui/main_window.py" line="6775" />
             <source>E{tag} seul (repère local)</source>
             <translation>E{tag} only (local coordinate system)</translation>
         </message>
         <message>
-            <location filename="../gui/main_window.py" line="6780" />
+            <location filename="../gui/main_window.py" line="6793" />
             <source>Diagramme de barre</source>
-            <translation>Diagramme de bar</translation>
+            <translation>Bar diagram</translation>
         </message>
         <message>
-            <location filename="../gui/main_window.py" line="6782" />
+            <location filename="../gui/main_window.py" line="6795" />
             <source>Diagramme :</source>
-            <translation>Diagramme :</translation>
+            <translation>Diagram:</translation>
         </message>
         <message>
-            <location filename="../gui/main_window.py" line="6783" />
+            <location filename="../gui/main_window.py" line="6796" />
             <source>Barre :</source>
             <translation>Bar:</translation>
         </message>
         <message>
-            <location filename="../gui/main_window.py" line="6846" />
+            <location filename="../gui/main_window.py" line="6859" />
             <source>Aucune barre compatible pour ce diagramme.</source>
-            <translation>Noe bar compatible pour ce diagramme.</translation>
+            <translation>No compatible bar for this diagram.</translation>
         </message>
         <message>
-            <location filename="../gui/main_window.py" line="6856" />
+            <location filename="../gui/main_window.py" line="6869" />
             <source>Aucune barre compatible</source>
-            <translation>Noe bar compatible</translation>
+            <translation>No compatible bar</translation>
         </message>
         <message>
-            <location filename="../gui/main_window.py" line="6954" />
-            <location filename="../gui/main_window.py" line="7336" />
-            <location filename="../gui/main_window.py" line="7615" />
-            <location filename="../gui/main_window.py" line="7641" />
+            <location filename="../gui/main_window.py" line="6967" />
+            <location filename="../gui/main_window.py" line="7349" />
+            <location filename="../gui/main_window.py" line="7628" />
+            <location filename="../gui/main_window.py" line="7654" />
             <source>Aucun résultat disponible.
 Lancez d'abord une analyse (F5).</source>
             <translation>No results available.
 Run an analysis first (F5).</translation>
         </message>
         <message>
-            <location filename="../gui/main_window.py" line="7019" />
+            <location filename="../gui/main_window.py" line="7032" />
             <source>Aucune vue de diagramme compatible.
 
 Les diagrammes actuels sont limités aux plans verticaux XZ et YZ.</source>
-            <translation>Noe vue de diagramme compatible.
+            <translation>No compatible diagram view.
 
-Les diagrammes actuels sont limités aux plans verticaux XZ et YZ.</translation>
+Current diagrams are limited to vertical XZ and YZ planes.</translation>
         </message>
         <message>
-            <location filename="../gui/main_window.py" line="7031" />
-            <location filename="../gui/main_window.py" line="7124" />
-            <location filename="../gui/main_window.py" line="7497" />
+            <location filename="../gui/main_window.py" line="7044" />
+            <location filename="../gui/main_window.py" line="7137" />
+            <location filename="../gui/main_window.py" line="7510" />
             <source>Aucune vue compatible</source>
-            <translation>Noe vue compatible</translation>
+            <translation>No compatible view</translation>
         </message>
         <message>
-            <location filename="../gui/main_window.py" line="7343" />
+            <location filename="../gui/main_window.py" line="7356" />
             <source>Aucun résultat plaque exploitable n'est disponible pour le cas courant.</source>
             <translation>No usable plate result is available for the current case.</translation>
         </message>
         <message>
-            <location filename="../gui/main_window.py" line="7369" />
+            <location filename="../gui/main_window.py" line="7382" />
             <source>Aucun résultat exploitable n'est disponible pour la surface S{tag}.</source>
             <translation>No usable result is available for surface S{tag}.</translation>
         </message>
         <message>
-            <location filename="../gui/main_window.py" line="7427" />
+            <location filename="../gui/main_window.py" line="7440" />
             <source>Charges affectées</source>
             <translation>Assigned loads</translation>
         </message>
         <message>
-            <location filename="../gui/main_window.py" line="7429" />
+            <location filename="../gui/main_window.py" line="7442" />
             <source>Affichage :</source>
-            <translation>Affichage :</translation>
+            <translation>Display:</translation>
         </message>
         <message>
-            <location filename="../gui/main_window.py" line="7430" />
+            <location filename="../gui/main_window.py" line="7443" />
             <source>File / plan :</source>
             <translation>Grid line / plane:</translation>
         </message>
         <message>
-            <location filename="../gui/main_window.py" line="7578" />
+            <location filename="../gui/main_window.py" line="7591" />
             <source>Aucun cas de charge n'est disponible.</source>
             <translation>No load case is available.</translation>
         </message>
         <message>
-            <location filename="../gui/main_window.py" line="8548" />
+            <location filename="../gui/main_window.py" line="8561" />
             <source>Modifications non enregistrées</source>
             <translation>Unsaved changes</translation>
         </message>
         <message>
-            <location filename="../gui/main_window.py" line="8549" />
+            <location filename="../gui/main_window.py" line="8562" />
             <source>Le projet a été modifié. Voulez-vous continuer sans enregistrer ?</source>
             <translation>The project has been modified. Do you want to continue without saving?</translation>
         </message>
         <message>
-            <location filename="../gui/main_window.py" line="3811" />
-            <location filename="../gui/main_window.py" line="3844" />
+            <location filename="../gui/main_window.py" line="3824" />
+            <location filename="../gui/main_window.py" line="3857" />
             <source>Modifier</source>
             <translation>Edit</translation>
         </message>
         <message>
-            <location filename="../gui/main_window.py" line="3812" />
-            <location filename="../gui/main_window.py" line="3845" />
+            <location filename="../gui/main_window.py" line="3825" />
+            <location filename="../gui/main_window.py" line="3858" />
             <source>Supprimer</source>
             <translation>Delete</translation>
         </message>
         <message>
-            <location filename="../gui/main_window.py" line="1530" />
-            <location filename="../gui/main_window.py" line="3813" />
-            <location filename="../gui/main_window.py" line="3846" />
-            <location filename="../gui/main_window.py" line="7710" />
+            <location filename="../gui/main_window.py" line="1543" />
+            <location filename="../gui/main_window.py" line="3826" />
+            <location filename="../gui/main_window.py" line="3859" />
+            <location filename="../gui/main_window.py" line="7723" />
             <source>Copier</source>
             <translation>Copy</translation>
         </message>
         <message>
-            <location filename="../gui/main_window.py" line="3815" />
-            <location filename="../gui/main_window.py" line="3848" />
+            <location filename="../gui/main_window.py" line="3828" />
+            <location filename="../gui/main_window.py" line="3861" />
             <source>Afficher diagrammes</source>
             <translation>Show diagrams</translation>
         </message>
         <message>
-            <location filename="../gui/main_window.py" line="3820" />
+            <location filename="../gui/main_window.py" line="3833" />
             <source>Lancez d'abord une analyse pour afficher les diagrammes.</source>
             <translation>Run an analysis first to show diagrams.</translation>
         </message>
         <message>
-            <location filename="../gui/main_window.py" line="3854" />
+            <location filename="../gui/main_window.py" line="3867" />
             <source>Lancez d'abord une analyse de plaques pour afficher les diagrammes.</source>
             <translation>Run a plate analysis first to show diagrams.</translation>
         </message>
         <message>
-            <location filename="../gui/main_window.py" line="3895" />
+            <location filename="../gui/main_window.py" line="3908" />
             <source>Plaque</source>
             <translation>Plate</translation>
         </message>
         <message>
-            <location filename="../gui/main_window.py" line="3891" />
+            <location filename="../gui/main_window.py" line="3904" />
             <source>Plaque macro</source>
             <translation>Macro plate</translation>
         </message>
@@ -3819,280 +3911,280 @@ Les diagrammes actuels sont limités aux plans verticaux XZ et YZ.</translation>
             <translation>Duplicated view unavailable</translation>
         </message>
         <message>
-            <location filename="../gui/main_window.py" line="2362" />
-            <location filename="../gui/main_window.py" line="2412" />
-            <location filename="../gui/main_window.py" line="2420" />
-            <location filename="../gui/main_window.py" line="2475" />
+            <location filename="../gui/main_window.py" line="2375" />
+            <location filename="../gui/main_window.py" line="2425" />
+            <location filename="../gui/main_window.py" line="2433" />
+            <location filename="../gui/main_window.py" line="2488" />
             <source>Dessin sur grille</source>
-            <translation>Dessin sur grille</translation>
+            <translation>Grid drawing</translation>
         </message>
         <message>
-            <location filename="../gui/main_window.py" line="2363" />
-            <location filename="../gui/main_window.py" line="2413" />
-            <location filename="../gui/main_window.py" line="2476" />
+            <location filename="../gui/main_window.py" line="2376" />
+            <location filename="../gui/main_window.py" line="2426" />
+            <location filename="../gui/main_window.py" line="2489" />
             <source>Définissez d'abord une grille active avant de dessiner.</source>
             <translation>Define an active grid before drawing.</translation>
         </message>
         <message>
-            <location filename="../gui/main_window.py" line="2421" />
+            <location filename="../gui/main_window.py" line="2434" />
             <source>Créez ou choisissez d'abord une section pour dessiner des barres.</source>
             <translation>Create or choose a section before drawing bars.</translation>
         </message>
         <message>
-            <location filename="../gui/main_window.py" line="2581" />
+            <location filename="../gui/main_window.py" line="2594" />
             <source>Dessin plaque temporairement limité</source>
             <translation>Plate drawing temporarily limited</translation>
         </message>
         <message>
-            <location filename="../gui/main_window.py" line="2583" />
+            <location filename="../gui/main_window.py" line="2596" />
             <source>Le dessin interactif des plaques est provisoirement limité aux dalles et voiles quadrangulaires. Choisissez une section de type ShellMITC4, ShellDKGQ ou ShellNLDKGQ.</source>
             <translation>Interactive plate drawing is temporarily limited to quadrilateral slabs and walls. Choose a ShellMITC4, ShellDKGQ or ShellNLDKGQ section.</translation>
         </message>
         <message>
-            <location filename="../gui/main_window.py" line="2824" />
-            <location filename="../gui/main_window.py" line="3204" />
-            <location filename="../gui/main_window.py" line="3383" />
-            <location filename="../gui/main_window.py" line="3481" />
-            <location filename="../gui/main_window.py" line="3671" />
+            <location filename="../gui/main_window.py" line="2837" />
+            <location filename="../gui/main_window.py" line="3217" />
+            <location filename="../gui/main_window.py" line="3396" />
+            <location filename="../gui/main_window.py" line="3494" />
+            <location filename="../gui/main_window.py" line="3684" />
             <source>Section plaque requise</source>
             <translation>Plate section required</translation>
         </message>
         <message>
-            <location filename="../gui/main_window.py" line="2825" />
-            <location filename="../gui/main_window.py" line="3672" />
+            <location filename="../gui/main_window.py" line="2838" />
+            <location filename="../gui/main_window.py" line="3685" />
             <source>Choisissez d'abord une section plaque valide avant de dessiner.</source>
             <translation>Choose a valid plate section before drawing.</translation>
         </message>
         <message>
-            <location filename="../gui/main_window.py" line="2879" />
-            <location filename="../gui/main_window.py" line="5300" />
+            <location filename="../gui/main_window.py" line="2892" />
+            <location filename="../gui/main_window.py" line="5313" />
             <source>Surface existante</source>
             <translation>Existing surface</translation>
         </message>
         <message>
-            <location filename="../gui/main_window.py" line="2880" />
-            <location filename="../gui/main_window.py" line="5301" />
+            <location filename="../gui/main_window.py" line="2893" />
+            <location filename="../gui/main_window.py" line="5314" />
             <source>Une surface S{tag} utilise déjà ces nœuds.</source>
             <translation>A surface S{tag} already uses these nodes.</translation>
         </message>
         <message>
-            <location filename="../gui/main_window.py" line="2890" />
-            <location filename="../gui/main_window.py" line="5309" />
+            <location filename="../gui/main_window.py" line="2903" />
+            <location filename="../gui/main_window.py" line="5322" />
             <source>Plaque existante</source>
             <translation>Existing plate</translation>
         </message>
         <message>
-            <location filename="../gui/main_window.py" line="2891" />
-            <location filename="../gui/main_window.py" line="5310" />
+            <location filename="../gui/main_window.py" line="2904" />
+            <location filename="../gui/main_window.py" line="5323" />
             <source>Une plaque P{tag} utilise déjà ces nœuds.</source>
             <translation>A plate P{tag} already uses these nodes.</translation>
         </message>
         <message>
-            <location filename="../gui/main_window.py" line="3004" />
+            <location filename="../gui/main_window.py" line="3017" />
             <source>Section requise</source>
             <translation>Section required</translation>
         </message>
         <message>
-            <location filename="../gui/main_window.py" line="3005" />
+            <location filename="../gui/main_window.py" line="3018" />
             <source>Aucune section disponible pour créer une barre.</source>
             <translation>No section is available to create a bar.</translation>
         </message>
         <message>
-            <location filename="../gui/main_window.py" line="3023" />
-            <location filename="../gui/main_window.py" line="5268" />
+            <location filename="../gui/main_window.py" line="3036" />
+            <location filename="../gui/main_window.py" line="5281" />
             <source>Barre invalide</source>
             <translation>Invalid bar</translation>
         </message>
         <message>
-            <location filename="../gui/main_window.py" line="3156" />
+            <location filename="../gui/main_window.py" line="3169" />
             <source>Aucun matériau disponible.</source>
             <translation>No material available.</translation>
         </message>
         <message>
-            <location filename="../gui/main_window.py" line="3205" />
+            <location filename="../gui/main_window.py" line="3218" />
             <source>Créez d'abord une section plaque.</source>
             <translation>Create a plate section first.</translation>
         </message>
         <message>
-            <location filename="../gui/main_window.py" line="3221" />
+            <location filename="../gui/main_window.py" line="3234" />
             <source>Section plaque</source>
             <translation>Plate section</translation>
         </message>
         <message>
-            <location filename="../gui/main_window.py" line="3222" />
+            <location filename="../gui/main_window.py" line="3235" />
             <source>Choisissez la section plaque à affecter :</source>
             <translation>Choose the plate section to assign:</translation>
         </message>
         <message>
-            <location filename="../gui/main_window.py" line="3385" />
+            <location filename="../gui/main_window.py" line="3398" />
             <source>La plaque doit utiliser une section plaque/surface, pas une section de barre. Créez ou choisissez une section plaque avant de continuer.</source>
             <translation>The plate must use a plate/surface section, not a bar section. Create or choose a plate section before continuing.</translation>
         </message>
         <message>
-            <location filename="../gui/main_window.py" line="3404" />
+            <location filename="../gui/main_window.py" line="3417" />
             <source>Plaque invalide</source>
             <translation>Invalid plate</translation>
         </message>
         <message>
-            <location filename="../gui/main_window.py" line="3482" />
+            <location filename="../gui/main_window.py" line="3495" />
             <source>Choisissez une section plaque valide avant de créer ou modifier la surface.</source>
             <translation>Choose a valid plate section before creating or editing the surface.</translation>
         </message>
         <message>
-            <location filename="../gui/main_window.py" line="3491" />
-            <location filename="../gui/main_window.py" line="5192" />
+            <location filename="../gui/main_window.py" line="3504" />
+            <location filename="../gui/main_window.py" line="5205" />
             <source>Formulation incompatible</source>
             <translation>Incompatible formulation</translation>
         </message>
         <message>
-            <location filename="../gui/main_window.py" line="3492" />
+            <location filename="../gui/main_window.py" line="3505" />
             <source>La section {formulation} attend {count} nœud(s).</source>
             <translation>Section {formulation} expects {count} node(s).</translation>
         </message>
         <message>
-            <location filename="../gui/main_window.py" line="3502" />
-            <location filename="../gui/main_window.py" line="3521" />
+            <location filename="../gui/main_window.py" line="3515" />
+            <location filename="../gui/main_window.py" line="3534" />
             <source>Surface invalide</source>
             <translation>Invalid surface</translation>
         </message>
         <message>
-            <location filename="../gui/main_window.py" line="3503" />
+            <location filename="../gui/main_window.py" line="3516" />
             <source>Chaque nœud d'une plaque doit être unique.</source>
             <translation>Each plate node must be unique.</translation>
         </message>
         <message>
-            <location filename="../gui/main_window.py" line="3511" />
+            <location filename="../gui/main_window.py" line="3524" />
             <source>Plan invalide</source>
             <translation>Invalid plane</translation>
         </message>
         <message>
-            <location filename="../gui/main_window.py" line="3512" />
+            <location filename="../gui/main_window.py" line="3525" />
             <source>Les nœuds choisis doivent rester dans un même plan.</source>
             <translation>The selected nodes must remain in the same plane.</translation>
         </message>
         <message>
-            <location filename="../gui/main_window.py" line="3522" />
+            <location filename="../gui/main_window.py" line="3535" />
             <source>Les nœuds choisis sont alignés ou ne définissent pas une plaque valide.</source>
             <translation>The selected nodes are aligned or do not define a valid plate.</translation>
         </message>
         <message>
-            <location filename="../gui/main_window.py" line="3897" />
+            <location filename="../gui/main_window.py" line="3910" />
             <source>Maillage automatique</source>
             <translation>Automatic mesh</translation>
         </message>
         <message>
-            <location filename="../gui/main_window.py" line="3900" />
+            <location filename="../gui/main_window.py" line="3913" />
             <source>Nombre de mailles...</source>
             <translation>Mesh divisions...</translation>
         </message>
         <message>
-            <location filename="../gui/main_window.py" line="3906" />
+            <location filename="../gui/main_window.py" line="3919" />
             <source>Disponible uniquement pour une plaque macro.</source>
             <translation>Available only for a macro plate.</translation>
         </message>
         <message>
-            <location filename="../gui/main_window.py" line="3909" />
+            <location filename="../gui/main_window.py" line="3922" />
             <source>Maillage retenu : {nx} x {ny}</source>
             <translation>Selected mesh: {nx} x {ny}</translation>
         </message>
         <message>
-            <location filename="../gui/main_window.py" line="3915" />
+            <location filename="../gui/main_window.py" line="3928" />
             <source>Intégrer une barre diagonale...</source>
             <translation>Integrate a diagonal bar...</translation>
         </message>
         <message>
-            <location filename="../gui/main_window.py" line="3916" />
+            <location filename="../gui/main_window.py" line="3929" />
             <source>Créer un nœud à l'intersection...</source>
             <translation>Create a node at the intersection...</translation>
         </message>
         <message>
-            <location filename="../gui/main_window.py" line="3917" />
+            <location filename="../gui/main_window.py" line="3930" />
             <source>Découper une barre traversante...</source>
             <translation>Split a crossing bar...</translation>
         </message>
         <message>
-            <location filename="../gui/main_window.py" line="3918" />
+            <location filename="../gui/main_window.py" line="3931" />
             <source>Maillage non structuré...</source>
             <translation>Unstructured mesh...</translation>
         </message>
         <message>
-            <location filename="../gui/main_window.py" line="3922" />
+            <location filename="../gui/main_window.py" line="3935" />
             <source>Fonction à venir.</source>
             <translation>Feature coming later.</translation>
         </message>
         <message>
-            <location filename="../gui/main_window.py" line="1934" />
+            <location filename="../gui/main_window.py" line="1947" />
             <source>Matériaux... ({count})</source>
             <translation>Materials... ({count})</translation>
         </message>
         <message>
-            <location filename="../gui/main_window.py" line="1938" />
+            <location filename="../gui/main_window.py" line="1951" />
             <source>Sections... ({count})</source>
             <translation>Sections... ({count})</translation>
         </message>
         <message>
-            <location filename="../gui/main_window.py" line="1942" />
+            <location filename="../gui/main_window.py" line="1955" />
             <source>Sections plaque... ({count})</source>
             <translation>Plate sections... ({count})</translation>
         </message>
         <message>
-            <location filename="../gui/main_window.py" line="1964" />
+            <location filename="../gui/main_window.py" line="1977" />
             <source>Affecter charges à la sélection... ({count})</source>
             <translation>Assign loads to selection... ({count})</translation>
         </message>
         <message>
-            <location filename="../gui/main_window.py" line="1979" />
+            <location filename="../gui/main_window.py" line="1992" />
             <source>Ajouter une surface depuis la sélection...</source>
             <translation>Add surface from selection...</translation>
         </message>
         <message>
-            <location filename="../gui/main_window.py" line="1975" />
+            <location filename="../gui/main_window.py" line="1988" />
             <source>Ajouter une surface depuis la sélection... ({count})</source>
             <translation>Add surface from selection... ({count})</translation>
         </message>
         <message>
-            <location filename="../gui/main_window.py" line="1995" />
+            <location filename="../gui/main_window.py" line="2008" />
             <source>Modifier la surface S{tag}...</source>
             <translation>Edit surface S{tag}...</translation>
         </message>
         <message>
-            <location filename="../gui/main_window.py" line="2006" />
+            <location filename="../gui/main_window.py" line="2019" />
             <source>Sélectionnez une seule surface pour la modifier.</source>
             <translation>Select one surface to edit it.</translation>
         </message>
         <message>
-            <location filename="../gui/main_window.py" line="1516" />
-            <location filename="../gui/main_window.py" line="1876" />
-            <location filename="../gui/main_window.py" line="5140" />
-            <location filename="../gui/main_window.py" line="5259" />
-            <location filename="../gui/main_window.py" line="5559" />
-            <location filename="../gui/main_window.py" line="7675" />
+            <location filename="../gui/main_window.py" line="1529" />
+            <location filename="../gui/main_window.py" line="1889" />
+            <location filename="../gui/main_window.py" line="5153" />
+            <location filename="../gui/main_window.py" line="5272" />
+            <location filename="../gui/main_window.py" line="5572" />
+            <location filename="../gui/main_window.py" line="7688" />
             <source>Section :</source>
             <translation>Section:</translation>
         </message>
         <message>
-            <location filename="../gui/main_window.py" line="1518" />
-            <location filename="../gui/main_window.py" line="1882" />
-            <location filename="../gui/main_window.py" line="7657" />
+            <location filename="../gui/main_window.py" line="1531" />
+            <location filename="../gui/main_window.py" line="1895" />
+            <location filename="../gui/main_window.py" line="7670" />
             <source>Vue A :</source>
             <translation>View A:</translation>
         </message>
         <message>
-            <location filename="../gui/main_window.py" line="1520" />
-            <location filename="../gui/main_window.py" line="1902" />
-            <location filename="../gui/main_window.py" line="7681" />
+            <location filename="../gui/main_window.py" line="1533" />
+            <location filename="../gui/main_window.py" line="1915" />
+            <location filename="../gui/main_window.py" line="7694" />
             <source>Vue B :</source>
             <translation>View B:</translation>
         </message>
         <message>
-            <location filename="../gui/main_window.py" line="1522" />
-            <location filename="../gui/main_window.py" line="1897" />
+            <location filename="../gui/main_window.py" line="1535" />
+            <location filename="../gui/main_window.py" line="1910" />
             <source>File précédente</source>
             <translation>Previous grid line</translation>
         </message>
         <message>
-            <location filename="../gui/main_window.py" line="1524" />
-            <location filename="../gui/main_window.py" line="1899" />
+            <location filename="../gui/main_window.py" line="1537" />
+            <location filename="../gui/main_window.py" line="1912" />
             <source>File suivante</source>
             <translation>Next grid line</translation>
         </message>
@@ -4327,7 +4419,7 @@ Les diagrammes actuels sont limités aux plans verticaux XZ et YZ.</translation>
         <message>
             <location filename="../gui/dialogs/library_manager_dlg.py" line="261" />
             <source>Supprimer le matériau « {name} » ?</source>
-            <translation>Delete material "{name}"?</translation>
+            <translation>Delete material &quot;{name}&quot;?</translation>
         </message>
     </context>
     <context>
@@ -4592,12 +4684,12 @@ Les diagrammes actuels sont limités aux plans verticaux XZ et YZ.</translation>
         <message>
             <location filename="../gui/dialogs/plate_region_properties_dlg.py" line="110" />
             <source>Centre :</source>
-            <translation>Centre :</translation>
+            <translation>Center:</translation>
         </message>
         <message>
             <location filename="../gui/dialogs/plate_region_properties_dlg.py" line="117" />
             <source>Normale locale :</source>
-            <translation>Normale locale :</translation>
+            <translation>Local normal:</translation>
         </message>
         <message>
             <location filename="../gui/dialogs/plate_region_properties_dlg.py" line="127" />
@@ -4628,22 +4720,22 @@ Les diagrammes actuels sont limités aux plans verticaux XZ et YZ.</translation>
         <message>
             <location filename="../gui/dialogs/plate_region_properties_dlg.py" line="155" />
             <source>Demande X :</source>
-            <translation>Demande X :</translation>
+            <translation>Requested X:</translation>
         </message>
         <message>
             <location filename="../gui/dialogs/plate_region_properties_dlg.py" line="156" />
             <source>Demande Y :</source>
-            <translation>Demande Y :</translation>
+            <translation>Requested Y:</translation>
         </message>
         <message>
             <location filename="../gui/dialogs/plate_region_properties_dlg.py" line="157" />
             <source>Retenu X :</source>
-            <translation>Retenu X :</translation>
+            <translation>Effective X:</translation>
         </message>
         <message>
             <location filename="../gui/dialogs/plate_region_properties_dlg.py" line="158" />
             <source>Retenu Y :</source>
-            <translation>Retenu Y :</translation>
+            <translation>Effective Y:</translation>
         </message>
         <message>
             <location filename="../gui/dialogs/plate_region_properties_dlg.py" line="162" />
@@ -4789,8 +4881,8 @@ Les diagrammes actuels sont limités aux plans verticaux XZ et YZ.</translation>
             <location filename="../gui/dialogs/plate_section_dlg.py" line="215" />
             <source>{formulation} : {info}
 Type générique transmis au solveur : {generic_type}.</source>
-            <translation>{formulation} : {info}
-Type générique transmis au solveur : {generic_type}.</translation>
+            <translation>{formulation}: {info}
+Generic type sent to the solver: {generic_type}.</translation>
         </message>
         <message>
             <location filename="../gui/dialogs/plate_section_dlg.py" line="248" />
@@ -4865,7 +4957,7 @@ Type générique transmis au solveur : {generic_type}.</translation>
         <message>
             <location filename="../gui/dialogs/plate_section_manager_dlg.py" line="251" />
             <source>Supprimer la section plaque « {name} » ?</source>
-            <translation>Delete plate section "{name}"?</translation>
+            <translation>Delete plate section &quot;{name}&quot;?</translation>
         </message>
     </context>
     <context>
@@ -5014,7 +5106,7 @@ to see its properties.</translation>
             <location filename="../gui/widgets/property_panel.py" line="291" />
             <location filename="../gui/widgets/property_panel.py" line="526" />
             <source>Info :</source>
-            <translation>Info :</translation>
+            <translation>Info:</translation>
         </message>
         <message>
             <location filename="../gui/widgets/property_panel.py" line="309" />
@@ -5039,12 +5131,12 @@ to see its properties.</translation>
         <message>
             <location filename="../gui/widgets/property_panel.py" line="348" />
             <source>Utilisateur :</source>
-            <translation>Utilisateur :</translation>
+            <translation>User:</translation>
         </message>
         <message>
             <location filename="../gui/widgets/property_panel.py" line="349" />
             <source>Calcul :</source>
-            <translation>Calcul :</translation>
+            <translation>Computed:</translation>
         </message>
         <message>
             <location filename="../gui/widgets/property_panel.py" line="375" />
@@ -5152,12 +5244,12 @@ to see its properties.</translation>
         <message>
             <location filename="../gui/widgets/property_panel.py" line="514" />
             <source>Iy :</source>
-            <translation>Iy :</translation>
+            <translation>Iy:</translation>
         </message>
         <message>
             <location filename="../gui/widgets/property_panel.py" line="518" />
             <source>Iz :</source>
-            <translation>Iz :</translation>
+            <translation>Iz:</translation>
         </message>
         <message>
             <location filename="../gui/widgets/property_panel.py" line="551" />
@@ -5167,7 +5259,7 @@ to see its properties.</translation>
         <message>
             <location filename="../gui/widgets/property_panel.py" line="567" />
             <source>Ex : A, B, C, neige, vent...</source>
-            <translation>Ex : A, B, C, neige, vent...</translation>
+            <translation>E.g.: A, B, C, snow, wind...</translation>
         </message>
         <message>
             <location filename="../gui/widgets/property_panel.py" line="568" />
@@ -5192,7 +5284,7 @@ to see its properties.</translation>
         <message>
             <location filename="../gui/widgets/property_panel.py" line="628" />
             <source>— Facteurs —</source>
-            <translation>— Facteurs —</translation>
+            <translation>- Factors -</translation>
         </message>
         <message>
             <location filename="../gui/widgets/property_panel.py" line="636" />
@@ -5415,16 +5507,16 @@ to see its properties.</translation>
         <message>
             <location filename="../gui/dialogs/section_dlg.py" line="189" />
             <source>h = {h:.0f} mm, b = {b:.0f} mm
-</source>
+            </source>
             <translation>h = {h:.0f} mm, b = {b:.0f} mm
-</translation>
+            </translation>
         </message>
         <message>
             <location filename="../gui/dialogs/section_dlg.py" line="193" />
             <source>A = {area:.1f} cm², Iy = {iy:.0f} cm⁴
-</source>
+            </source>
             <translation>A = {area:.1f} cm², Iy = {iy:.0f} cm⁴
-</translation>
+            </translation>
         </message>
         <message>
             <location filename="../gui/dialogs/section_dlg.py" line="197" />
@@ -5449,7 +5541,7 @@ to see its properties.</translation>
         <message>
             <location filename="../gui/ui/section_dlg.ui" line="29" />
             <source>Ex : IPE 300</source>
-            <translation>Ex : IPE 300</translation>
+            <translation>E.g.: IPE 300</translation>
         </message>
         <message>
             <location filename="../gui/ui/section_dlg.ui" line="36" />
@@ -5464,7 +5556,7 @@ to see its properties.</translation>
         <message>
             <location filename="../gui/ui/section_dlg.ui" line="68" />
             <source>Largeur b :</source>
-            <translation>Largeur b :</translation>
+            <translation>Width b:</translation>
         </message>
         <message>
             <location filename="../gui/ui/section_dlg.ui" line="87" />
@@ -5480,47 +5572,47 @@ to see its properties.</translation>
         <message>
             <location filename="../gui/ui/section_dlg.ui" line="93" />
             <source>Largeur</source>
-            <translation>Largeur</translation>
+            <translation>Width</translation>
         </message>
         <message>
             <location filename="../gui/ui/section_dlg.ui" line="100" />
             <source>Hauteur h :</source>
-            <translation>Hauteur h :</translation>
+            <translation>Height h:</translation>
         </message>
         <message>
             <location filename="../gui/ui/section_dlg.ui" line="125" />
             <source>Hauteur</source>
-            <translation>Hauteur</translation>
+            <translation>Height</translation>
         </message>
         <message>
             <location filename="../gui/ui/section_dlg.ui" line="137" />
             <source>Largeur âme bw :</source>
-            <translation>Largeur âme bw :</translation>
+            <translation>Web width bw:</translation>
         </message>
         <message>
             <location filename="../gui/ui/section_dlg.ui" line="162" />
             <source>Largeur âme</source>
-            <translation>Largeur âme</translation>
+            <translation>Web width</translation>
         </message>
         <message>
             <location filename="../gui/ui/section_dlg.ui" line="169" />
             <source>Hauteur âme hw :</source>
-            <translation>Hauteur âme hw :</translation>
+            <translation>Web height hw:</translation>
         </message>
         <message>
             <location filename="../gui/ui/section_dlg.ui" line="194" />
             <source>Hauteur âme</source>
-            <translation>Hauteur âme</translation>
+            <translation>Web height</translation>
         </message>
         <message>
             <location filename="../gui/ui/section_dlg.ui" line="201" />
             <source>Largeur table bf :</source>
-            <translation>Largeur table bf :</translation>
+            <translation>Flange width bf:</translation>
         </message>
         <message>
             <location filename="../gui/ui/section_dlg.ui" line="226" />
             <source>Largeur table</source>
-            <translation>Largeur table</translation>
+            <translation>Flange width</translation>
         </message>
         <message>
             <location filename="../gui/ui/section_dlg.ui" line="233" />
@@ -5535,7 +5627,7 @@ to see its properties.</translation>
         <message>
             <location filename="../gui/ui/section_dlg.ui" line="270" />
             <source>Famille :</source>
-            <translation>Famille :</translation>
+            <translation>Family:</translation>
         </message>
         <message>
             <location filename="../gui/ui/section_dlg.ui" line="278" />
@@ -5636,7 +5728,7 @@ to see its properties.</translation>
         <message>
             <location filename="../gui/dialogs/library_manager_dlg.py" line="520" />
             <source>Supprimer la section « {name} » ?</source>
-            <translation>Delete section "{name}"?</translation>
+            <translation>Delete section &quot;{name}&quot;?</translation>
         </message>
     </context>
     <context>
@@ -5665,7 +5757,7 @@ to see its properties.</translation>
         <message>
             <location filename="../gui/dialogs/surface_properties_dlg.py" line="65" />
             <source>NTM</source>
-            <translation>NTM</translation>
+            <translation>N-T-M</translation>
         </message>
         <message>
             <location filename="../gui/dialogs/surface_properties_dlg.py" line="66" />
@@ -5718,12 +5810,12 @@ to see its properties.</translation>
         <message>
             <location filename="../gui/dialogs/surface_properties_dlg.py" line="103" />
             <source>Centre :</source>
-            <translation>Centre :</translation>
+            <translation>Center:</translation>
         </message>
         <message>
             <location filename="../gui/dialogs/surface_properties_dlg.py" line="110" />
             <source>Normale locale :</source>
-            <translation>Normale locale :</translation>
+            <translation>Local normal:</translation>
         </message>
         <message>
             <location filename="../gui/dialogs/surface_properties_dlg.py" line="119" />

@@ -1098,9 +1098,9 @@ class MainWindow(QMainWindow):
     def _refresh_result_actions(self) -> None:
         has_results = bool(self._all_results)
         tip = (
-            "Afficher les résultats du cas courant."
+            self.tr("Afficher les résultats du cas courant.")
             if has_results
-            else "Aucun résultat disponible. Lancez d'abord une analyse (F5)."
+            else self.tr("Aucun résultat disponible. Lancez d'abord une analyse (F5).")
         )
         for action in self._result_actions():
             action.setEnabled(has_results)
@@ -1124,34 +1124,38 @@ class MainWindow(QMainWindow):
         self.act_res_deformed.setEnabled(has_results)
 
         if not has_results:
-            tip = "Aucun résultat disponible. Lancez d'abord une analyse (F5)."
+            tip = self.tr("Aucun résultat disponible. Lancez d'abord une analyse (F5).")
         elif self._deformed_visible:
-            tip = "Masquer la déformée du cas courant."
+            tip = self.tr("Masquer la déformée du cas courant.")
         else:
-            tip = "Afficher la déformée du cas courant."
+            tip = self.tr("Afficher la déformée du cas courant.")
         self.act_res_deformed.setToolTip(tip)
         self.act_res_deformed.setStatusTip(tip)
 
     def _diagram_support_is_available(self) -> bool:
         """Handle diagram support is available."""
         if not self.project.elements:
-            self._diagram_support_reason = "Aucun élément n'est disponible dans le modèle."
+            self._diagram_support_reason = self.tr(
+                "Aucun élément n'est disponible dans le modèle."
+            )
             return False
         try:
             from gui.widgets.diagram_renderer import detect_files
         except Exception as exc:
-            self._diagram_support_reason = (
-                "Le moteur de rendu des diagrammes n'a pas pu être chargé : "
-                f"{exc}"
+            self._diagram_support_reason = self.tr(
+                "Le moteur de rendu des diagrammes n'a pas pu être chargé : {error}"
+            ).format(
+                error=exc,
             )
             return False
 
         try:
             files = detect_files(project=self.project)
         except Exception as exc:
-            self._diagram_support_reason = (
-                "La détection des files de diagrammes a échoué : "
-                f"{exc}"
+            self._diagram_support_reason = self.tr(
+                "La détection des files de diagrammes a échoué : {error}"
+            ).format(
+                error=exc,
             )
             return False
 
@@ -1159,7 +1163,7 @@ class MainWindow(QMainWindow):
             self._diagram_support_reason = ""
             return True
 
-        self._diagram_support_reason = (
+        self._diagram_support_reason = self.tr(
             "Les diagrammes actuels sont disponibles uniquement "
             "sur les plans verticaux XZ et YZ."
         )
@@ -1171,33 +1175,36 @@ class MainWindow(QMainWindow):
             self._current_surface_result_case_results()
         )
         if not render_project.surface_elements:
-            self._surface_result_support_reason = (
+            self._surface_result_support_reason = self.tr(
                 "Aucun élément surfacique n'est disponible dans le modèle."
             )
             return False
         try:
             from matplotlib.figure import Figure as _Figure  # noqa: F401
         except Exception as exc:
-            self._surface_result_support_reason = (
-                "matplotlib est indisponible pour les cartes plaques : "
-                f"{exc}"
+            self._surface_result_support_reason = self.tr(
+                "matplotlib est indisponible pour les cartes plaques : {error}"
+            ).format(
+                error=exc,
             )
             return False
         try:
             from gui.widgets.surface_result_renderer import detect_surface_result_views
         except Exception as exc:
-            self._surface_result_support_reason = (
-                "Le moteur de rendu des cartes plaques n'a pas pu être chargé : "
-                f"{exc}"
+            self._surface_result_support_reason = self.tr(
+                "Le moteur de rendu des cartes plaques n'a pas pu être chargé : {error}"
+            ).format(
+                error=exc,
             )
             return False
 
         try:
             files = detect_surface_result_views(render_project)
         except Exception as exc:
-            self._surface_result_support_reason = (
-                "La détection des plans de plaques a échoué : "
-                f"{exc}"
+            self._surface_result_support_reason = self.tr(
+                "La détection des plans de plaques a échoué : {error}"
+            ).format(
+                error=exc,
             )
             return False
 
@@ -1205,8 +1212,8 @@ class MainWindow(QMainWindow):
             self._surface_result_support_reason = ""
             return True
 
-        self._surface_result_support_reason = (
-            "Les cartes plaques necessitent des surfaces coplanaires XY, XZ ou YZ."
+        self._surface_result_support_reason = self.tr(
+            "Les cartes plaques nécessitent des surfaces coplanaires XY, XZ ou YZ."
         )
         return False
 
@@ -1216,12 +1223,14 @@ class MainWindow(QMainWindow):
         support_available = self._surface_result_support_is_available()
 
         if not has_surface_results:
-            table_tip = "Aucun résultat plaque disponible. Lancez d'abord une analyse de plaques."
+            table_tip = self.tr(
+                "Aucun résultat plaque disponible. Lancez d'abord une analyse de plaques."
+            )
             map_tip = table_tip
         else:
-            table_tip = "Afficher les résultats plaques du cas courant."
+            table_tip = self.tr("Afficher les résultats plaques du cas courant.")
             map_tip = (
-                "Afficher une carte de contours des résultats plaques."
+                self.tr("Afficher une carte de contours des résultats plaques.")
                 if support_available
                 else self._surface_result_support_reason
             )
@@ -1247,13 +1256,17 @@ class MainWindow(QMainWindow):
         enabled = has_results
 
         if not has_results:
-            tip = "Aucun résultat disponible. Lancez d'abord une analyse (F5)."
+            tip = self.tr("Aucun résultat disponible. Lancez d'abord une analyse (F5).")
         elif diagrams_supported:
-            tip = "Afficher les diagrammes d'efforts internes pour le cas courant."
+            tip = self.tr(
+                "Afficher les diagrammes d'efforts internes pour le cas courant."
+            )
         else:
             tip = self._diagram_support_reason or (
-                "Afficher les diagrammes. "
-                "Si aucune vue compatible n'est disponible, la fenêtre l'indiquera."
+                self.tr(
+                    "Afficher les diagrammes. "
+                    "Si aucune vue compatible n'est disponible, la fenêtre l'indiquera."
+                )
             )
 
         for action in self._diagram_actions():
