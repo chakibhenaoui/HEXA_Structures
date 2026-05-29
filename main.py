@@ -1,8 +1,11 @@
 """HEXA Structures application entry point."""
 
+import json
 import os
 import sys
-from PySide6.QtCore import Qt
+from pathlib import Path
+
+from PySide6.QtCore import QCoreApplication, Qt
 from PySide6.QtGui import QColor, QFont, QIcon, QPainter, QPen, QPixmap
 from PySide6.QtWidgets import QApplication, QSplashScreen
 
@@ -98,7 +101,87 @@ def _update_splash(splash: QSplashScreen, message: str) -> None:
     QApplication.processEvents()
 
 
+def _argument_value(name: str, default: str = "") -> str:
+    """Return a command-line option value without adding argparse to startup."""
+    if name not in sys.argv:
+        return default
+    index = sys.argv.index(name)
+    if index + 1 >= len(sys.argv):
+        return default
+    return sys.argv[index + 1]
+
+
+def _run_smoke_test() -> int:
+    """Run a non-interactive packaged-build smoke test."""
+    _configure_qt_opengl()
+    app = QApplication([sys.argv[0]])
+    app.setOrganizationName("HEXA Structures")
+    app.setApplicationName("HEXA Structures")
+
+    requested_language = _argument_value(
+        "--smoke-language",
+        os.environ.get("HEXA_SMOKE_LANGUAGE", "en"),
+    )
+    allow_language_fallback = (
+        "--smoke-allow-language-fallback" in sys.argv
+        or os.environ.get("HEXA_SMOKE_ALLOW_LANGUAGE_FALLBACK") == "1"
+    )
+
+    language_manager = LanguageManager(app=app)
+    language_applied = language_manager.load_language(requested_language, save=False)
+    if not language_applied:
+        language_manager.reset_to_default_language(save=False)
+
+    file_menu = QCoreApplication.translate("MainWindow", "&Fichier")
+    diagram_label = QCoreApplication.translate("DiagramWindow", "Diagramme de barre")
+    i18n_dir = language_manager.i18n_dir
+    payload = {
+        "success": True,
+        "requested_language": requested_language,
+        "language_applied": language_applied,
+        "current_language": language_manager.current_language_code,
+        "allow_language_fallback": allow_language_fallback,
+        "i18n_dir": str(i18n_dir),
+        "i18n_dir_exists": i18n_dir.exists(),
+        "english_qm_exists": language_manager.translation_path("en").exists(),
+        "file_menu": file_menu,
+        "diagram_label": diagram_label,
+    }
+
+    if not i18n_dir.exists():
+        payload["success"] = False
+        payload["error"] = "i18n directory not found"
+    elif (
+        requested_language != LanguageManager.DEFAULT_LANGUAGE
+        and not language_applied
+        and not allow_language_fallback
+    ):
+        payload["success"] = False
+        payload["error"] = "requested language was not applied"
+    elif language_applied and requested_language == "en" and file_menu != "&File":
+        payload["success"] = False
+        payload["error"] = "english translations were not active"
+
+    output_path = _argument_value(
+        "--smoke-output",
+        os.environ.get("HEXA_SMOKE_OUTPUT", ""),
+    )
+    if output_path:
+        output = Path(output_path)
+        output.parent.mkdir(parents=True, exist_ok=True)
+        output.write_text(
+            json.dumps(payload, indent=2, ensure_ascii=False),
+            encoding="utf-8",
+        )
+
+    app.quit()
+    return 0 if payload["success"] else 2
+
+
 def main():
+    if "--smoke-test" in sys.argv or os.environ.get("HEXA_SMOKE_TEST") == "1":
+        return _run_smoke_test()
+
     _configure_qt_opengl()
     app = QApplication(sys.argv)
     app.setOrganizationName("HEXA Structures")
@@ -132,4 +215,4 @@ def main():
 
 
 if __name__ == "__main__":
-    main()
+    sys.exit(main())
