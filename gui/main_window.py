@@ -219,6 +219,11 @@ class MainWindow(QMainWindow):
         self.act_show_section_names = self.ui.findChild(QAction, "act_show_section_names")
         self.act_show_extruded_sections = QAction(self.tr("Sections 3D extrudées"), self)
         self.act_show_extruded_sections.setCheckable(True)
+        self.act_show_local_axes = QAction(self.tr("Repère local"), self)
+        self.act_show_local_axes.setCheckable(True)
+        self.act_show_local_axes.setToolTip(
+            self.tr("Afficher le repère local des barres sélectionnées.")
+        )
         self.act_show_assigned_loads = QAction(self.tr("Afficher charges..."), self)
         self.menu_file = self.ui.findChild(QMenu, "menu_file")
         self.menu_edit = self.ui.findChild(QMenu, "menu_edit")
@@ -265,6 +270,7 @@ class MainWindow(QMainWindow):
             self.secondary_view.show_node_tags = self.settings.gui.show_node_tags
             self.secondary_view.show_section_names = self.settings.gui.show_section_names
             self.secondary_view.show_extruded_sections = self.settings.gui.show_extruded_sections
+            self.secondary_view.show_local_axes = self.settings.gui.show_local_axes
         else:
             self.secondary_view = QLabel(self.tr("Vue dupliquée indisponible"))
             self.secondary_view.setAlignment(Qt.AlignCenter)
@@ -365,6 +371,7 @@ class MainWindow(QMainWindow):
         self.act_show_node_tags.setChecked(self.settings.gui.show_node_tags)
         self.act_show_section_names.setChecked(self.settings.gui.show_section_names)
         self.act_show_extruded_sections.setChecked(self.settings.gui.show_extruded_sections)
+        self.act_show_local_axes.setChecked(self.settings.gui.show_local_axes)
 
         self._update_statusbar()
         self._setup_edit_menu()
@@ -457,6 +464,7 @@ class MainWindow(QMainWindow):
             self.model_view.show_node_tags = self.settings.gui.show_node_tags
             self.model_view.show_section_names = self.settings.gui.show_section_names
             self.model_view.show_extruded_sections = self.settings.gui.show_extruded_sections
+            self.model_view.show_local_axes = self.settings.gui.show_local_axes
             return self.model_view
         except Exception as exc:
             self.model_view = None
@@ -604,6 +612,7 @@ class MainWindow(QMainWindow):
         self.act_show_node_tags.toggled.connect(self._on_toggle_node_tags)
         self.act_show_section_names.toggled.connect(self._on_toggle_section_names)
         self.act_show_extruded_sections.toggled.connect(self._on_toggle_extruded_sections)
+        self.act_show_local_axes.toggled.connect(self._on_toggle_local_axes)
         self.act_show_assigned_loads.triggered.connect(self._show_load_diagram)
 
         # --- Help menu actions ---
@@ -1284,16 +1293,17 @@ class MainWindow(QMainWindow):
 
         self._clear_menu_structure(self.menu_view)
 
-        menu_orientation = self.menu_view.addMenu(self.tr("Orientation"))
-        menu_orientation.addAction(self.act_view_xy)
-        menu_orientation.addAction(self.act_view_xz)
-        menu_orientation.addAction(self.act_view_yz)
-        menu_orientation.addAction(self.act_view_iso)
+        self.menu_view_orientation = self.menu_view.addMenu(self.tr("Orientation"))
+        self.menu_view_orientation.addAction(self.act_view_xy)
+        self.menu_view_orientation.addAction(self.act_view_xz)
+        self.menu_view_orientation.addAction(self.act_view_yz)
+        self.menu_view_orientation.addAction(self.act_view_iso)
 
-        menu_display = self.menu_view.addMenu(self.tr("Affichage"))
-        menu_display.addAction(self.act_show_node_tags)
-        menu_display.addAction(self.act_show_section_names)
-        menu_display.addAction(self.act_show_extruded_sections)
+        self.menu_view_display = self.menu_view.addMenu(self.tr("Affichage"))
+        self.menu_view_display.addAction(self.act_show_node_tags)
+        self.menu_view_display.addAction(self.act_show_section_names)
+        self.menu_view_display.addAction(self.act_show_extruded_sections)
+        self.menu_view_display.addAction(self.act_show_local_axes)
 
         menu_windows = self.menu_view.addMenu(self.tr("Fenêtres"))
         if getattr(self, "act_toggle_split_view", None) is not None:
@@ -1464,6 +1474,7 @@ class MainWindow(QMainWindow):
                 getattr(self, "act_show_extruded_sections", None),
                 self.tr("Sections 3D extrudées"),
             ),
+            (getattr(self, "act_show_local_axes", None), self.tr("Repère local")),
             (getattr(self, "act_show_assigned_loads", None), self.tr("Afficher charges...")),
             (getattr(self, "act_about", None), self.tr("À propos...")),
             (getattr(self, "act_undo_model", None), self.tr("Annuler")),
@@ -1511,6 +1522,11 @@ class MainWindow(QMainWindow):
         for action, text in action_texts:
             if action is not None:
                 action.setText(text)
+        if getattr(self, "act_show_local_axes", None) is not None:
+            self.act_show_local_axes.setToolTip(
+                self.tr("Afficher le repère local des barres sélectionnées.")
+            )
+            self.act_show_local_axes.setStatusTip(self.act_show_local_axes.toolTip())
 
     def _refresh_primary_toolbar_texts(self) -> None:
         toolbar = getattr(self, "toolbar_primary", None)
@@ -3777,22 +3793,55 @@ class MainWindow(QMainWindow):
         """Handle select element for context."""
         if tag not in self.project.elements:
             return False
+        preserve_element_selection = (
+            tag in self._selected_element_tags
+            and not self._selected_node_tags
+            and not self._selected_surface_tags
+        )
+        selected_elements = (
+            sorted({int(item) for item in self._selected_element_tags})
+            if preserve_element_selection
+            else [tag]
+        )
         panel_already_current = (
             getattr(self.properties, "_current_kind", "") == "element"
             and getattr(self.properties, "_current_tag", -1) == tag
         )
         self._selected_node_tags = []
-        self._selected_element_tags = [tag]
+        self._selected_element_tags = selected_elements
         self._selected_surface_tags = []
         if self.model_view is not None:
-            self.model_view.set_selected_objects([], [tag], [], emit_signal=False)
+            self.model_view.set_selected_objects([], selected_elements, [], emit_signal=False)
         if getattr(self, "secondary_view", None) is not None and hasattr(self.secondary_view, "set_selected_objects"):
-            self.secondary_view.set_selected_objects([], [tag], [], emit_signal=False)
-        self.tree.select_element(tag)
-        if not panel_already_current:
+            self.secondary_view.set_selected_objects([], selected_elements, [], emit_signal=False)
+        if len(selected_elements) == 1:
+            self.tree.select_element(tag)
+        else:
+            self.tree.blockSignals(True)
+            self.tree.clearSelection()
+            self.tree.setCurrentItem(None)
+            self.tree.blockSignals(False)
+        if len(selected_elements) == 1 and not panel_already_current:
             self.properties.show_element(tag)
+        elif len(selected_elements) > 1:
+            self.properties.clear_display()
         self._refresh_model_management_menus()
         return True
+
+    def _element_context_targets(self, fallback_tag: int) -> list[int]:
+        """Return element tags affected by context actions."""
+        selected = [
+            int(tag)
+            for tag in self._selected_element_tags
+            if int(tag) in self.project.elements
+        ]
+        if (
+            int(fallback_tag) in selected
+            and not self._selected_node_tags
+            and not self._selected_surface_tags
+        ):
+            return sorted(set(selected))
+        return [int(fallback_tag)]
 
     def _select_surface_for_context(self, tag: int) -> bool:
         """Handle select surface for context."""
@@ -3832,6 +3881,22 @@ class MainWindow(QMainWindow):
             act_diagrams.setToolTip(
                 self.tr("Lancez d'abord une analyse pour afficher les diagrammes.")
             )
+        targets = self._element_context_targets(tag)
+        menu.addSeparator()
+        menu_orientation = menu.addMenu(self.tr("Orientation locale"))
+        menu_orientation.setToolTip(
+            self.tr("Affecte la rotation de section aux barres sélectionnées.")
+        )
+        act_roll_0 = menu_orientation.addAction(self.tr("Rotation 0°"))
+        act_roll_90 = menu_orientation.addAction(self.tr("Rotation 90°"))
+        act_roll_minus_90 = menu_orientation.addAction(self.tr("Rotation -90°"))
+        act_roll_180 = menu_orientation.addAction(self.tr("Rotation 180°"))
+        menu_orientation.addSeparator()
+        act_roll_custom = menu_orientation.addAction(self.tr("Rotation personnalisée..."))
+        act_roll_info = menu_orientation.addAction(
+            self.tr("{count} barre(s) sélectionnée(s)").format(count=len(targets))
+        )
+        act_roll_info.setEnabled(False)
         menu.addSeparator()
         act_properties = menu.addAction(self.tr("Propriétés"))
 
@@ -3844,8 +3909,63 @@ class MainWindow(QMainWindow):
             self._copy_selected_objects()
         elif chosen is act_diagrams:
             self._show_element_diagram(tag)
+        elif chosen is act_roll_0:
+            self._set_selected_elements_roll_angle(0.0, context_tag=tag)
+        elif chosen is act_roll_90:
+            self._set_selected_elements_roll_angle(90.0, context_tag=tag)
+        elif chosen is act_roll_minus_90:
+            self._set_selected_elements_roll_angle(-90.0, context_tag=tag)
+        elif chosen is act_roll_180:
+            self._set_selected_elements_roll_angle(180.0, context_tag=tag)
+        elif chosen is act_roll_custom:
+            self._prompt_selected_elements_roll_angle(tag)
         elif chosen is act_properties:
             self._show_element_properties(tag)
+
+    def _prompt_selected_elements_roll_angle(self, context_tag: int) -> None:
+        """Ask for a section roll angle and apply it to selected elements."""
+        reference = self.project.elements.get(int(context_tag))
+        current_value = float(getattr(reference, "roll_angle_deg", 0.0) or 0.0)
+        value, accepted = QInputDialog.getDouble(
+            self,
+            self.tr("Orientation locale"),
+            self.tr("Rotation de section autour de l'axe local x (degrés) :"),
+            current_value,
+            -360.0,
+            360.0,
+            1,
+        )
+        if not accepted:
+            return
+        self._set_selected_elements_roll_angle(float(value), context_tag=context_tag)
+
+    def _set_selected_elements_roll_angle(
+        self,
+        roll_angle_deg: float,
+        *,
+        context_tag: int,
+    ) -> None:
+        """Apply a section roll angle to the context element selection."""
+        targets = self._element_context_targets(context_tag)
+        if not targets:
+            return
+        for element_tag in targets:
+            self.project.set_element_orientation(
+                element_tag,
+                roll_angle_deg=float(roll_angle_deg),
+            )
+        self._mark_project_modified()
+        if len(targets) == 1:
+            self.properties.show_element(targets[0])
+        else:
+            self.properties.clear_display()
+        self._refresh(preserve_view=True)
+        self._log(
+            self.tr("Rotation locale {angle:.1f}° affectée à {count} barre(s).").format(
+                angle=float(roll_angle_deg),
+                count=len(targets),
+            )
+        )
 
     def _show_surface_context_menu(self, tag: int, global_pos: QPoint) -> None:
         """Show surface context menu."""
@@ -6503,6 +6623,7 @@ class MainWindow(QMainWindow):
         self.model_view.show_section_names = self.settings.gui.show_section_names
         self.model_view.show_grid = self.settings.gui.show_grid
         self.model_view.show_extruded_sections = self.settings.gui.show_extruded_sections
+        self.model_view.show_local_axes = self.settings.gui.show_local_axes
         self.model_view.display_model(self.project, preserve_camera=preserve_view)
         self.model_view.set_selection_mode(self._selection_mode_active)
         self.model_view.set_drawing_mode(self._interactive_drawing_enabled())
@@ -6533,6 +6654,7 @@ class MainWindow(QMainWindow):
         self.secondary_view.show_section_names = self.settings.gui.show_section_names
         self.secondary_view.show_grid = self.settings.gui.show_grid
         self.secondary_view.show_extruded_sections = self.settings.gui.show_extruded_sections
+        self.secondary_view.show_local_axes = self.settings.gui.show_local_axes
         self.secondary_view.display_model(self.project, preserve_camera=preserve_view)
         self.secondary_view.set_selection_mode(self._selection_mode_active)
         self.secondary_view.set_drawing_mode(self._interactive_drawing_enabled())
@@ -8138,6 +8260,19 @@ class MainWindow(QMainWindow):
             self.secondary_view.show_extruded_sections = checked
         self._refresh(preserve_view=True)
 
+    def _on_toggle_local_axes(self, checked: bool) -> None:
+        """Handle local frame display toggle."""
+        self.settings.gui.show_local_axes = checked
+        if self.model_view is not None:
+            self.model_view.show_local_axes = checked
+            if hasattr(self.model_view, "_update_selection_actors"):
+                self.model_view._update_selection_actors(render=False)
+        if getattr(self, "secondary_view", None) is not None and hasattr(self.secondary_view, "show_local_axes"):
+            self.secondary_view.show_local_axes = checked
+            if hasattr(self.secondary_view, "_update_selection_actors"):
+                self.secondary_view._update_selection_actors(render=False)
+        self._refresh(preserve_view=True)
+
     def _clear_results_state(self) -> None:
         """Clear results state."""
         self._all_results.clear()
@@ -8398,6 +8533,8 @@ class MainWindow(QMainWindow):
                 elem.node_j,
                 elem.section_tag,
                 elem.element_type,
+                self._scene_signature_value(getattr(elem, "orientation_vector", None)),
+                round(float(getattr(elem, "roll_angle_deg", 0.0) or 0.0), 12),
             )
             for tag, elem in sorted(project.elements.items())
         )
@@ -8433,6 +8570,7 @@ class MainWindow(QMainWindow):
             bool(gui.show_node_tags),
             bool(gui.show_section_names),
             bool(gui.show_extruded_sections),
+            bool(gui.show_local_axes),
             getattr(self, "_active_parallel_plane", "3D"),
             round(float(getattr(self, "_active_parallel_value", None)), 12)
             if getattr(self, "_active_parallel_value", None) is not None

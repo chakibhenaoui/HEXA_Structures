@@ -8,6 +8,7 @@ from core.sections import (
     RectangularSection,
     TSection,
     get_profile,
+    list_profile_families,
     list_profiles,
 )
 from gui.dialogs import load_dialog_ui
@@ -15,7 +16,7 @@ from gui.dialogs import load_dialog_ui
 
 _SECTION_TYPE_KEYS = ("rectangular", "T", "I_profile", "surface")
 
-_PROFILE_FAMILIES = ["IPE", "HEA", "HEB"]
+_PROFILE_FAMILIES = tuple(list_profile_families())
 
 
 class SectionDialog(QDialog):
@@ -99,6 +100,9 @@ class SectionDialog(QDialog):
                 continue
             self._combo_type.addItem(self._section_type_label(key), key)
 
+        self._combo_family.clear()
+        self._combo_family.addItems(_PROFILE_FAMILIES)
+
         for tag, mat in self._materials.items():
             self._combo_material.addItem(f"{mat.name} ({mat.grade})", tag)
         if not self._materials:
@@ -141,7 +145,10 @@ class SectionDialog(QDialog):
         elif sec_type == "I_profile":
             profile_name = str(props.get("profile", "")).strip()
             if profile_name:
-                family = profile_name.split()[0]
+                try:
+                    family = get_profile(profile_name).family
+                except KeyError:
+                    family = profile_name.split()[0]
                 idx_family = self._combo_family.findText(family)
                 if idx_family >= 0:
                     self._combo_family.setCurrentIndex(idx_family)
@@ -194,6 +201,7 @@ class SectionDialog(QDialog):
                     area=p.area * 1e4,
                     iy=p.inertia_y * 1e8,
                 )
+                + self.tr("Iz = {iz:.0f} cm4, ").format(iz=p.inertia_z * 1e8)
                 + self.tr("Masse = {mass:.1f} kg/m").format(mass=p.mass)
             )
         except KeyError:

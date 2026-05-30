@@ -2,9 +2,14 @@
 
 from __future__ import annotations
 
-from dataclasses import dataclass
+import math
+from dataclasses import dataclass, field
+from typing import Iterable
 
 from utils.units import CM2_TO_M2, CM4_TO_M4, MM_TO_M
+
+
+STEEL_DENSITY_KG_M3 = 7850.0
 
 
 # ═══════════════════════════════════════════════════════════════════════════
@@ -114,6 +119,57 @@ class SteelProfile:
     wel_y: float      # elastic modulus about the major axis (m3)
     wpl_y: float      # plastic modulus about the major axis (m3)
     mass: float       # linear mass (kg/m)
+    shape: str = "i_section"
+    standard: str = "EN 10365"
+    source: str = "bundled"
+    dimensions: dict[str, float] = field(default_factory=dict)
+    wel_z: float = 0.0
+    wpl_z: float = 0.0
+    inertia_torsion: float = 0.0
+
+    def dimension(self, key: str, default: float = 0.0) -> float:
+        """Return a named geometric dimension in meters."""
+        return float(self.dimensions.get(key, default))
+
+
+@dataclass(frozen=True)
+class ProfileFamilyInfo:
+    """Metadata for a steel profile family."""
+
+    code: str
+    label: str
+    shape: str
+    standard: str
+    source: str
+
+
+PROFILE_FAMILY_ORDER: tuple[str, ...] = (
+    "IPE",
+    "HEA",
+    "HEB",
+    "HEM",
+    "UPN",
+    "UPE",
+    "CHS",
+    "SHS",
+    "RHS",
+    "L",
+    "L unequal",
+)
+
+PROFILE_FAMILY_INFO: dict[str, ProfileFamilyInfo] = {
+    "IPE": ProfileFamilyInfo("IPE", "IPE", "i_section", "EN 10365", "tabulated"),
+    "HEA": ProfileFamilyInfo("HEA", "HEA", "i_section", "EN 10365", "tabulated"),
+    "HEB": ProfileFamilyInfo("HEB", "HEB", "i_section", "EN 10365", "tabulated"),
+    "HEM": ProfileFamilyInfo("HEM", "HEM", "i_section", "EN 10365", "theoretical_geometry"),
+    "UPN": ProfileFamilyInfo("UPN", "UPN", "channel", "EN 10365", "theoretical_geometry"),
+    "UPE": ProfileFamilyInfo("UPE", "UPE", "channel", "EN 10365", "theoretical_geometry"),
+    "CHS": ProfileFamilyInfo("CHS", "CHS", "circular_hollow", "EN 10210/10219", "theoretical_geometry"),
+    "SHS": ProfileFamilyInfo("SHS", "SHS", "rectangular_hollow", "EN 10210/10219", "theoretical_geometry"),
+    "RHS": ProfileFamilyInfo("RHS", "RHS", "rectangular_hollow", "EN 10210/10219", "theoretical_geometry"),
+    "L": ProfileFamilyInfo("L", "L egales", "angle_equal", "EN 10056", "theoretical_geometry"),
+    "L unequal": ProfileFamilyInfo("L unequal", "L inegales", "angle_unequal", "EN 10056", "theoretical_geometry"),
+}
 
 
 # ═══════════════════════════════════════════════════════════════════════════
@@ -207,20 +263,447 @@ IPE_PROFILES: list[SteelProfile] = _convert_raw(_IPE_RAW, "IPE")
 HEA_PROFILES: list[SteelProfile] = _convert_raw(_HEA_RAW, "HEA")
 HEB_PROFILES: list[SteelProfile] = _convert_raw(_HEB_RAW, "HEB")
 
-# Index by name for fast lookup
-PROFILE_CATALOG: dict[str, SteelProfile] = {}
-for _profiles in (IPE_PROFILES, HEA_PROFILES, HEB_PROFILES):
-    for _p in _profiles:
-        PROFILE_CATALOG[_p.name] = _p
+
+# Extended catalogue ---------------------------------------------------------
+
+def _m(value_mm: float) -> float:
+    return float(value_mm) * MM_TO_M
+
+
+def _mass_from_area(area: float) -> float:
+    return area * STEEL_DENSITY_KG_M3
+
+
+def _default_wpl(wel: float) -> float:
+    return wel * 1.10 if wel > 0.0 else 0.0
+
+
+def _family_info(family: str) -> ProfileFamilyInfo:
+    return PROFILE_FAMILY_INFO[family]
+
+
+def _profile(
+    *,
+    name: str,
+    family: str,
+    h: float,
+    b: float,
+    tw: float,
+    tf: float,
+    area: float,
+    inertia_y: float,
+    inertia_z: float,
+    shape: str | None = None,
+    standard: str | None = None,
+    source: str | None = None,
+    mass: float | None = None,
+    wel_y: float | None = None,
+    wpl_y: float | None = None,
+    wel_z: float | None = None,
+    wpl_z: float | None = None,
+    inertia_torsion: float = 0.0,
+    dimensions: dict[str, float] | None = None,
+) -> SteelProfile:
+    info = _family_info(family)
+    effective_wel_y = wel_y if wel_y is not None else (inertia_y / (h / 2.0) if h > 0 else 0.0)
+    effective_wel_z = wel_z if wel_z is not None else (inertia_z / (b / 2.0) if b > 0 else 0.0)
+    dims = {"h": h, "b": b, "tw": tw, "tf": tf}
+    if dimensions:
+        dims.update(dimensions)
+    return SteelProfile(
+        name=name,
+        family=family,
+        h=h,
+        b=b,
+        tw=tw,
+        tf=tf,
+        area=area,
+        inertia_y=inertia_y,
+        inertia_z=inertia_z,
+        wel_y=effective_wel_y,
+        wpl_y=wpl_y if wpl_y is not None else _default_wpl(effective_wel_y),
+        mass=mass if mass is not None else _mass_from_area(area),
+        shape=shape or info.shape,
+        standard=standard or info.standard,
+        source=source or info.source,
+        dimensions=dims,
+        wel_z=effective_wel_z,
+        wpl_z=wpl_z if wpl_z is not None else _default_wpl(effective_wel_z),
+        inertia_torsion=inertia_torsion,
+    )
+
+
+def _tabulated_profile(profile: SteelProfile) -> SteelProfile:
+    info = _family_info(profile.family)
+    return _profile(
+        name=profile.name,
+        family=profile.family,
+        h=profile.h,
+        b=profile.b,
+        tw=profile.tw,
+        tf=profile.tf,
+        area=profile.area,
+        inertia_y=profile.inertia_y,
+        inertia_z=profile.inertia_z,
+        wel_y=profile.wel_y,
+        wpl_y=profile.wpl_y,
+        mass=profile.mass,
+        shape=info.shape,
+        standard=info.standard,
+        source=info.source,
+        dimensions={
+            "h": profile.h,
+            "b": profile.b,
+            "tw": profile.tw,
+            "tf": profile.tf,
+        },
+    )
+
+
+def _i_shape_profile(
+    family: str,
+    size: int,
+    h_mm: float,
+    b_mm: float,
+    tw_mm: float,
+    tf_mm: float,
+) -> SteelProfile:
+    h = _m(h_mm)
+    b = _m(b_mm)
+    tw = _m(tw_mm)
+    tf = _m(tf_mm)
+    web_h = max(h - 2.0 * tf, 0.0)
+    area = 2.0 * b * tf + web_h * tw
+    inertia_y = (b * h**3 - (b - tw) * web_h**3) / 12.0
+    inertia_z = 2.0 * (tf * b**3 / 12.0) + web_h * tw**3 / 12.0
+    j = (2.0 * b * tf**3 + web_h * tw**3) / 3.0
+    return _profile(
+        name=f"{family} {size}",
+        family=family,
+        h=h,
+        b=b,
+        tw=tw,
+        tf=tf,
+        area=area,
+        inertia_y=inertia_y,
+        inertia_z=inertia_z,
+        inertia_torsion=j,
+    )
+
+
+def _composite_rectangles(
+    rectangles: Iterable[tuple[float, float, float, float, float]],
+) -> tuple[float, float, float, float, float]:
+    """Return area, centroid_y, centroid_z, Iy, Iz for signed rectangles."""
+    items = tuple(rectangles)
+    area = sum(sign * width * height for sign, _y, _z, width, height in items)
+    if area <= 0.0:
+        raise ValueError("Invalid steel profile geometry.")
+    cy = sum(sign * width * height * y for sign, y, _z, width, height in items) / area
+    cz = sum(sign * width * height * z for sign, _y, z, width, height in items) / area
+    iy = 0.0
+    iz = 0.0
+    for sign, y, z, width, height in items:
+        signed_area = sign * width * height
+        iy += sign * width * height**3 / 12.0 + signed_area * (z - cz) ** 2
+        iz += sign * height * width**3 / 12.0 + signed_area * (y - cy) ** 2
+    return area, cy, cz, iy, iz
+
+
+def _channel_profile(
+    family: str,
+    size: int,
+    h_mm: float,
+    b_mm: float,
+    tw_mm: float,
+    tf_mm: float,
+) -> SteelProfile:
+    h = _m(h_mm)
+    b = _m(b_mm)
+    tw = _m(tw_mm)
+    tf = _m(tf_mm)
+    web_h = max(h - 2.0 * tf, 0.0)
+    area, cy, cz, iy, iz = _composite_rectangles(
+        (
+            (1.0, tw / 2.0, h / 2.0, tw, web_h),
+            (1.0, b / 2.0, tf / 2.0, b, tf),
+            (1.0, b / 2.0, h - tf / 2.0, b, tf),
+        )
+    )
+    j = (2.0 * b * tf**3 + web_h * tw**3) / 3.0
+    return _profile(
+        name=f"{family} {size}",
+        family=family,
+        h=h,
+        b=b,
+        tw=tw,
+        tf=tf,
+        area=area,
+        inertia_y=iy,
+        inertia_z=iz,
+        inertia_torsion=j,
+        dimensions={"centroid_y": cy, "centroid_z": cz},
+    )
+
+
+def _chs_profile(d_mm: float, t_mm: float) -> SteelProfile:
+    d = _m(d_mm)
+    t = _m(t_mm)
+    inner = max(d - 2.0 * t, 0.0)
+    area = math.pi * (d**2 - inner**2) / 4.0
+    inertia = math.pi * (d**4 - inner**4) / 64.0
+    j = math.pi * (d**4 - inner**4) / 32.0
+    return _profile(
+        name=f"CHS {d_mm:g}x{t_mm:g}",
+        family="CHS",
+        h=d,
+        b=d,
+        tw=t,
+        tf=t,
+        area=area,
+        inertia_y=inertia,
+        inertia_z=inertia,
+        inertia_torsion=j,
+        dimensions={"d": d, "t": t},
+    )
+
+
+def _rhs_profile(family: str, h_mm: float, b_mm: float, t_mm: float) -> SteelProfile:
+    h = _m(h_mm)
+    b = _m(b_mm)
+    t = _m(t_mm)
+    inner_h = max(h - 2.0 * t, 0.0)
+    inner_b = max(b - 2.0 * t, 0.0)
+    area = b * h - inner_b * inner_h
+    iy = (b * h**3 - inner_b * inner_h**3) / 12.0
+    iz = (h * b**3 - inner_h * inner_b**3) / 12.0
+    name = f"{family} {h_mm:g}x{b_mm:g}x{t_mm:g}"
+    if family == "SHS":
+        name = f"SHS {h_mm:g}x{t_mm:g}"
+    return _profile(
+        name=name,
+        family=family,
+        h=h,
+        b=b,
+        tw=t,
+        tf=t,
+        area=area,
+        inertia_y=iy,
+        inertia_z=iz,
+        dimensions={"t": t},
+    )
+
+
+def _angle_profile(family: str, h_mm: float, b_mm: float, t_mm: float) -> SteelProfile:
+    h = _m(h_mm)
+    b = _m(b_mm)
+    t = _m(t_mm)
+    area, cy, cz, iy, iz = _composite_rectangles(
+        (
+            (1.0, t / 2.0, h / 2.0, t, h),
+            (1.0, b / 2.0, t / 2.0, b, t),
+            (-1.0, t / 2.0, t / 2.0, t, t),
+        )
+    )
+    name = f"L {h_mm:g}x{t_mm:g}" if family == "L" else f"L {h_mm:g}x{b_mm:g}x{t_mm:g}"
+    return _profile(
+        name=name,
+        family=family,
+        h=h,
+        b=b,
+        tw=t,
+        tf=t,
+        area=area,
+        inertia_y=iy,
+        inertia_z=iz,
+        dimensions={"t": t, "centroid_y": cy, "centroid_z": cz},
+    )
+
+
+_HEM_DIMENSIONS: list[tuple[int, float, float, float, float]] = [
+    (100, 120, 106, 12.0, 20.0),
+    (120, 140, 126, 12.5, 21.0),
+    (140, 160, 146, 13.0, 22.0),
+    (160, 180, 166, 14.0, 23.0),
+    (180, 200, 186, 14.5, 24.0),
+    (200, 220, 206, 15.0, 25.0),
+    (220, 240, 226, 15.5, 26.0),
+    (240, 270, 248, 18.0, 32.0),
+    (260, 290, 268, 18.0, 32.5),
+    (280, 310, 288, 18.5, 33.0),
+    (300, 340, 310, 21.0, 39.0),
+    (320, 359, 309, 21.0, 40.0),
+    (340, 377, 309, 21.0, 40.0),
+    (360, 395, 308, 21.0, 40.0),
+    (400, 432, 307, 21.0, 40.0),
+]
+
+_UPN_DIMENSIONS: list[tuple[int, float, float, float, float]] = [
+    (80, 80, 45, 6.0, 8.0),
+    (100, 100, 50, 6.0, 8.5),
+    (120, 120, 55, 7.0, 9.0),
+    (140, 140, 60, 7.0, 10.0),
+    (160, 160, 65, 7.5, 10.5),
+    (180, 180, 70, 8.0, 11.0),
+    (200, 200, 75, 8.5, 11.5),
+    (220, 220, 80, 9.0, 12.5),
+    (240, 240, 85, 9.5, 13.0),
+    (260, 260, 90, 10.0, 14.0),
+    (280, 280, 95, 10.0, 15.0),
+    (300, 300, 100, 10.0, 16.0),
+    (320, 320, 100, 14.0, 17.5),
+    (350, 350, 100, 14.0, 16.0),
+    (380, 380, 102, 13.5, 16.0),
+    (400, 400, 110, 14.0, 18.0),
+]
+
+_UPE_DIMENSIONS: list[tuple[int, float, float, float, float]] = [
+    (80, 80, 50, 4.5, 7.0),
+    (100, 100, 55, 5.0, 7.5),
+    (120, 120, 60, 5.5, 8.0),
+    (140, 140, 65, 6.0, 9.0),
+    (160, 160, 70, 6.5, 10.0),
+    (180, 180, 75, 7.0, 10.5),
+    (200, 200, 80, 7.5, 11.0),
+    (220, 220, 85, 8.0, 12.0),
+    (240, 240, 90, 8.5, 13.0),
+    (270, 270, 95, 9.5, 14.0),
+    (300, 300, 100, 10.0, 15.0),
+    (330, 330, 105, 11.0, 16.0),
+    (360, 360, 110, 12.0, 17.0),
+    (400, 400, 115, 13.5, 18.0),
+]
+
+_CHS_DIMENSIONS: list[tuple[float, float]] = [
+    (48.3, 3.2),
+    (60.3, 3.2),
+    (76.1, 3.6),
+    (88.9, 4.0),
+    (101.6, 4.0),
+    (114.3, 5.0),
+    (139.7, 5.0),
+    (168.3, 6.3),
+    (193.7, 6.3),
+    (219.1, 8.0),
+    (273.0, 8.0),
+    (323.9, 10.0),
+]
+
+_SHS_DIMENSIONS: list[tuple[float, float]] = [
+    (40, 3),
+    (50, 3),
+    (60, 4),
+    (80, 5),
+    (100, 5),
+    (120, 6.3),
+    (150, 8),
+    (200, 10),
+    (250, 10),
+]
+
+_RHS_DIMENSIONS: list[tuple[float, float, float]] = [
+    (80, 40, 4),
+    (100, 50, 4),
+    (120, 60, 5),
+    (140, 80, 5),
+    (150, 100, 6.3),
+    (200, 100, 6.3),
+    (200, 150, 8),
+    (250, 150, 8),
+    (300, 200, 10),
+]
+
+_ANGLE_EQUAL_DIMENSIONS: list[tuple[float, float]] = [
+    (40, 4),
+    (50, 5),
+    (60, 6),
+    (70, 7),
+    (80, 8),
+    (90, 9),
+    (100, 10),
+    (120, 12),
+    (150, 15),
+]
+
+_ANGLE_UNEQUAL_DIMENSIONS: list[tuple[float, float, float]] = [
+    (60, 40, 5),
+    (70, 50, 6),
+    (80, 40, 6),
+    (80, 60, 7),
+    (100, 50, 8),
+    (100, 75, 8),
+    (120, 80, 10),
+    (150, 90, 12),
+    (200, 100, 14),
+]
+
+
+IPE_PROFILES = [_tabulated_profile(profile) for profile in IPE_PROFILES]
+HEA_PROFILES = [_tabulated_profile(profile) for profile in HEA_PROFILES]
+HEB_PROFILES = [_tabulated_profile(profile) for profile in HEB_PROFILES]
+HEM_PROFILES: list[SteelProfile] = [
+    _i_shape_profile("HEM", *row) for row in _HEM_DIMENSIONS
+]
+UPN_PROFILES: list[SteelProfile] = [
+    _channel_profile("UPN", *row) for row in _UPN_DIMENSIONS
+]
+UPE_PROFILES: list[SteelProfile] = [
+    _channel_profile("UPE", *row) for row in _UPE_DIMENSIONS
+]
+CHS_PROFILES: list[SteelProfile] = [_chs_profile(*row) for row in _CHS_DIMENSIONS]
+SHS_PROFILES: list[SteelProfile] = [
+    _rhs_profile("SHS", size, size, thickness)
+    for size, thickness in _SHS_DIMENSIONS
+]
+RHS_PROFILES: list[SteelProfile] = [
+    _rhs_profile("RHS", *row) for row in _RHS_DIMENSIONS
+]
+ANGLE_EQUAL_PROFILES: list[SteelProfile] = [
+    _angle_profile("L", size, size, thickness)
+    for size, thickness in _ANGLE_EQUAL_DIMENSIONS
+]
+ANGLE_UNEQUAL_PROFILES: list[SteelProfile] = [
+    _angle_profile("L unequal", *row) for row in _ANGLE_UNEQUAL_DIMENSIONS
+]
+
+PROFILE_FAMILIES: dict[str, tuple[SteelProfile, ...]] = {
+    "IPE": tuple(IPE_PROFILES),
+    "HEA": tuple(HEA_PROFILES),
+    "HEB": tuple(HEB_PROFILES),
+    "HEM": tuple(HEM_PROFILES),
+    "UPN": tuple(UPN_PROFILES),
+    "UPE": tuple(UPE_PROFILES),
+    "CHS": tuple(CHS_PROFILES),
+    "SHS": tuple(SHS_PROFILES),
+    "RHS": tuple(RHS_PROFILES),
+    "L": tuple(ANGLE_EQUAL_PROFILES),
+    "L unequal": tuple(ANGLE_UNEQUAL_PROFILES),
+}
+
+PROFILE_CATALOG = {
+    profile.name: profile
+    for family in PROFILE_FAMILY_ORDER
+    for profile in PROFILE_FAMILIES.get(family, ())
+}
 
 
 def get_profile(name: str) -> SteelProfile:
-    """Return profile."""
+    """Return a steel profile by catalogue name."""
     return PROFILE_CATALOG[name]
 
 
 def list_profiles(family: str | None = None) -> list[str]:
-    """List profiles."""
+    """List profile names, optionally filtered by family code."""
     if family is None:
         return list(PROFILE_CATALOG.keys())
-    return [p.name for p in PROFILE_CATALOG.values() if p.family == family]
+    return [profile.name for profile in PROFILE_FAMILIES.get(family, ())]
+
+
+def list_profile_families() -> list[str]:
+    """List available steel profile family codes in GUI order."""
+    return [family for family in PROFILE_FAMILY_ORDER if PROFILE_FAMILIES.get(family)]
+
+
+def get_profile_family_info(family: str) -> ProfileFamilyInfo:
+    """Return metadata for a profile family."""
+    return PROFILE_FAMILY_INFO[family]

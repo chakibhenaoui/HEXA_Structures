@@ -597,6 +597,21 @@ class ProjectModel:
 
     # --- Object creation ---
 
+    @staticmethod
+    def _coerce_orientation_vector(
+        orientation_vector: tuple[float, float, float] | None,
+    ) -> tuple[float, float, float] | None:
+        """Return a validated local orientation vector."""
+        if orientation_vector is None:
+            return None
+
+        values = tuple(float(value) for value in orientation_vector)
+        if len(values) != 3:
+            raise ValueError("orientation_vector must contain exactly 3 values.")
+        if sum(value * value for value in values) <= 1.0e-24:
+            raise ValueError("orientation_vector must not be zero.")
+        return values
+
     def add_node(self, x: float, y: float, z: float = 0.0, **kwargs) -> NodeData:
         """Add node."""
         tag = self.next_node_tag()
@@ -622,10 +637,7 @@ class ProjectModel:
         section = self.sections.get(int(section_tag))
         if section is not None and section.is_surface:
             raise ValueError("Element section must be a line/bar section.")
-        if orientation_vector is not None:
-            orientation_vector = tuple(float(value) for value in orientation_vector)
-            if len(orientation_vector) != 3:
-                raise ValueError("orientation_vector must contain exactly 3 values.")
+        orientation_vector = self._coerce_orientation_vector(orientation_vector)
 
         elem = ElementData(
             tag=tag, node_i=int(node_i), node_j=int(node_j),
@@ -634,6 +646,21 @@ class ProjectModel:
             roll_angle_deg=float(roll_angle_deg),
         )
         self.elements[tag] = elem
+        return elem
+
+    def set_element_orientation(
+        self,
+        element_tag: int,
+        *,
+        orientation_vector: tuple[float, float, float] | None = None,
+        roll_angle_deg: float | None = None,
+    ) -> ElementData:
+        """Update the local orientation stored on a line element."""
+        elem = self.elements[int(element_tag)]
+        if orientation_vector is not None:
+            elem.orientation_vector = self._coerce_orientation_vector(orientation_vector)
+        if roll_angle_deg is not None:
+            elem.roll_angle_deg = float(roll_angle_deg)
         return elem
 
     def add_surface_element(

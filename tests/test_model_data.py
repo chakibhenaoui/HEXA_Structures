@@ -72,6 +72,44 @@ class TestProjectModel:
         assert e.node_i == 1
         assert e.node_j == 2
 
+    def test_add_element_defaults_to_automatic_orientation(self):
+        p = ProjectModel()
+        p.add_node(0, 0)
+        p.add_node(5, 0)
+        p.add_section("Rect 30x50", "rectangular", 1)
+
+        elem = p.add_element(node_i=1, node_j=2, section_tag=1)
+
+        assert elem.orientation_vector is None
+        assert elem.roll_angle_deg == pytest.approx(0.0)
+
+    def test_set_element_orientation_updates_roll_without_touching_section(self):
+        p = ProjectModel()
+        p.add_node(0, 0)
+        p.add_node(5, 0)
+        p.add_section("IPE 300", "I_profile", 1)
+        elem = p.add_element(node_i=1, node_j=2, section_tag=1)
+
+        p.set_element_orientation(elem.tag, roll_angle_deg=90.0)
+
+        assert elem.section_tag == 1
+        assert p.sections[1].name == "IPE 300"
+        assert elem.roll_angle_deg == pytest.approx(90.0)
+
+    def test_zero_orientation_vector_is_rejected(self):
+        p = ProjectModel()
+        p.add_node(0, 0)
+        p.add_node(5, 0)
+        p.add_section("Rect 30x50", "rectangular", 1)
+
+        with pytest.raises(ValueError, match="orientation_vector.*zero"):
+            p.add_element(
+                node_i=1,
+                node_j=2,
+                section_tag=1,
+                orientation_vector=(0.0, 0.0, 0.0),
+            )
+
     def test_add_element_rejects_surface_section(self):
         p = ProjectModel()
         p.add_node(0, 0)

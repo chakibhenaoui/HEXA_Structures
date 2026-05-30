@@ -1,5 +1,6 @@
 """Helpers for test OpenSees builder."""
 
+import math
 import pytest
 
 from core.materials import (
@@ -12,6 +13,7 @@ from core.sections import (
     RectangularSection,
     TSection,
     get_profile,
+    list_profile_families,
     list_profiles,
 )
 from utils.units import convert, CM2, M2, CM4, M4
@@ -83,6 +85,23 @@ class TestTSection:
 
 
 class TestProfileCatalog:
+    def test_catalog_exposes_target_families(self):
+        families = list_profile_families()
+        assert families == [
+            "IPE",
+            "HEA",
+            "HEB",
+            "HEM",
+            "UPN",
+            "UPE",
+            "CHS",
+            "SHS",
+            "RHS",
+            "L",
+            "L unequal",
+        ]
+        assert all(list_profiles(family) for family in families)
+
     def test_ipe300_exists(self):
         p = get_profile("IPE 300")
         assert p.family == "IPE"
@@ -100,11 +119,28 @@ class TestProfileCatalog:
 
     def test_list_all(self):
         names = list_profiles()
-        assert len(names) > 30  # IPE + HEA + HEB
+        assert len(names) > 100
+
+    def test_new_families_have_expected_examples(self):
+        expected = {
+            "HEM 200": "HEM",
+            "UPN 200": "UPN",
+            "UPE 200": "UPE",
+            "CHS 114.3x5": "CHS",
+            "SHS 100x5": "SHS",
+            "RHS 200x100x6.3": "RHS",
+            "L 100x10": "L",
+            "L 100x75x8": "L unequal",
+        }
+        for name, family in expected.items():
+            assert get_profile(name).family == family
 
     def test_unknown_profile_raises(self):
         with pytest.raises(KeyError):
             get_profile("XXX 999")
+
+    def test_unknown_family_returns_empty_list(self):
+        assert list_profiles("XXX") == []
 
     def test_ipe300_area_reasonable(self):
         """Test ipe300 area reasonable."""
@@ -117,3 +153,20 @@ class TestProfileCatalog:
         p = get_profile("IPE 300")
         iy_cm4 = convert(p.inertia_y, M4, CM4)
         assert abs(iy_cm4 - 8360) < 10
+
+    def test_tube_properties_use_hollow_section_geometry(self):
+        p = get_profile("CHS 114.3x5")
+        d = 0.1143
+        t = 0.005
+        expected_area = math.pi * (d**2 - (d - 2 * t) ** 2) / 4.0
+        assert p.shape == "circular_hollow"
+        assert p.area == pytest.approx(expected_area)
+        assert p.inertia_y == pytest.approx(p.inertia_z)
+
+    def test_profiles_expose_metadata_for_gui_and_solvers(self):
+        p = get_profile("RHS 200x100x6.3")
+        assert p.shape == "rectangular_hollow"
+        assert p.standard == "EN 10210/10219"
+        assert p.source == "theoretical_geometry"
+        assert p.wel_z > 0.0
+        assert p.dimension("t") == pytest.approx(0.0063)

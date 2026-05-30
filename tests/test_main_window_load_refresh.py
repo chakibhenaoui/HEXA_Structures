@@ -96,6 +96,7 @@ class _DummySettings:
         show_section_names = False
         show_grid = True
         show_extruded_sections = False
+        show_local_axes = False
 
     def __init__(self) -> None:
         self.gui = self._Gui()

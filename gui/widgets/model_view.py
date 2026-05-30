@@ -12,6 +12,7 @@ from PySide6.QtGui import QColor, QFont, QFontMetricsF, QPainter, QPainterPath, 
 from PySide6.QtWidgets import QRubberBand, QVBoxLayout, QWidget
 from pyvistaqt import QtInteractor
 
+from core.local_axes import local_axes_from_nodes
 from core.sections import TSection, get_profile
 
 if TYPE_CHECKING:
@@ -27,6 +28,9 @@ _COLORS = {
     "node_selected": "#2ecc71",
     "element": "#3498db",
     "element_selected": "#2ecc71",
+    "local_axis_x": "#d32f2f",
+    "local_axis_y": "#2e7d32",
+    "local_axis_z": "#1565c0",
     "deformed": "#e74c3c",
     "undeformed": "#555555",
     "grid": "#666666",
@@ -117,6 +121,7 @@ class ModelView(QWidget):
         self.show_node_tags: bool = True
         self.show_section_names: bool = False
         self.show_extruded_sections: bool = False
+        self.show_local_axes: bool = False
         self.show_grid: bool = True
         self._setup_ui()
 
@@ -262,13 +267,24 @@ class ModelView(QWidget):
             else:
                 mesh = self._build_line_elements_mesh(project, points)
                 if mesh is not None and mesh.n_cells > 0:
-                    self.plotter.add_mesh(
-                        mesh,
-                        color=_COLORS["element"],
-                        line_width=4,
-                        name="elements",
-                        render=False,
-                    )
+                    try:
+                        self.plotter.add_mesh(
+                            mesh,
+                            scalars="section_rgb",
+                            rgb=True,
+                            line_width=4,
+                            show_scalar_bar=False,
+                            name="elements",
+                            render=False,
+                        )
+                    except (TypeError, ValueError):
+                        self.plotter.add_mesh(
+                            mesh,
+                            color=_COLORS["element"],
+                            line_width=4,
+                            name="elements",
+                            render=False,
+                        )
                     if self.show_section_names:
                         self._draw_section_labels(project, points)
 
@@ -900,6 +916,8 @@ class ModelView(QWidget):
                     elem.node_j,
                     elem.section_tag,
                     elem.element_type,
+                    self._signature_value(getattr(elem, "orientation_vector", None)),
+                    round(float(getattr(elem, "roll_angle_deg", 0.0) or 0.0), 12),
                 )
             )
             node_tags.add(elem.node_i)
@@ -975,6 +993,7 @@ class ModelView(QWidget):
     ) -> pv.PolyData | None:
         """Build line elements mesh."""
         lines: list[int] = []
+        cell_colors: list[np.ndarray] = []
         self._elem_tags.clear()
         for elem in project.elements.values():
             idx_i = self._tag_to_idx.get(elem.node_i)
@@ -982,11 +1001,17 @@ class ModelView(QWidget):
             if idx_i is None or idx_j is None:
                 continue
             lines.extend([2, idx_i, idx_j])
+            cell_colors.append(
+                self._hex_to_uint8_rgb(self._section_color_for_tag(elem.section_tag))
+            )
             self._elem_tags.append(elem.tag)
 
         if not lines:
             return None
-        return pv.PolyData(points, lines=lines)
+        mesh = pv.PolyData(points, lines=lines)
+        if cell_colors:
+            mesh.cell_data["section_rgb"] = np.vstack(cell_colors).astype(np.uint8)
+        return mesh
 
     def _build_surface_elements_mesh(
         self,
@@ -1157,7 +1182,7 @@ class ModelView(QWidget):
             if not self._node_on_active_plane(nj.x, nj.y, nj.z):
                 continue
 
-            mesh = self._build_single_element_extrusion(section, ni, nj)
+            mesh = self._build_single_element_extrusion(section, elem, ni, nj)
             if mesh is None or mesh.n_cells == 0:
                 continue
             color = self._hex_to_uint8_rgb(self._section_color_for_tag(section.tag))
@@ -1208,7 +1233,7 @@ class ModelView(QWidget):
             if not self._node_on_active_plane(nj.x, nj.y, nj.z):
                 continue
 
-            mesh = self._build_extruded_section_guides(section, ni, nj)
+            mesh = self._build_extruded_section_guides(section, elem, ni, nj)
             if mesh is None or mesh.n_cells == 0:
                 continue
             guide_meshes.append(mesh)
@@ -1223,12 +1248,9 @@ class ModelView(QWidget):
         self._remember_extruded_cache(self._extruded_guides_cache, cache_key, merged)
         return merged
 
-    def _build_single_element_extrusion(self, section, node_i, node_j) -> pv.PolyData | None:
+    def _build_single_element_extrusion(self, section, element, node_i, node_j) -> pv.PolyData | None:
         """Build single element extrusion."""
-        frame = self._local_frame_from_points(
-            np.array([node_i.x, node_i.y, node_i.z], dtype=float),
-            np.array([node_j.x, node_j.y, node_j.z], dtype=float),
-        )
+        frame = self._local_frame_from_element(element, node_i, node_j)
         if frame is None:
             return None
         x_axis, y_axis, z_axis, length = frame
@@ -1237,16 +1259,30 @@ class ModelView(QWidget):
         if polygon is None or len(polygon) < 3:
             return None
 
-        local_points = np.column_stack(
-            [
-                np.zeros(len(polygon), dtype=float),
-                polygon[:, 0],
-                polygon[:, 1],
-            ]
+        inner_polygon = self._section_inner_polygon_points(
+            section.section_type,
+            section.properties,
         )
-        faces = np.hstack([[len(local_points)], np.arange(len(local_points), dtype=np.int32)])
-        profile = pv.PolyData(local_points, faces=faces)
-        extruded = profile.extrude((length, 0.0, 0.0), capping=True)
+        if inner_polygon is not None and len(inner_polygon) == len(polygon):
+            extruded = self._build_hollow_section_extrusion_mesh(
+                polygon,
+                inner_polygon,
+                length,
+            )
+        else:
+            local_points = np.column_stack(
+                [
+                    np.zeros(len(polygon), dtype=float),
+                    polygon[:, 0],
+                    polygon[:, 1],
+                ]
+            )
+            faces = np.hstack([[len(local_points)], np.arange(len(local_points), dtype=np.int32)])
+            profile = pv.PolyData(local_points, faces=faces)
+            extruded = profile.extrude((length, 0.0, 0.0), capping=True)
+
+        if extruded is None or extruded.n_cells == 0:
+            return None
 
         transform = np.eye(4)
         transform[:3, 0] = x_axis
@@ -1257,12 +1293,9 @@ class ModelView(QWidget):
         extruded.transform(transform, inplace=True)
         return extruded.clean()
 
-    def _build_extruded_section_guides(self, section, node_i, node_j) -> pv.PolyData | None:
+    def _build_extruded_section_guides(self, section, element, node_i, node_j) -> pv.PolyData | None:
         """Build extruded section guides."""
-        frame = self._local_frame_from_points(
-            np.array([node_i.x, node_i.y, node_i.z], dtype=float),
-            np.array([node_j.x, node_j.y, node_j.z], dtype=float),
-        )
+        frame = self._local_frame_from_element(element, node_i, node_j)
         if frame is None:
             return None
         x_axis, y_axis, z_axis, length = frame
@@ -1308,6 +1341,34 @@ class ModelView(QWidget):
         return guide_mesh.clean()
 
     @staticmethod
+    def _local_frame_from_element(
+        element,
+        node_i,
+        node_j,
+    ) -> tuple[np.ndarray, np.ndarray, np.ndarray, float] | None:
+        """Return the same local frame used by analysis backends."""
+        start = np.array([node_i.x, node_i.y, node_i.z], dtype=float)
+        end = np.array([node_j.x, node_j.y, node_j.z], dtype=float)
+        length = float(np.linalg.norm(end - start))
+        if length < 1e-12:
+            return None
+        try:
+            axes = local_axes_from_nodes(
+                tuple(start.tolist()),
+                tuple(end.tolist()),
+                reference_vector=getattr(element, "orientation_vector", None),
+                roll_angle_deg=float(getattr(element, "roll_angle_deg", 0.0) or 0.0),
+            )
+        except ValueError:
+            return None
+        return (
+            np.array(axes.x, dtype=float),
+            np.array(axes.y, dtype=float),
+            np.array(axes.z, dtype=float),
+            length,
+        )
+
+    @staticmethod
     def _local_frame_from_points(
         start: np.ndarray,
         end: np.ndarray,
@@ -1335,6 +1396,88 @@ class ModelView(QWidget):
         z_axis = np.cross(x_axis, y_axis)
         z_axis /= float(np.linalg.norm(z_axis))
         return x_axis, y_axis, z_axis, length
+
+    @staticmethod
+    def _build_hollow_section_extrusion_mesh(
+        outer: np.ndarray,
+        inner: np.ndarray,
+        length: float,
+    ) -> pv.PolyData | None:
+        """Build a local x-axis extrusion for a hollow section profile."""
+        outer = np.asarray(outer, dtype=float)
+        inner = np.asarray(inner, dtype=float)
+        if outer.ndim != 2 or inner.ndim != 2:
+            return None
+        if outer.shape != inner.shape or outer.shape[0] < 3 or outer.shape[1] != 2:
+            return None
+        if length <= 0.0:
+            return None
+
+        count = outer.shape[0]
+        outer_start = np.column_stack(
+            [np.zeros(count, dtype=float), outer[:, 0], outer[:, 1]]
+        )
+        outer_end = outer_start.copy()
+        outer_end[:, 0] = length
+        inner_start = np.column_stack(
+            [np.zeros(count, dtype=float), inner[:, 0], inner[:, 1]]
+        )
+        inner_end = inner_start.copy()
+        inner_end[:, 0] = length
+
+        points = np.vstack((outer_start, outer_end, inner_start, inner_end))
+        outer_start_idx = 0
+        outer_end_idx = count
+        inner_start_idx = count * 2
+        inner_end_idx = count * 3
+        faces: list[int] = []
+
+        for idx in range(count):
+            nxt = (idx + 1) % count
+            # Outer wall.
+            faces.extend(
+                [
+                    4,
+                    outer_start_idx + idx,
+                    outer_start_idx + nxt,
+                    outer_end_idx + nxt,
+                    outer_end_idx + idx,
+                ]
+            )
+            # Inner wall, reversed so normals point into the hollow void.
+            faces.extend(
+                [
+                    4,
+                    inner_start_idx + idx,
+                    inner_end_idx + idx,
+                    inner_end_idx + nxt,
+                    inner_start_idx + nxt,
+                ]
+            )
+            # Start and end annular caps.
+            faces.extend(
+                [
+                    4,
+                    outer_start_idx + idx,
+                    inner_start_idx + idx,
+                    inner_start_idx + nxt,
+                    outer_start_idx + nxt,
+                ]
+            )
+            faces.extend(
+                [
+                    4,
+                    outer_end_idx + idx,
+                    outer_end_idx + nxt,
+                    inner_end_idx + nxt,
+                    inner_end_idx + idx,
+                ]
+            )
+
+        return pv.PolyData(
+            points,
+            faces=np.array(faces, dtype=np.int32),
+        ).clean()
 
     @staticmethod
     def _section_polygon_points(
@@ -1395,20 +1538,122 @@ class ModelView(QWidget):
             h = profile.h
             tw = profile.tw
             tf = profile.tf
+            shape = getattr(profile, "shape", "i_section")
+
+            if shape == "i_section":
+                return np.array(
+                    [
+                        [-b / 2.0, h / 2.0],
+                        [b / 2.0, h / 2.0],
+                        [b / 2.0, h / 2.0 - tf],
+                        [tw / 2.0, h / 2.0 - tf],
+                        [tw / 2.0, -h / 2.0 + tf],
+                        [b / 2.0, -h / 2.0 + tf],
+                        [b / 2.0, -h / 2.0],
+                        [-b / 2.0, -h / 2.0],
+                        [-b / 2.0, -h / 2.0 + tf],
+                        [-tw / 2.0, -h / 2.0 + tf],
+                        [-tw / 2.0, h / 2.0 - tf],
+                        [-b / 2.0, h / 2.0 - tf],
+                    ],
+                    dtype=float,
+                )
+
+            if shape == "circular_hollow":
+                radius = profile.dimension("d", h) / 2.0
+                if radius <= 0.0:
+                    return None
+                angles = np.linspace(0.0, 2.0 * np.pi, 32, endpoint=False)
+                return np.column_stack((np.cos(angles) * radius, np.sin(angles) * radius))
+
+            if shape == "channel":
+                cy = profile.dimension("centroid_y", b / 2.0)
+                cz = profile.dimension("centroid_z", h / 2.0)
+                return np.array(
+                    [
+                        [-cy, h - cz],
+                        [b - cy, h - cz],
+                        [b - cy, h - tf - cz],
+                        [tw - cy, h - tf - cz],
+                        [tw - cy, tf - cz],
+                        [b - cy, tf - cz],
+                        [b - cy, -cz],
+                        [-cy, -cz],
+                    ],
+                    dtype=float,
+                )
+
+            if shape in {"rectangular_hollow", "angle_equal", "angle_unequal"}:
+                if shape.startswith("angle"):
+                    t = profile.dimension("t", min(tw, tf))
+                    if min(b, h, t) <= 0.0:
+                        return None
+                    cy = profile.dimension("centroid_y", b / 2.0)
+                    cz = profile.dimension("centroid_z", h / 2.0)
+                    return np.array(
+                        [
+                            [-cy, -cz],
+                            [b - cy, -cz],
+                            [b - cy, t - cz],
+                            [t - cy, t - cz],
+                            [t - cy, h - cz],
+                            [-cy, h - cz],
+                        ],
+                        dtype=float,
+                    )
+                return np.array(
+                    [
+                        [-b / 2.0, -h / 2.0],
+                        [b / 2.0, -h / 2.0],
+                        [b / 2.0, h / 2.0],
+                        [-b / 2.0, h / 2.0],
+                    ],
+                    dtype=float,
+                )
+
+            return None
+
+        return None
+
+    @staticmethod
+    def _section_inner_polygon_points(
+        section_type: str,
+        properties: dict,
+    ) -> np.ndarray | None:
+        """Return the inner loop for hollow catalogue profiles."""
+        if section_type != "I_profile":
+            return None
+
+        profile_name = str(properties.get("profile", "")).strip()
+        if not profile_name:
+            return None
+        try:
+            profile = get_profile(profile_name)
+        except KeyError:
+            return None
+
+        shape = getattr(profile, "shape", "i_section")
+        if shape == "circular_hollow":
+            diameter = profile.dimension("d", profile.h)
+            thickness = profile.dimension("t", profile.tw)
+            radius = max((diameter - 2.0 * thickness) / 2.0, 0.0)
+            if radius <= 0.0:
+                return None
+            angles = np.linspace(0.0, 2.0 * np.pi, 32, endpoint=False)
+            return np.column_stack((np.cos(angles) * radius, np.sin(angles) * radius))
+
+        if shape == "rectangular_hollow":
+            thickness = profile.dimension("t", profile.tw)
+            inner_b = profile.b - 2.0 * thickness
+            inner_h = profile.h - 2.0 * thickness
+            if inner_b <= 0.0 or inner_h <= 0.0:
+                return None
             return np.array(
                 [
-                    [-b / 2.0, h / 2.0],
-                    [b / 2.0, h / 2.0],
-                    [b / 2.0, h / 2.0 - tf],
-                    [tw / 2.0, h / 2.0 - tf],
-                    [tw / 2.0, -h / 2.0 + tf],
-                    [b / 2.0, -h / 2.0 + tf],
-                    [b / 2.0, -h / 2.0],
-                    [-b / 2.0, -h / 2.0],
-                    [-b / 2.0, -h / 2.0 + tf],
-                    [-tw / 2.0, -h / 2.0 + tf],
-                    [-tw / 2.0, h / 2.0 - tf],
-                    [-b / 2.0, h / 2.0 - tf],
+                    [-inner_b / 2.0, -inner_h / 2.0],
+                    [inner_b / 2.0, -inner_h / 2.0],
+                    [inner_b / 2.0, inner_h / 2.0],
+                    [-inner_b / 2.0, inner_h / 2.0],
                 ],
                 dtype=float,
             )
@@ -1430,6 +1675,8 @@ class ModelView(QWidget):
         try:
             profile = get_profile(profile_name)
         except KeyError:
+            return np.empty((0, 2), dtype=float)
+        if getattr(profile, "shape", "i_section") != "i_section":
             return np.empty((0, 2), dtype=float)
 
         half_web = profile.tw / 2.0
@@ -1462,6 +1709,8 @@ class ModelView(QWidget):
         try:
             profile = get_profile(profile_name)
         except KeyError:
+            return np.empty((0, 2), dtype=float)
+        if getattr(profile, "shape", "i_section") != "i_section":
             return np.empty((0, 2), dtype=float)
 
         half_web = profile.tw / 2.0
@@ -2415,6 +2664,9 @@ class ModelView(QWidget):
         self.plotter.remove_actor("highlight_surfaces_edges", render=False)
         self.plotter.remove_actor("highlight_node", render=False)
         self.plotter.remove_actor("highlight_elem", render=False)
+        self.plotter.remove_actor("selected_local_axis_x", render=False)
+        self.plotter.remove_actor("selected_local_axis_y", render=False)
+        self.plotter.remove_actor("selected_local_axis_z", render=False)
 
         if self._project is not None and self._selected_nodes:
             points = []
@@ -2501,6 +2753,19 @@ class ModelView(QWidget):
                         render=False,
                     )
 
+            if self.show_local_axes:
+                axis_meshes = self._build_selected_local_axes_meshes(self._selected_elements)
+                for axis_name, axis_mesh in axis_meshes.items():
+                    color_key = f"local_axis_{axis_name}"
+                    self.plotter.add_mesh(
+                        axis_mesh,
+                        color=_COLORS[color_key],
+                        line_width=4,
+                        name=f"selected_local_axis_{axis_name}",
+                        pickable=False,
+                        render=False,
+                    )
+
         if self._project is not None and self._selected_surfaces:
             selected_tags = set(self._selected_surfaces)
             mesh = self._build_surface_elements_mesh(
@@ -2525,6 +2790,60 @@ class ModelView(QWidget):
 
         if render:
             self.plotter.render()
+
+    def _build_selected_local_axes_meshes(
+        self,
+        element_tags: set[int],
+    ) -> dict[str, pv.PolyData]:
+        """Build local x/y/z axis overlays for selected elements."""
+        if self._project is None:
+            return {}
+
+        points_by_axis: dict[str, list[list[float]]] = {"x": [], "y": [], "z": []}
+        lines_by_axis: dict[str, list[int]] = {"x": [], "y": [], "z": []}
+
+        for tag in sorted(element_tags):
+            elem = self._project.elements.get(tag)
+            if elem is None:
+                continue
+            ni = self._project.nodes.get(elem.node_i)
+            nj = self._project.nodes.get(elem.node_j)
+            if ni is None or nj is None:
+                continue
+            if not self._node_on_active_plane(ni.x, ni.y, ni.z):
+                continue
+            if not self._node_on_active_plane(nj.x, nj.y, nj.z):
+                continue
+
+            frame = self._local_frame_from_element(elem, ni, nj)
+            if frame is None:
+                continue
+            x_axis, y_axis, z_axis, length = frame
+            center = (
+                np.array([ni.x, ni.y, ni.z], dtype=float)
+                + np.array([nj.x, nj.y, nj.z], dtype=float)
+            ) * 0.5
+            axis_length = max(float(length) * 0.18, 0.20)
+            for axis_name, axis_vector in (
+                ("x", x_axis),
+                ("y", y_axis),
+                ("z", z_axis),
+            ):
+                start_idx = len(points_by_axis[axis_name])
+                points_by_axis[axis_name].append(center.tolist())
+                points_by_axis[axis_name].append(
+                    (center + axis_vector * axis_length).tolist()
+                )
+                lines_by_axis[axis_name].extend([2, start_idx, start_idx + 1])
+
+        meshes: dict[str, pv.PolyData] = {}
+        for axis_name, points in points_by_axis.items():
+            if points and lines_by_axis[axis_name]:
+                meshes[axis_name] = pv.PolyData(
+                    np.array(points, dtype=float),
+                    lines=np.array(lines_by_axis[axis_name], dtype=np.int32),
+                )
+        return meshes
 
     def _select_in_rect(self, rect: QRect) -> None:
         """Handle select in rect."""

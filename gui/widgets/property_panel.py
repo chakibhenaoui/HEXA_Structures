@@ -82,6 +82,7 @@ class PropertyPanel(QScrollArea):
 
         self.setWidgetResizable(True)
         self.setMinimumWidth(220)
+        self.setHorizontalScrollBarPolicy(Qt.ScrollBarAlwaysOff)
 
         self._container = QWidget()
         self._layout = QVBoxLayout(self._container)
@@ -189,10 +190,13 @@ class PropertyPanel(QScrollArea):
 
         group = QGroupBox(self.tr("Élément E{tag}").format(tag=tag))
         form = QFormLayout(group)
+        form.setFieldGrowthPolicy(QFormLayout.FieldsStayAtSizeHint)
 
         # Nodes (editable through combobox)
         self._combo_node_i = QComboBox()
         self._combo_node_j = QComboBox()
+        self._combo_node_i.setMaximumWidth(170)
+        self._combo_node_j.setMaximumWidth(170)
         for ntag in sorted(self._project.nodes.keys()):
             label = f"N{ntag}"
             self._combo_node_i.addItem(label, ntag)
@@ -208,6 +212,7 @@ class PropertyPanel(QScrollArea):
 
         # Section (editable through combobox)
         self._combo_section = QComboBox()
+        self._combo_section.setMaximumWidth(170)
         for stag, sec in self._project.sections.items():
             if sec.is_surface:
                 continue
@@ -218,12 +223,34 @@ class PropertyPanel(QScrollArea):
 
         # Type (editable)
         self._combo_elem_type = QComboBox()
+        self._combo_elem_type.setMaximumWidth(170)
         elem_types = ["elasticBeamColumn", "forceBeamColumn", "truss", "corotTruss"]
         self._combo_elem_type.addItems(elem_types)
         idx_t = self._combo_elem_type.findText(elem.element_type)
         if idx_t >= 0:
             self._combo_elem_type.setCurrentIndex(idx_t)
         form.addRow(self.tr("Type :"), self._combo_elem_type)
+
+        self._spin_roll_angle = self._make_spin(
+            float(getattr(elem, "roll_angle_deg", 0.0) or 0.0),
+            -360.0,
+            360.0,
+        )
+        self._spin_roll_angle.setDecimals(1)
+        self._spin_roll_angle.setSingleStep(15.0)
+        self._spin_roll_angle.setMaximumWidth(120)
+        self._spin_roll_angle.setToolTip(
+            self.tr("Rotation de la section autour de l'axe local x.")
+        )
+        form.addRow(self.tr("Rotation x local :"), self._spin_roll_angle)
+
+        orientation_vector = getattr(elem, "orientation_vector", None)
+        orientation_text = (
+            "{:.3g} / {:.3g} / {:.3g}".format(*orientation_vector)
+            if orientation_vector is not None
+            else self.tr("Automatique")
+        )
+        form.addRow(self.tr("Orientation :"), QLabel(orientation_text))
 
         # Longueur (lecture seule)
         ni = self._project.nodes.get(elem.node_i)
@@ -675,6 +702,7 @@ class PropertyPanel(QScrollArea):
             return
         elem.section_tag = section_tag
         elem.element_type = self._combo_elem_type.currentText()
+        elem.roll_angle_deg = float(self._spin_roll_angle.value())
         self.element_modified.emit(self._current_tag)
         self.model_changed.emit()
 

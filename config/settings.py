@@ -83,6 +83,7 @@ class GuiPreferences:
     show_node_tags: bool = True       # node numbers (visible by default)
     show_section_names: bool = False   # section names on elements
     show_extruded_sections: bool = False  # 3D extruded section display
+    show_local_axes: bool = False  # selected bar local axis display
 
 
 @dataclass

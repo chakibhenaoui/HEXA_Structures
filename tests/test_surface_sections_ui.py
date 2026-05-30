@@ -57,6 +57,19 @@ def test_section_dialog_surface_result() -> None:
     assert "Section surfacique" in dlg._lbl_summary.text()
 
 
+def test_section_dialog_profile_families_come_from_catalog() -> None:
+    _app()
+    dlg = SectionDialog(section_type="I_profile")
+
+    families = [
+        dlg._combo_family.itemText(index)
+        for index in range(dlg._combo_family.count())
+    ]
+
+    assert families[:4] == ["IPE", "HEA", "HEB", "HEM"]
+    assert {"UPN", "UPE", "CHS", "SHS", "RHS", "L", "L unequal"}.issubset(families)
+
+
 def test_plate_section_dialog_result_includes_formulation() -> None:
     _app()
     project = _surface_project()

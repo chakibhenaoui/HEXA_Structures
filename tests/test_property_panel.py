@@ -4,6 +4,7 @@ import os
 
 os.environ.setdefault("QT_QPA_PLATFORM", "offscreen")
 
+from PySide6.QtCore import Qt
 from PySide6.QtWidgets import QApplication
 
 from core.model_data import ProjectModel
@@ -48,3 +49,30 @@ def test_property_panel_detaches_previous_form_immediately() -> None:
     assert panel._layout.count() == 2
     assert first_group is not second_group
     assert first_group.parent() is None
+
+
+def test_property_panel_updates_element_roll_angle() -> None:
+    _app()
+    project = _project_with_element()
+    panel = PropertyPanel()
+    panel.set_project(project)
+
+    panel.show_element(1)
+    panel._spin_roll_angle.setValue(45.0)
+    panel._apply_element()
+
+    assert project.elements[1].roll_angle_deg == 45.0
+    assert project.elements[1].section_tag == 1
+
+
+def test_property_panel_element_fields_stay_compact() -> None:
+    _app()
+    panel = PropertyPanel()
+    panel.set_project(_project_with_element())
+
+    panel.show_element(1)
+
+    assert panel.horizontalScrollBarPolicy() == Qt.ScrollBarAlwaysOff
+    assert panel._combo_elem_type.maximumWidth() <= 170
+    assert panel._combo_section.maximumWidth() <= 170
+    assert panel._spin_roll_angle.maximumWidth() <= 120

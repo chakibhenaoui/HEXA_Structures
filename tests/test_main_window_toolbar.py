@@ -9,7 +9,7 @@ os.environ.setdefault("QT_QPA_PLATFORM", "offscreen")
 
 from PySide6.QtCore import Qt
 from PySide6.QtGui import QAction
-from PySide6.QtWidgets import QApplication, QMainWindow, QMenu, QTabWidget, QWidget
+from PySide6.QtWidgets import QApplication, QDockWidget, QMainWindow, QMenu, QTabWidget, QWidget
 
 from config.settings import Settings
 from core.model_data import ProjectModel
@@ -89,6 +89,7 @@ def test_create_view_widget_exists_and_configures_model_view(monkeypatch) -> Non
             self.show_node_tags = None
             self.show_section_names = None
             self.show_extruded_sections = None
+            self.show_local_axes = None
 
     fake_module = types.ModuleType("gui.widgets.model_view")
     fake_module.ModelView = FakeModelView
@@ -100,6 +101,7 @@ def test_create_view_widget_exists_and_configures_model_view(monkeypatch) -> Non
     window.settings.gui.show_node_tags = False
     window.settings.gui.show_section_names = True
     window.settings.gui.show_extruded_sections = False
+    window.settings.gui.show_local_axes = True
     window.model_view = None
 
     widget = window._create_view_widget()
@@ -109,6 +111,7 @@ def test_create_view_widget_exists_and_configures_model_view(monkeypatch) -> Non
     assert widget.show_node_tags is False
     assert widget.show_section_names is True
     assert widget.show_extruded_sections is False
+    assert widget.show_local_axes is True
 
 
 def test_window_title_uses_file_stem_when_project_name_is_default(tmp_path) -> None:
@@ -123,6 +126,45 @@ def test_window_title_uses_file_stem_when_project_name_is_default(tmp_path) -> N
 
     assert "portique_test" in window.windowTitle()
     assert "Nouveau projet" not in window.windowTitle()
+
+
+def test_context_roll_action_applies_to_selected_elements() -> None:
+    _app()
+    project = ProjectModel()
+    project.add_node(0.0, 0.0, 0.0)
+    project.add_node(5.0, 0.0, 0.0)
+    project.add_node(10.0, 0.0, 0.0)
+    project.add_section("IPE 300", "I_profile", 1)
+    project.add_element(1, 2, section_tag=1)
+    project.add_element(2, 3, section_tag=1)
+
+    class DummyProperties:
+        def __init__(self) -> None:
+            self.cleared = False
+
+        def clear_display(self) -> None:
+            self.cleared = True
+
+        def show_element(self, _tag: int) -> None:
+            self.cleared = False
+
+    window = MainWindow.__new__(MainWindow)
+    QMainWindow.__init__(window)
+    window.project = project
+    window.properties = DummyProperties()
+    window._selected_node_tags = []
+    window._selected_element_tags = [1, 2]
+    window._selected_surface_tags = []
+    window._mark_project_modified = lambda: None
+    window._refresh = lambda preserve_view=False: None
+    window._log = lambda _message: None
+
+    window._set_selected_elements_roll_angle(90.0, context_tag=1)
+
+    assert project.elements[1].roll_angle_deg == 90.0
+    assert project.elements[2].roll_angle_deg == 90.0
+    assert project.sections[1].name == "IPE 300"
+    assert window.properties.cleared is True
 
 
 def test_window_title_keeps_custom_project_name_over_file_path(tmp_path) -> None:
@@ -227,6 +269,76 @@ def test_menu_bar_order_and_model_boundary_action() -> None:
     ]
     assert "cas de charge" in charges_action_titles
     assert "combinaisons" in charges_action_titles
+
+
+def test_view_menu_contains_local_axes_toggle() -> None:
+    _app()
+    window = MainWindow.__new__(MainWindow)
+    QMainWindow.__init__(window)
+    window.menu_view = QMenu("Vue", window)
+
+    for attr, text in {
+        "act_view_xy": "XY",
+        "act_view_xz": "XZ",
+        "act_view_yz": "YZ",
+        "act_view_iso": "Iso",
+        "act_show_node_tags": "Noeuds",
+        "act_show_section_names": "Sections",
+        "act_show_extruded_sections": "Sections 3D",
+        "act_show_local_axes": "Repere local",
+        "act_toggle_split_view": "Deux vues",
+    }.items():
+        action = QAction(text, window)
+        if attr.startswith("act_show"):
+            action.setCheckable(True)
+        setattr(window, attr, action)
+
+    window.dock_tree = QDockWidget("Arbre", window)
+    window.dock_properties = QDockWidget("Proprietes", window)
+    window.dock_bottom = QDockWidget("Infos", window)
+
+    window._setup_view_menu()
+
+    display_titles = [
+        _normalize_label(action.text())
+        for action in window.menu_view_display.actions()
+        if not action.isSeparator()
+    ]
+    assert "repere local" in display_titles
+    assert window.act_show_local_axes.isCheckable()
+
+
+def test_toggle_local_axes_updates_model_views() -> None:
+    _app()
+
+    class DummyView:
+        def __init__(self) -> None:
+            self.show_local_axes = False
+            self.selection_refreshes = 0
+
+        def _update_selection_actors(self, render: bool = True) -> None:
+            self.selection_refreshes += 1
+
+    window = MainWindow.__new__(MainWindow)
+    QMainWindow.__init__(window)
+    window.settings = Settings()
+    window.model_view = DummyView()
+    window.secondary_view = DummyView()
+    window.refresh_preserve_view = None
+    window._refresh = lambda preserve_view=False: setattr(
+        window,
+        "refresh_preserve_view",
+        preserve_view,
+    )
+
+    window._on_toggle_local_axes(True)
+
+    assert window.settings.gui.show_local_axes is True
+    assert window.model_view.show_local_axes is True
+    assert window.secondary_view.show_local_axes is True
+    assert window.model_view.selection_refreshes == 1
+    assert window.secondary_view.selection_refreshes == 1
+    assert window.refresh_preserve_view is True
 
 
 def test_remove_duplicate_bottom_tabs_keeps_single_combinations_tab() -> None:
