@@ -10,7 +10,11 @@ from PySide6.QtWidgets import QApplication, QDialogButtonBox, QMessageBox
 from core.model_data import ProjectModel
 from gui.dialogs.plate_section_dlg import PlateSectionDialog
 from gui.dialogs.plate_section_manager_dlg import PlateSectionManagerDialog
-from gui.dialogs.section_dlg import SectionDialog
+from gui.dialogs.section_dlg import (
+    SectionDialog,
+    _section_geometry_error_code,
+    _section_properties,
+)
 from gui.widgets.plane_editor_view import PlaneEditorView
 from gui.widgets.property_panel import PropertyPanel
 
@@ -68,6 +72,138 @@ def test_section_dialog_profile_families_come_from_catalog() -> None:
 
     assert families[:4] == ["IPE", "HEA", "HEB", "HEM"]
     assert {"UPN", "UPE", "CHS", "SHS", "RHS", "L", "L unequal"}.issubset(families)
+
+
+def test_section_dialog_auto_selects_material_from_section_type() -> None:
+    _app()
+    project = ProjectModel()
+    concrete = project.add_material("Beton C30", "concrete", "C30/37")
+    steel = project.add_material("Acier S355", "steel", "S355")
+
+    dlg = SectionDialog(materials=project.materials, section_type="I_profile")
+
+    assert dlg._combo_material.currentData() == steel.tag
+
+    idx_rectangular = dlg._combo_type.findData("rectangular")
+    dlg._combo_type.setCurrentIndex(idx_rectangular)
+
+    assert dlg._combo_material.currentData() == concrete.tag
+
+    idx_profile = dlg._combo_type.findData("I_profile")
+    dlg._combo_type.setCurrentIndex(idx_profile)
+
+    assert dlg._combo_material.currentData() == steel.tag
+
+
+def test_section_dialog_offers_parametric_steel_shapes() -> None:
+    _app()
+    dlg = SectionDialog()
+
+    section_types = {
+        dlg._combo_type.itemData(index)
+        for index in range(dlg._combo_type.count())
+    }
+
+    assert {
+        "I",
+        "channel",
+        "angle",
+        "pipe",
+        "tube",
+        "I_profile",
+    }.issubset(section_types)
+
+
+def test_section_dialog_parametric_shape_result_and_preview() -> None:
+    _app()
+    project = ProjectModel()
+    project.add_material("Beton C30", "concrete", "C30/37")
+    steel = project.add_material("Acier S355", "steel", "S355")
+
+    dlg = SectionDialog(materials=project.materials, section_type="angle")
+
+    data = dlg.result()
+
+    assert dlg._combo_material.currentData() == steel.tag
+    assert data["section_type"] == "angle"
+    assert data["area"] > 0.0
+    assert data["inertia_y"] > 0.0
+    assert data["inertia_z"] > 0.0
+    assert data["properties"]["t"] == pytest.approx(0.008)
+    assert len(dlg._preview._outer) == 6
+
+    idx_pipe = dlg._combo_type.findData("pipe")
+    dlg._combo_type.setCurrentIndex(idx_pipe)
+    assert len(dlg._preview._outer) == 64
+    assert len(dlg._preview._inner) == 64
+
+
+def test_section_dialog_catalog_profile_is_selected_not_parametric() -> None:
+    _app()
+    dlg = SectionDialog(section_type="I_profile")
+
+    assert "I_profile" not in dlg._shape_spins
+    assert dlg._stack.currentIndex() == dlg._page_by_type["I_profile"]
+    assert dlg._combo_profile.count() > 0
+    assert dlg._preview._outer
+
+
+def test_section_dialog_limits_pipe_thickness_to_valid_inner_diameter() -> None:
+    _app()
+    dlg = SectionDialog(section_type="pipe")
+    spins = dlg._shape_spins["pipe"]
+
+    spins["d"].setValue(0.050)
+    spins["t"].setValue(0.040)
+
+    assert spins["t"].maximum() == pytest.approx(0.024)
+    assert spins["t"].value() == pytest.approx(0.024)
+    assert _section_geometry_error_code("pipe", dlg._current_section_properties()) is None
+
+
+def test_section_dialog_limits_i_shape_to_valid_web_and_flanges() -> None:
+    _app()
+    dlg = SectionDialog(section_type="I")
+    spins = dlg._shape_spins["I"]
+
+    spins["b"].setValue(0.050)
+    spins["h"].setValue(0.080)
+    spins["tw"].setValue(0.080)
+    spins["tf"].setValue(0.060)
+
+    assert spins["tw"].maximum() == pytest.approx(0.049)
+    assert spins["tf"].maximum() == pytest.approx(0.039)
+    assert spins["tw"].value() == pytest.approx(0.049)
+    assert spins["tf"].value() == pytest.approx(0.039)
+    assert _section_geometry_error_code("I", dlg._current_section_properties()) is None
+
+
+def test_invalid_parametric_section_properties_return_zero_values() -> None:
+    area, iy, iz = _section_properties(
+        "tube",
+        {"h": 0.20, "b": 0.10, "t": 0.06},
+    )
+
+    assert (area, iy, iz) == (0.0, 0.0, 0.0)
+    assert _section_geometry_error_code(
+        "tube",
+        {"h": 0.20, "b": 0.10, "t": 0.06},
+    ) == "tube_too_thick"
+
+
+def test_section_dialog_keeps_explicit_initial_material() -> None:
+    _app()
+    project = ProjectModel()
+    concrete = project.add_material("Beton C30", "concrete", "C30/37")
+    project.add_material("Acier S355", "steel", "S355")
+
+    dlg = SectionDialog(
+        materials=project.materials,
+        section_type="I_profile",
+        material_tag=concrete.tag,
+    )
+
+    assert dlg._combo_material.currentData() == concrete.tag
 
 
 def test_plate_section_dialog_result_includes_formulation() -> None:

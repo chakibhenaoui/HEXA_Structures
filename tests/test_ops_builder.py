@@ -10,9 +10,13 @@ from core.materials import (
     DENSITIES,
 )
 from core.sections import (
+    PROFILE_CATALOG,
+    PROFILE_DATABASE_LOAD_ERROR,
+    PROFILE_DATABASE_PATH,
     RectangularSection,
     TSection,
     get_profile,
+    load_profile_database,
     list_profile_families,
     list_profiles,
 )
@@ -85,6 +89,34 @@ class TestTSection:
 
 
 class TestProfileCatalog:
+    def test_profile_database_loads_without_fallback(self):
+        assert PROFILE_DATABASE_PATH.exists()
+        assert PROFILE_DATABASE_LOAD_ERROR is None
+        data = load_profile_database()
+        assert data["schema_version"] == 1
+        assert len(data["families"]) >= 11
+
+    def test_profile_database_rows_are_unique_and_non_empty(self):
+        data = load_profile_database()
+        names: set[str] = set()
+        for family in data["families"]:
+            rows = family["rows"]
+            assert rows
+            columns = family["columns"]
+            if "name" not in columns:
+                continue
+            name_index = columns.index("name")
+            for row in rows:
+                name = row[name_index]
+                assert name not in names
+                names.add(name)
+
+    def test_catalog_is_populated_from_profile_database(self):
+        data = load_profile_database()
+        db_families = [family["code"] for family in data["families"]]
+        assert list_profile_families() == db_families
+        assert len(PROFILE_CATALOG) == sum(len(family["rows"]) for family in data["families"])
+
     def test_catalog_exposes_target_families(self):
         families = list_profile_families()
         assert families == [
@@ -119,7 +151,7 @@ class TestProfileCatalog:
 
     def test_list_all(self):
         names = list_profiles()
-        assert len(names) > 100
+        assert len(names) > 200
 
     def test_new_families_have_expected_examples(self):
         expected = {
@@ -131,9 +163,21 @@ class TestProfileCatalog:
             "RHS 200x100x6.3": "RHS",
             "L 100x10": "L",
             "L 100x75x8": "L unequal",
+            "CHS 406.4x16": "CHS",
+            "SHS 300x12.5": "SHS",
+            "RHS 400x200x12.5": "RHS",
+            "L 200x20": "L",
+            "L 200x150x15": "L unequal",
         }
         for name, family in expected.items():
             assert get_profile(name).family == family
+
+    def test_market_profile_ranges_are_covered(self):
+        assert len(list_profiles("CHS")) >= 40
+        assert len(list_profiles("SHS")) >= 30
+        assert len(list_profiles("RHS")) >= 20
+        assert len(list_profiles("L")) >= 20
+        assert len(list_profiles("L unequal")) >= 20
 
     def test_unknown_profile_raises(self):
         with pytest.raises(KeyError):

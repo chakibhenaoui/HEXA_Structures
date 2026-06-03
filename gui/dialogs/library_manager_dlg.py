@@ -293,7 +293,7 @@ class SectionManagerDialog(QDialog):
         self._materials = deepcopy(materials or {})
         self._element_section_tags = set(element_section_tags or set())
         self._allowed_types = tuple(
-            allowed_types or ("rectangular", "T", "I_profile", "surface")
+            allowed_types or (*SectionDialog.line_section_types(), "surface")
         )
 
         self._build_ui()

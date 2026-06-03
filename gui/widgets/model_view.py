@@ -1480,6 +1480,30 @@ class ModelView(QWidget):
         ).clean()
 
     @staticmethod
+    def _composite_rectangles(
+        rectangles: tuple[tuple[float, float, float, float, float], ...],
+    ) -> tuple[float, float, float, float, float]:
+        """Return area, centroid_y, centroid_z, Iy and Iz for signed rectangles."""
+        area = sum(sign * width * height for sign, _y, _z, width, height in rectangles)
+        if area <= 0.0:
+            return 0.0, 0.0, 0.0, 0.0, 0.0
+        cy = sum(
+            sign * width * height * y
+            for sign, y, _z, width, height in rectangles
+        ) / area
+        cz = sum(
+            sign * width * height * z
+            for sign, _y, z, width, height in rectangles
+        ) / area
+        iy = 0.0
+        iz = 0.0
+        for sign, y, z, width, height in rectangles:
+            signed_area = sign * width * height
+            iy += sign * width * height**3 / 12.0 + signed_area * (z - cz) ** 2
+            iz += sign * height * width**3 / 12.0 + signed_area * (y - cy) ** 2
+        return area, cy, cz, iy, iz
+
+    @staticmethod
     def _section_polygon_points(
         section_type: str,
         properties: dict,
@@ -1521,6 +1545,109 @@ class ModelView(QWidget):
                     [-bf / 2.0, z2],
                     [-bf / 2.0, z1],
                     [-bw / 2.0, z1],
+                ],
+                dtype=float,
+            )
+
+        if section_type == "I":
+            h = float(properties.get("h", 0.0))
+            b = float(properties.get("b", 0.0))
+            tw = float(properties.get("tw", 0.0))
+            tf = float(properties.get("tf", 0.0))
+            if min(h, b, tw, tf) <= 0.0 or h <= 2.0 * tf or b <= tw:
+                return None
+            return np.array(
+                [
+                    [-b / 2.0, h / 2.0],
+                    [b / 2.0, h / 2.0],
+                    [b / 2.0, h / 2.0 - tf],
+                    [tw / 2.0, h / 2.0 - tf],
+                    [tw / 2.0, -h / 2.0 + tf],
+                    [b / 2.0, -h / 2.0 + tf],
+                    [b / 2.0, -h / 2.0],
+                    [-b / 2.0, -h / 2.0],
+                    [-b / 2.0, -h / 2.0 + tf],
+                    [-tw / 2.0, -h / 2.0 + tf],
+                    [-tw / 2.0, h / 2.0 - tf],
+                    [-b / 2.0, h / 2.0 - tf],
+                ],
+                dtype=float,
+            )
+
+        if section_type == "channel":
+            h = float(properties.get("h", 0.0))
+            b = float(properties.get("b", 0.0))
+            tw = float(properties.get("tw", 0.0))
+            tf = float(properties.get("tf", 0.0))
+            if min(h, b, tw, tf) <= 0.0 or h <= 2.0 * tf or b <= tw:
+                return None
+            _area, cy, cz, _iy, _iz = ModelView._composite_rectangles(
+                (
+                    (1.0, tw / 2.0, h / 2.0, tw, h - 2.0 * tf),
+                    (1.0, b / 2.0, tf / 2.0, b, tf),
+                    (1.0, b / 2.0, h - tf / 2.0, b, tf),
+                )
+            )
+            return np.array(
+                [
+                    [-cy, h - cz],
+                    [b - cy, h - cz],
+                    [b - cy, h - tf - cz],
+                    [tw - cy, h - tf - cz],
+                    [tw - cy, tf - cz],
+                    [b - cy, tf - cz],
+                    [b - cy, -cz],
+                    [-cy, -cz],
+                ],
+                dtype=float,
+            )
+
+        if section_type == "angle":
+            h = float(properties.get("h", 0.0))
+            b = float(properties.get("b", 0.0))
+            t = float(properties.get("t", 0.0))
+            if min(h, b, t) <= 0.0 or h <= t or b <= t:
+                return None
+            _area, cy, cz, _iy, _iz = ModelView._composite_rectangles(
+                (
+                    (1.0, t / 2.0, h / 2.0, t, h),
+                    (1.0, b / 2.0, t / 2.0, b, t),
+                    (-1.0, t / 2.0, t / 2.0, t, t),
+                )
+            )
+            return np.array(
+                [
+                    [-cy, -cz],
+                    [b - cy, -cz],
+                    [b - cy, t - cz],
+                    [t - cy, t - cz],
+                    [t - cy, h - cz],
+                    [-cy, h - cz],
+                ],
+                dtype=float,
+            )
+
+        if section_type == "pipe":
+            d = float(properties.get("d", 0.0))
+            t = float(properties.get("t", 0.0))
+            if d <= 0.0 or t <= 0.0 or d <= 2.0 * t:
+                return None
+            radius = d / 2.0
+            angles = np.linspace(0.0, 2.0 * np.pi, 32, endpoint=False)
+            return np.column_stack((np.cos(angles) * radius, np.sin(angles) * radius))
+
+        if section_type == "tube":
+            h = float(properties.get("h", 0.0))
+            b = float(properties.get("b", 0.0))
+            t = float(properties.get("t", 0.0))
+            if min(h, b, t) <= 0.0 or h <= 2.0 * t or b <= 2.0 * t:
+                return None
+            return np.array(
+                [
+                    [-b / 2.0, -h / 2.0],
+                    [b / 2.0, -h / 2.0],
+                    [b / 2.0, h / 2.0],
+                    [-b / 2.0, h / 2.0],
                 ],
                 dtype=float,
             )
@@ -1621,6 +1748,33 @@ class ModelView(QWidget):
         properties: dict,
     ) -> np.ndarray | None:
         """Return the inner loop for hollow catalogue profiles."""
+        if section_type == "pipe":
+            d = float(properties.get("d", 0.0))
+            t = float(properties.get("t", 0.0))
+            if d <= 0.0 or t <= 0.0 or d <= 2.0 * t:
+                return None
+            radius = (d - 2.0 * t) / 2.0
+            angles = np.linspace(0.0, 2.0 * np.pi, 32, endpoint=False)
+            return np.column_stack((np.cos(angles) * radius, np.sin(angles) * radius))
+
+        if section_type == "tube":
+            h = float(properties.get("h", 0.0))
+            b = float(properties.get("b", 0.0))
+            t = float(properties.get("t", 0.0))
+            inner_b = b - 2.0 * t
+            inner_h = h - 2.0 * t
+            if inner_b <= 0.0 or inner_h <= 0.0:
+                return None
+            return np.array(
+                [
+                    [-inner_b / 2.0, -inner_h / 2.0],
+                    [inner_b / 2.0, -inner_h / 2.0],
+                    [inner_b / 2.0, inner_h / 2.0],
+                    [-inner_b / 2.0, inner_h / 2.0],
+                ],
+                dtype=float,
+            )
+
         if section_type != "I_profile":
             return None
 

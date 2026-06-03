@@ -119,6 +119,65 @@ def test_channel_and_angle_profiles_do_not_use_i_shape_polygon() -> None:
     assert angle.shape == (6, 2)
 
 
+@pytest.mark.parametrize(
+    ("section_type", "properties", "point_count"),
+    [
+        ("I", {"h": 0.30, "b": 0.15, "tw": 0.008, "tf": 0.012}, 12),
+        ("channel", {"h": 0.20, "b": 0.08, "tw": 0.008, "tf": 0.010}, 8),
+        ("angle", {"h": 0.10, "b": 0.075, "t": 0.008}, 6),
+        ("pipe", {"d": 0.114, "t": 0.005}, 32),
+        ("tube", {"h": 0.20, "b": 0.10, "t": 0.006}, 4),
+    ],
+)
+def test_parametric_steel_section_polygons_are_supported(
+    section_type: str,
+    properties: dict,
+    point_count: int,
+) -> None:
+    polygon = ModelView._section_polygon_points(section_type, properties)
+
+    assert polygon is not None
+    assert polygon.shape == (point_count, 2)
+
+
+@pytest.mark.parametrize(
+    ("section_type", "properties"),
+    [
+        ("pipe", {"d": 0.114, "t": 0.005}),
+        ("tube", {"h": 0.20, "b": 0.10, "t": 0.006}),
+    ],
+)
+def test_parametric_hollow_sections_have_inner_polygons(
+    section_type: str,
+    properties: dict,
+) -> None:
+    outer = ModelView._section_polygon_points(section_type, properties)
+    inner = ModelView._section_inner_polygon_points(section_type, properties)
+
+    assert outer is not None
+    assert inner is not None
+    assert inner.shape == outer.shape
+
+
+def test_representative_parametric_sections_build_extruded_meshes() -> None:
+    view = ModelView.__new__(ModelView)
+    element = SimpleNamespace(orientation_vector=None, roll_angle_deg=0.0)
+    node_i = SimpleNamespace(x=0.0, y=0.0, z=0.0)
+    node_j = SimpleNamespace(x=2.0, y=0.0, z=0.0)
+
+    for section_type, properties in (
+        ("I", {"h": 0.30, "b": 0.15, "tw": 0.008, "tf": 0.012}),
+        ("channel", {"h": 0.20, "b": 0.08, "tw": 0.008, "tf": 0.010}),
+        ("angle", {"h": 0.10, "b": 0.075, "t": 0.008}),
+        ("pipe", {"d": 0.114, "t": 0.005}),
+        ("tube", {"h": 0.20, "b": 0.10, "t": 0.006}),
+    ):
+        section = SimpleNamespace(section_type=section_type, properties=properties)
+        mesh = view._build_single_element_extrusion(section, element, node_i, node_j)
+        assert mesh is not None, section_type
+        assert mesh.n_cells > 0, section_type
+
+
 def test_representative_catalog_profiles_build_extruded_meshes() -> None:
     view = ModelView.__new__(ModelView)
     element = SimpleNamespace(orientation_vector=None, roll_angle_deg=0.0)

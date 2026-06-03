@@ -491,6 +491,11 @@ class PropertyPanel(QScrollArea):
         sec_types = [
             ("rectangular", self.tr("Rectangulaire")),
             ("T", self.tr("Section en T")),
+            ("I", self.tr("I / H parametrique")),
+            ("channel", self.tr("U / Channel parametrique")),
+            ("angle", self.tr("Corniere L parametrique")),
+            ("pipe", self.tr("Tube circulaire")),
+            ("tube", self.tr("Tube rectangulaire")),
             ("I_profile", self.tr("Profilé acier")),
         ]
         if sec.is_surface or self._plate_editing_enabled:

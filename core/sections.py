@@ -3,13 +3,22 @@
 from __future__ import annotations
 
 import math
+import json
 from dataclasses import dataclass, field
+from pathlib import Path
 from typing import Iterable
 
 from utils.units import CM2_TO_M2, CM4_TO_M4, MM_TO_M
 
 
 STEEL_DENSITY_KG_M3 = 7850.0
+PROFILE_DATABASE_PATH = (
+    Path(__file__).resolve().parent.parent
+    / "resources"
+    / "profiles"
+    / "european_profiles.json"
+)
+PROFILE_DATABASE_LOAD_ERROR: str | None = None
 
 
 # ═══════════════════════════════════════════════════════════════════════════
@@ -279,7 +288,16 @@ def _default_wpl(wel: float) -> float:
 
 
 def _family_info(family: str) -> ProfileFamilyInfo:
-    return PROFILE_FAMILY_INFO[family]
+    return PROFILE_FAMILY_INFO.get(
+        family,
+        ProfileFamilyInfo(
+            code=family,
+            label=family,
+            shape="custom",
+            standard="",
+            source="database",
+        ),
+    )
 
 
 def _profile(
@@ -638,51 +656,219 @@ _ANGLE_UNEQUAL_DIMENSIONS: list[tuple[float, float, float]] = [
 ]
 
 
-IPE_PROFILES = [_tabulated_profile(profile) for profile in IPE_PROFILES]
-HEA_PROFILES = [_tabulated_profile(profile) for profile in HEA_PROFILES]
-HEB_PROFILES = [_tabulated_profile(profile) for profile in HEB_PROFILES]
-HEM_PROFILES: list[SteelProfile] = [
-    _i_shape_profile("HEM", *row) for row in _HEM_DIMENSIONS
-]
-UPN_PROFILES: list[SteelProfile] = [
-    _channel_profile("UPN", *row) for row in _UPN_DIMENSIONS
-]
-UPE_PROFILES: list[SteelProfile] = [
-    _channel_profile("UPE", *row) for row in _UPE_DIMENSIONS
-]
-CHS_PROFILES: list[SteelProfile] = [_chs_profile(*row) for row in _CHS_DIMENSIONS]
-SHS_PROFILES: list[SteelProfile] = [
-    _rhs_profile("SHS", size, size, thickness)
-    for size, thickness in _SHS_DIMENSIONS
-]
-RHS_PROFILES: list[SteelProfile] = [
-    _rhs_profile("RHS", *row) for row in _RHS_DIMENSIONS
-]
-ANGLE_EQUAL_PROFILES: list[SteelProfile] = [
-    _angle_profile("L", size, size, thickness)
-    for size, thickness in _ANGLE_EQUAL_DIMENSIONS
-]
-ANGLE_UNEQUAL_PROFILES: list[SteelProfile] = [
-    _angle_profile("L unequal", *row) for row in _ANGLE_UNEQUAL_DIMENSIONS
-]
+def _fallback_profile_families() -> dict[str, tuple[SteelProfile, ...]]:
+    """Build the bundled in-code catalogue used if the JSON database is absent."""
+    ipe_profiles = [_tabulated_profile(profile) for profile in IPE_PROFILES]
+    hea_profiles = [_tabulated_profile(profile) for profile in HEA_PROFILES]
+    heb_profiles = [_tabulated_profile(profile) for profile in HEB_PROFILES]
+    hem_profiles = [_i_shape_profile("HEM", *row) for row in _HEM_DIMENSIONS]
+    upn_profiles = [_channel_profile("UPN", *row) for row in _UPN_DIMENSIONS]
+    upe_profiles = [_channel_profile("UPE", *row) for row in _UPE_DIMENSIONS]
+    chs_profiles = [_chs_profile(*row) for row in _CHS_DIMENSIONS]
+    shs_profiles = [
+        _rhs_profile("SHS", size, size, thickness)
+        for size, thickness in _SHS_DIMENSIONS
+    ]
+    rhs_profiles = [_rhs_profile("RHS", *row) for row in _RHS_DIMENSIONS]
+    angle_equal_profiles = [
+        _angle_profile("L", size, size, thickness)
+        for size, thickness in _ANGLE_EQUAL_DIMENSIONS
+    ]
+    angle_unequal_profiles = [
+        _angle_profile("L unequal", *row)
+        for row in _ANGLE_UNEQUAL_DIMENSIONS
+    ]
+    return {
+        "IPE": tuple(ipe_profiles),
+        "HEA": tuple(hea_profiles),
+        "HEB": tuple(heb_profiles),
+        "HEM": tuple(hem_profiles),
+        "UPN": tuple(upn_profiles),
+        "UPE": tuple(upe_profiles),
+        "CHS": tuple(chs_profiles),
+        "SHS": tuple(shs_profiles),
+        "RHS": tuple(rhs_profiles),
+        "L": tuple(angle_equal_profiles),
+        "L unequal": tuple(angle_unequal_profiles),
+    }
 
-PROFILE_FAMILIES: dict[str, tuple[SteelProfile, ...]] = {
-    "IPE": tuple(IPE_PROFILES),
-    "HEA": tuple(HEA_PROFILES),
-    "HEB": tuple(HEB_PROFILES),
-    "HEM": tuple(HEM_PROFILES),
-    "UPN": tuple(UPN_PROFILES),
-    "UPE": tuple(UPE_PROFILES),
-    "CHS": tuple(CHS_PROFILES),
-    "SHS": tuple(SHS_PROFILES),
-    "RHS": tuple(RHS_PROFILES),
-    "L": tuple(ANGLE_EQUAL_PROFILES),
-    "L unequal": tuple(ANGLE_UNEQUAL_PROFILES),
-}
+
+def load_profile_database(path: Path | None = None) -> dict:
+    """Load the steel profile JSON database."""
+    db_path = path or PROFILE_DATABASE_PATH
+    with db_path.open("r", encoding="utf-8") as file:
+        data = json.load(file)
+    if not isinstance(data, dict):
+        raise ValueError("Profile database root must be a JSON object.")
+    families = data.get("families")
+    if not isinstance(families, list) or not families:
+        raise ValueError("Profile database must define a non-empty families list.")
+    return data
+
+
+def _row_dict(columns: Iterable[str], row) -> dict:
+    if isinstance(row, dict):
+        return row
+    if not isinstance(row, list):
+        raise ValueError("Profile row must be an object or an array.")
+    column_list = list(columns)
+    if len(row) != len(column_list):
+        raise ValueError("Profile row length does not match family columns.")
+    return dict(zip(column_list, row, strict=True))
+
+
+def _database_rows(family_data: dict) -> list[dict]:
+    columns = family_data.get("columns", ())
+    rows = family_data.get("rows", ())
+    if not isinstance(rows, list):
+        raise ValueError("Profile family rows must be a list.")
+    return [_row_dict(columns, row) for row in rows]
+
+
+def _database_float(row: dict, key: str) -> float:
+    try:
+        return float(row[key])
+    except KeyError as exc:
+        raise ValueError(f"Missing profile database value: {key}") from exc
+
+
+def _database_int(row: dict, key: str) -> int:
+    return int(_database_float(row, key))
+
+
+def _tabulated_profile_from_database(family: str, family_data: dict, row: dict) -> SteelProfile:
+    source = str(family_data.get("source", _family_info(family).source))
+    standard = str(family_data.get("standard", _family_info(family).standard))
+    shape = str(family_data.get("shape", _family_info(family).shape))
+    return _profile(
+        name=str(row["name"]),
+        family=family,
+        h=_m(_database_float(row, "h_mm")),
+        b=_m(_database_float(row, "b_mm")),
+        tw=_m(_database_float(row, "tw_mm")),
+        tf=_m(_database_float(row, "tf_mm")),
+        area=_database_float(row, "area_cm2") * CM2_TO_M2,
+        inertia_y=_database_float(row, "inertia_y_cm4") * CM4_TO_M4,
+        inertia_z=_database_float(row, "inertia_z_cm4") * CM4_TO_M4,
+        wel_y=_database_float(row, "wel_y_cm3") * 1e-6,
+        wpl_y=_database_float(row, "wpl_y_cm3") * 1e-6,
+        mass=_database_float(row, "mass_kg_m"),
+        shape=shape,
+        standard=standard,
+        source=source,
+    )
+
+
+def _profile_from_database(family_data: dict, row: dict) -> SteelProfile:
+    family = str(family_data["code"])
+    method = str(family_data.get("method", "tabulated"))
+    if method == "tabulated":
+        return _tabulated_profile_from_database(family, family_data, row)
+    if method == "i_shape":
+        return _i_shape_profile(
+            family,
+            _database_int(row, "size"),
+            _database_float(row, "h_mm"),
+            _database_float(row, "b_mm"),
+            _database_float(row, "tw_mm"),
+            _database_float(row, "tf_mm"),
+        )
+    if method == "channel":
+        return _channel_profile(
+            family,
+            _database_int(row, "size"),
+            _database_float(row, "h_mm"),
+            _database_float(row, "b_mm"),
+            _database_float(row, "tw_mm"),
+            _database_float(row, "tf_mm"),
+        )
+    if method == "chs":
+        return _chs_profile(
+            _database_float(row, "d_mm"),
+            _database_float(row, "t_mm"),
+        )
+    if method == "shs":
+        size = _database_float(row, "size_mm")
+        return _rhs_profile("SHS", size, size, _database_float(row, "t_mm"))
+    if method == "rhs":
+        return _rhs_profile(
+            "RHS",
+            _database_float(row, "h_mm"),
+            _database_float(row, "b_mm"),
+            _database_float(row, "t_mm"),
+        )
+    if method == "angle_equal":
+        size = _database_float(row, "size_mm")
+        return _angle_profile("L", size, size, _database_float(row, "t_mm"))
+    if method == "angle_unequal":
+        return _angle_profile(
+            "L unequal",
+            _database_float(row, "h_mm"),
+            _database_float(row, "b_mm"),
+            _database_float(row, "t_mm"),
+        )
+    raise ValueError(f"Unsupported profile database method: {method}")
+
+
+def _profile_families_from_database(data: dict) -> dict[str, tuple[SteelProfile, ...]]:
+    family_profiles: dict[str, tuple[SteelProfile, ...]] = {}
+    seen_names: set[str] = set()
+    for family_data in data["families"]:
+        if not isinstance(family_data, dict):
+            raise ValueError("Profile family entry must be an object.")
+        family = str(family_data["code"])
+        profiles = tuple(
+            _profile_from_database(family_data, row)
+            for row in _database_rows(family_data)
+        )
+        if not profiles:
+            raise ValueError(f"Profile family {family} is empty.")
+        for profile in profiles:
+            if profile.name in seen_names:
+                raise ValueError(f"Duplicate profile name: {profile.name}")
+            seen_names.add(profile.name)
+        family_profiles[family] = profiles
+    return family_profiles
+
+
+def _load_profile_families() -> dict[str, tuple[SteelProfile, ...]]:
+    global PROFILE_DATABASE_LOAD_ERROR
+    try:
+        PROFILE_DATABASE_LOAD_ERROR = None
+        return _profile_families_from_database(load_profile_database())
+    except (OSError, ValueError, KeyError, TypeError, json.JSONDecodeError) as exc:
+        PROFILE_DATABASE_LOAD_ERROR = str(exc)
+        return _fallback_profile_families()
+
+
+PROFILE_FAMILIES: dict[str, tuple[SteelProfile, ...]] = _load_profile_families()
+
+IPE_PROFILES = list(PROFILE_FAMILIES.get("IPE", ()))
+HEA_PROFILES = list(PROFILE_FAMILIES.get("HEA", ()))
+HEB_PROFILES = list(PROFILE_FAMILIES.get("HEB", ()))
+HEM_PROFILES = list(PROFILE_FAMILIES.get("HEM", ()))
+UPN_PROFILES = list(PROFILE_FAMILIES.get("UPN", ()))
+UPE_PROFILES = list(PROFILE_FAMILIES.get("UPE", ()))
+CHS_PROFILES = list(PROFILE_FAMILIES.get("CHS", ()))
+SHS_PROFILES = list(PROFILE_FAMILIES.get("SHS", ()))
+RHS_PROFILES = list(PROFILE_FAMILIES.get("RHS", ()))
+ANGLE_EQUAL_PROFILES = list(PROFILE_FAMILIES.get("L", ()))
+ANGLE_UNEQUAL_PROFILES = list(PROFILE_FAMILIES.get("L unequal", ()))
+
+
+def _catalog_family_order() -> list[str]:
+    ordered = [family for family in PROFILE_FAMILY_ORDER if PROFILE_FAMILIES.get(family)]
+    ordered.extend(
+        family
+        for family in PROFILE_FAMILIES
+        if family not in ordered and PROFILE_FAMILIES.get(family)
+    )
+    return ordered
+
 
 PROFILE_CATALOG = {
     profile.name: profile
-    for family in PROFILE_FAMILY_ORDER
+    for family in _catalog_family_order()
     for profile in PROFILE_FAMILIES.get(family, ())
 }
 
@@ -701,9 +887,18 @@ def list_profiles(family: str | None = None) -> list[str]:
 
 def list_profile_families() -> list[str]:
     """List available steel profile family codes in GUI order."""
-    return [family for family in PROFILE_FAMILY_ORDER if PROFILE_FAMILIES.get(family)]
+    return _catalog_family_order()
 
 
 def get_profile_family_info(family: str) -> ProfileFamilyInfo:
     """Return metadata for a profile family."""
-    return PROFILE_FAMILY_INFO[family]
+    return PROFILE_FAMILY_INFO.get(
+        family,
+        ProfileFamilyInfo(
+            code=family,
+            label=family,
+            shape="custom",
+            standard="",
+            source="database",
+        ),
+    )

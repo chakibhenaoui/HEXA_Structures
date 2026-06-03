@@ -5144,7 +5144,7 @@ class MainWindow(QMainWindow):
         dlg = SectionDialog(
             self,
             materials=self.project.materials,
-            allowed_types=("rectangular", "T", "I_profile"),
+            allowed_types=SectionDialog.line_section_types(),
         )
         if dlg.exec() != SectionDialog.Accepted:
             return
@@ -5193,6 +5193,7 @@ class MainWindow(QMainWindow):
     def _manage_sections(self) -> None:
         """Open the section manager."""
         from gui.dialogs.library_manager_dlg import SectionManagerDialog
+        from gui.dialogs.section_dlg import SectionDialog
 
         dlg = SectionManagerDialog(
             self,
@@ -5203,7 +5204,7 @@ class MainWindow(QMainWindow):
             } | {
                 plate.section_tag for plate in self.project.plate_regions.values()
             },
-            allowed_types=("rectangular", "T", "I_profile"),
+            allowed_types=SectionDialog.line_section_types(),
         )
         if dlg.exec() != QDialog.Accepted:
             return
@@ -5305,7 +5306,7 @@ class MainWindow(QMainWindow):
                 section_type=sec.section_type,
                 material_tag=sec.material_tag,
                 properties=sec.properties,
-                allowed_types=("rectangular", "T", "I_profile"),
+                allowed_types=SectionDialog.line_section_types(),
             )
             if dlg.exec() != SectionDialog.Accepted:
                 return
