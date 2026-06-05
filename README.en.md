@@ -40,8 +40,8 @@ Current work mainly focuses on:
 
 - Basic structural modeling: nodes, beam elements, supports
 - Concrete (EC2) and steel (EC3) material libraries
-- Rectangular, T-shaped, and European steel profile sections
-- Built-in catalog of 46 European steel profiles (`IPE`, `HEA`, `HEB`)
+- Rectangular, T-shaped, I/H, channel, angle, and tube sections with live preview
+- Built-in catalog of more than 200 European steel profiles (`IPE`, `HEA`, `HEB`, `HEM`, `UPN`, `UPE`, `CHS`, `SHS`, `RHS`, angles)
 - PyVista 3D view with interactive selection and support symbols
 - Hierarchical model tree synchronized with the 3D view
 - Editable property panel for main model objects
@@ -186,7 +186,7 @@ The internal unit system uses **kN, m, kPa**. Conversions to and from other unit
 | NF EN 1990 (EC0) | Load combinations, psi coefficients | Constants |
 | NF EN 1991 (EC1) | Imposed loads, wind (French NA), snow (French NA) | Constants |
 | NF EN 1992 (EC2) | Concrete materials, C20 to C50 classes, B500 reinforcement | Materials |
-| NF EN 1993 (EC3) | Steel S235 to S460, IPE / HEA / HEB profiles | Materials + catalog |
+| NF EN 1993 (EC3) | Steel S235 to S460, IPE/HEA/HEB/HEM, UPN/UPE, CHS/SHS/RHS tubes and angles | Materials + catalog |
 | NF EN 1998 (EC8) | Response spectra, French seismic zoning, soil classes | Constants |
 
 ## Tests

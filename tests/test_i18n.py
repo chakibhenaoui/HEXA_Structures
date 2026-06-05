@@ -101,6 +101,20 @@ def test_english_catalog_translates_high_visibility_labels(tmp_path) -> None:
             QCoreApplication.translate("LoadCaseManagerDialog", "Cliquer pour :")
             == "Click to:"
         )
+        assert QCoreApplication.translate("SectionDialog", "Apercu") == "Preview"
+        assert (
+            QCoreApplication.translate("SectionDialog", "I / H parametrique")
+            == "Parametric I / H"
+        )
+        assert (
+            QCoreApplication.translate("SectionDialog", "Geometrie de section invalide")
+            == "Invalid section geometry"
+        )
+        assert (
+            QCoreApplication.translate("PropertyPanel", "Tube rectangulaire")
+            == "Rectangular tube"
+        )
+        assert QCoreApplication.translate("MainWindow", "Repère local") == "Local axes"
     finally:
         manager.reset_to_default_language(save=False)
 

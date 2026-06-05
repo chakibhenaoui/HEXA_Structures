@@ -1,5 +1,26 @@
 # Changelog
 
+## Non publie
+
+### Ajoute
+
+- Catalogue acier enrichi avec plus de 200 profiles europeens courants : IPE, HEA, HEB, HEM, UPN, UPE, CHS, SHS, RHS et cornieres.
+- Sections parametriques filaires dans la GUI : I/H, U, L, tube circulaire et tube rectangulaire.
+- Apercu dynamique de section dans la boite de definition des sections.
+- Extrusion 3D des nouvelles sections parametriques, avec tubes creux et couleur differente par section.
+
+### Modifie
+
+- Selection automatique du materiau coherent dans la boite de section : beton pour les sections rectangulaires, acier pour les profiles acier.
+- Limites geometriques pendant la saisie : epaisseurs et ames bridees pour conserver des formes valides.
+- Catalogues i18n francais et anglais regeneres pour les nouveaux libelles de sections, de repere local et de validation.
+
+### Validation
+
+- `pytest` : 546 tests passes.
+- `pyside6-lrelease i18n\hexa_en.ts -qm i18n\hexa_en.qm` : 1142 traductions terminees.
+- `pyside6-lrelease i18n\hexa_fr.ts -qm i18n\hexa_fr.qm` : 1142 traductions terminees.
+
 ## 0.1.0 - Build Windows i18n
 
 Date : 2026-05-29

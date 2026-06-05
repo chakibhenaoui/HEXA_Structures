@@ -40,8 +40,8 @@ Les travaux en cours portent surtout sur :
 
 - Modélisation de base du projet : nœuds, éléments poutres, appuis
 - Bibliothèque de matériaux béton (EC2) et acier (EC3)
-- Sections rectangulaires, en T et profilés acier européens
-- Catalogue embarqué de 46 profilés européens (`IPE`, `HEA`, `HEB`)
+- Sections rectangulaires, en T, I/H, U, L et tubes avec aperçu dynamique
+- Catalogue embarqué de plus de 200 profilés européens (`IPE`, `HEA`, `HEB`, `HEM`, `UPN`, `UPE`, `CHS`, `SHS`, `RHS`, cornières)
 - Vue 3D PyVista avec sélection interactive et symboles d'appui
 - Arbre hiérarchique du modèle synchronisé avec la vue
 - Panneau de propriétés éditable pour les principaux objets
@@ -199,7 +199,7 @@ Le système interne utilise **kN, m, kPa**. Les conversions depuis et vers d'aut
 | NF EN 1990 (EC0) | Combinaisons de charges, coefficients psi | Constantes |
 | NF EN 1991 (EC1) | Charges d'exploitation, vent (AN FR), neige (AN FR) | Constantes |
 | NF EN 1992 (EC2) | Matériaux béton, classes C20 à C50, armatures B500 | Matériaux |
-| NF EN 1993 (EC3) | Acier S235 à S460, profilés IPE / HEA / HEB | Matériaux + catalogue |
+| NF EN 1993 (EC3) | Acier S235 à S460, profils IPE/HEA/HEB/HEM, UPN/UPE, tubes CHS/SHS/RHS et cornières | Matériaux + catalogue |
 | NF EN 1998 (EC8) | Spectres de réponse, zonage France, classes de sol | Constantes |
 
 ## Tests
