@@ -1509,6 +1509,25 @@ class ModelView(QWidget):
         properties: dict,
     ) -> np.ndarray | None:
         """Handle section polygon points."""
+        if section_type == "sectionproperties":
+            display_type = str(properties.get("display_type", "") or "")
+            display_properties = properties.get("display_properties", {})
+            if isinstance(display_properties, dict):
+                return ModelView._section_polygon_points(display_type, display_properties)
+            return None
+
+        if section_type == "custom_polygon":
+            try:
+                points = [
+                    [float(point[0]), float(point[1])]
+                    for point in properties.get("points", [])
+                ]
+            except (TypeError, ValueError, IndexError):
+                return None
+            if len(points) < 3:
+                return None
+            return np.array(points, dtype=float)
+
         if section_type == "rectangular":
             b = float(properties.get("b", 0.0))
             h = float(properties.get("h", 0.0))
@@ -1523,6 +1542,14 @@ class ModelView(QWidget):
                 ],
                 dtype=float,
             )
+
+        if section_type == "circle":
+            d = float(properties.get("d", 0.0))
+            if d <= 0.0:
+                return None
+            radius = d / 2.0
+            angles = np.linspace(0.0, 2.0 * np.pi, 32, endpoint=False)
+            return np.column_stack((np.cos(angles) * radius, np.sin(angles) * radius))
 
         if section_type == "T":
             bw = float(properties.get("bw", 0.0))
@@ -1748,6 +1775,13 @@ class ModelView(QWidget):
         properties: dict,
     ) -> np.ndarray | None:
         """Return the inner loop for hollow catalogue profiles."""
+        if section_type == "sectionproperties":
+            display_type = str(properties.get("display_type", "") or "")
+            display_properties = properties.get("display_properties", {})
+            if isinstance(display_properties, dict):
+                return ModelView._section_inner_polygon_points(display_type, display_properties)
+            return None
+
         if section_type == "pipe":
             d = float(properties.get("d", 0.0))
             t = float(properties.get("t", 0.0))

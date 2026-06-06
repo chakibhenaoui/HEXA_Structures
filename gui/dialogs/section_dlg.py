@@ -241,10 +241,39 @@ def _section_outer_polygon(section_type: str, properties: dict) -> list[tuple[fl
     if _section_geometry_error_code(section_type, properties):
         return []
 
+    if section_type == "sectionproperties":
+        display_type = str(properties.get("display_type", "") or "")
+        display_properties = properties.get("display_properties", {})
+        if isinstance(display_properties, dict):
+            return _section_outer_polygon(display_type, display_properties)
+        return []
+
+    if section_type == "custom_polygon":
+        try:
+            return [
+                (float(point[0]), float(point[1]))
+                for point in properties.get("points", [])
+            ]
+        except (TypeError, ValueError, IndexError):
+            return []
+
     if section_type == "rectangular":
         b = float(properties.get("b", 0.0))
         h = float(properties.get("h", 0.0))
         return [(-b / 2, -h / 2), (b / 2, -h / 2), (b / 2, h / 2), (-b / 2, h / 2)]
+
+    if section_type == "circle":
+        d = float(properties.get("d", 0.0))
+        radius = d / 2.0
+        if radius <= 0.0:
+            return []
+        return [
+            (
+                math.cos(angle) * radius,
+                math.sin(angle) * radius,
+            )
+            for angle in (2.0 * math.pi * idx / 64 for idx in range(64))
+        ]
 
     if section_type == "T":
         bw = float(properties.get("bw", 0.0))
@@ -385,6 +414,13 @@ def _section_outer_polygon(section_type: str, properties: dict) -> list[tuple[fl
 def _section_inner_polygon(section_type: str, properties: dict) -> list[tuple[float, float]]:
     """Return the drawable inner void outline for hollow sections."""
     if _section_geometry_error_code(section_type, properties):
+        return []
+
+    if section_type == "sectionproperties":
+        display_type = str(properties.get("display_type", "") or "")
+        display_properties = properties.get("display_properties", {})
+        if isinstance(display_properties, dict):
+            return _section_inner_polygon(display_type, display_properties)
         return []
 
     if section_type == "pipe":

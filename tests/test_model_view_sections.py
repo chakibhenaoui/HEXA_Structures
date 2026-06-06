@@ -30,6 +30,32 @@ def test_rectangular_section_polygon_uses_real_dimensions() -> None:
     assert math.isclose(float(polygon[:, 1].max() - polygon[:, 1].min()), 0.50)
 
 
+def test_sectionproperties_section_polygon_delegates_to_display_type() -> None:
+    polygon = ModelView._section_polygon_points(
+        "sectionproperties",
+        {
+            "display_type": "I",
+            "display_properties": {"h": 0.30, "b": 0.15, "tw": 0.008, "tf": 0.012},
+        },
+    )
+
+    assert polygon is not None
+    assert polygon.shape == (12, 2)
+    assert math.isclose(float(polygon[:, 0].max() - polygon[:, 0].min()), 0.15)
+
+
+def test_custom_polygon_section_points_are_used_for_display() -> None:
+    polygon = ModelView._section_polygon_points(
+        "custom_polygon",
+        {"points": [(0.0, 0.0), (0.20, 0.0), (0.20, 0.30), (0.0, 0.30)]},
+    )
+
+    assert polygon is not None
+    assert polygon.shape == (4, 2)
+    assert math.isclose(float(polygon[:, 0].max() - polygon[:, 0].min()), 0.20)
+    assert math.isclose(float(polygon[:, 1].max() - polygon[:, 1].min()), 0.30)
+
+
 def test_t_section_polygon_uses_web_and_flange_dimensions() -> None:
     polygon = ModelView._section_polygon_points(
         "T",

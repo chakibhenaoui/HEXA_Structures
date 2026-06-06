@@ -66,6 +66,126 @@ l'utilisateur choisit un autre profile s'il veut une autre geometrie.
 Pour les sections parametriques, les proprietes `area`, `inertia_y`, `inertia_z` et
 `properties` sont recalculees a partir des dimensions saisies.
 
+## Section Builder HEXA
+
+Le menu `Modele > Section Builder...` ouvre une premiere version fonctionnelle de
+l'atelier de sections personnalisees.
+
+Cette version utilise uniquement PySide6 pour l'edition 2D :
+
+- `QGraphicsView` ;
+- `QGraphicsScene` ;
+- items graphiques de grille, de contour et de points ;
+- zoom molette ;
+- accrochage a la grille.
+
+La premiere version permet :
+
+- affichage du repere local y/z ;
+- affichage d'une grille ;
+- accrochage au pas de grille ;
+- dessin point par point du contour exterieur ;
+- edition des coordonnees dans un tableau ;
+- insertion et suppression de points ;
+- fermeture du contour par clic pres du premier point, clic droit ou bouton ;
+- refus des contours croises ou degeneres ;
+- analyse geometrique simple par formules polygonales ;
+- analyse optionnelle par `sectionproperties` si la bibliotheque est installee ;
+- generation et affichage du maillage triangule ;
+- affichage du centre de gravite apres analyse ;
+- insertion dans la bibliotheque des sections du projet.
+
+Le calcul fournit :
+
+- aire `area` ;
+- perimetre `perimeter` ;
+- inertie forte `inertia_y` ;
+- inertie faible `inertia_z` ;
+- centre de gravite local `centroid_y`, `centroid_z`.
+
+Une section issue de cette voie est sauvegardee comme :
+
+```text
+section_type = "custom_polygon"
+properties["source"] = "section_builder"
+properties["analysis_engine"] = "polygonal" | "sectionproperties"
+properties["points"] = [...]
+properties["perimeter"] = ...
+properties["centroid_y"] = ...
+properties["centroid_z"] = ...
+```
+
+Quand `sectionproperties` est disponible, le Section Builder utilise le contour ferme
+pour creer une geometrie `sectionproperties`, generer un maillage et recalculer les
+proprietes. Les informations avancees sont conservees sous :
+
+```text
+properties["sectionproperties"]["mesh_area"] = ...
+properties["sectionproperties"]["ixy"] = ...
+properties["sectionproperties"]["torsion_constant"] = ...
+properties["sectionproperties"]["mesh_node_count"] = ...
+properties["sectionproperties"]["mesh_triangle_count"] = ...
+```
+
+Si la bibliotheque n'est pas installee, ou si le maillage echoue, HEXA conserve le
+calcul polygonal simple afin que l'outil reste utilisable.
+
+La vue 3D reutilise directement les points du contour pour l'affichage/extrusion.
+Les solveurs continuent a lire les valeurs numeriques `area`, `inertia_y` et
+`inertia_z` sans connaitre PySide6.
+
+Limites volontaires de cette etape :
+
+- pas de trous ;
+- pas de sections composees ;
+- pas de contraintes internes ;
+- pas d'import DXF ;
+- pas de verification EC3 ;
+- `sectionproperties` reste optionnel et peut etre installe via `requirements-optional.txt`.
+
+L'objectif produit reste de construire ensuite un vrai atelier comparable aux outils de
+Robot ou SAP2000 : contours multiples, trous, import DXF, maillage visible et calculs
+avances.
+
+## Backend sectionproperties
+
+Le menu `Modele > Atelier sectionproperties...` ouvre l'atelier experimental branche
+sur la bibliotheque `sectionproperties` lorsqu'elle est disponible dans le venv.
+
+Installation optionnelle :
+
+```powershell
+pip install -r requirements-optional.txt
+```
+
+La couche `core.sectionproperties_adapter` reste independante de PySide6. Elle expose :
+
+- statut d'import et version installee ;
+- modules detectes ;
+- fonctions de la bibliotheque `sectionproperties.pre.library` ;
+- capacites branchees ou prevues.
+
+Capacites deja branchees dans HEXA :
+
+- bibliotheque de sections parametriques ;
+- generation du maillage ;
+- analyse geometrique ;
+- analyse de torsion / gauchissement pour recuperer `J` quand possible.
+
+Capacites preparees pour les prochaines etapes :
+
+- analyse `frame` ;
+- analyse plastique ;
+- analyse de contraintes ;
+- post-traitement ;
+- import DXF ;
+- contours multiples avec trous ;
+- sections composees et materiaux multiples.
+
+Le packaging PyInstaller inclut `sectionproperties` seulement si la bibliotheque est
+installee dans l'environnement de build. Une build sans `sectionproperties` doit donc
+continuer a demarrer normalement.
+
 ## Limites geometriques dans la GUI
 
 Le dialogue de section bride les dimensions dependantes afin de conserver une geometrie

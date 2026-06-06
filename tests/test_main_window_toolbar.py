@@ -254,6 +254,8 @@ def test_menu_bar_order_and_model_boundary_action() -> None:
         if not action.isSeparator()
     ]
     assert "conditions aux limites" in model_action_titles
+    assert any("section builder" in title for title in model_action_titles)
+    assert any("sectionproperties" in title for title in model_action_titles)
     assert any("surface" in title for title in model_action_titles)
     assert any("plaque" in title for title in model_action_titles)
     assert any(title.startswith("modifier la surface") for title in model_action_titles)

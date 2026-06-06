@@ -1,0 +1,2 @@
+# Optional advanced section workbench backend
+sectionproperties>=3.10,<4

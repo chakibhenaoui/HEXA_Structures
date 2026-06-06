@@ -497,6 +497,8 @@ class PropertyPanel(QScrollArea):
             ("pipe", self.tr("Tube circulaire")),
             ("tube", self.tr("Tube rectangulaire")),
             ("I_profile", self.tr("Profilé acier")),
+            ("custom_polygon", self.tr("Section personnalisée")),
+            ("sectionproperties", self.tr("Section utilisateur calculee")),
         ]
         if sec.is_surface or self._plate_editing_enabled:
             sec_types.append(("surface", self.tr("Section surfacique")))

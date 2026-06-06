@@ -8,6 +8,7 @@ import pytest
 from PySide6.QtWidgets import QApplication, QDialogButtonBox, QMessageBox
 
 from core.model_data import ProjectModel
+from core.sectionproperties_adapter import is_sectionproperties_available
 from gui.dialogs.plate_section_dlg import PlateSectionDialog
 from gui.dialogs.plate_section_manager_dlg import PlateSectionManagerDialog
 from gui.dialogs.section_dlg import (
@@ -15,6 +16,7 @@ from gui.dialogs.section_dlg import (
     _section_geometry_error_code,
     _section_properties,
 )
+from gui.dialogs.sectionproperties_dlg import SectionPropertiesDialog
 from gui.widgets.plane_editor_view import PlaneEditorView
 from gui.widgets.property_panel import PropertyPanel
 
@@ -204,6 +206,57 @@ def test_section_dialog_keeps_explicit_initial_material() -> None:
     )
 
     assert dlg._combo_material.currentData() == concrete.tag
+
+
+def test_sectionproperties_dialog_creates_user_section() -> None:
+    if not is_sectionproperties_available():
+        pytest.skip("sectionproperties is not installed")
+    _app()
+    project = ProjectModel()
+    concrete = project.add_material("Beton C30", "concrete", "C30/37")
+    project.add_material("Acier S355", "steel", "S355")
+
+    dlg = SectionPropertiesDialog(materials=project.materials)
+    idx_rect = dlg._combo_shape.findData("rectangular")
+    dlg._combo_shape.setCurrentIndex(idx_rect)
+
+    assert dlg._combo_material.currentData() == concrete.tag
+    assert dlg._calculate(show_errors=False) is True
+
+    data = dlg.result()
+
+    assert data["section_type"] == "sectionproperties"
+    assert data["area"] == pytest.approx(0.06)
+    assert data["inertia_y"] > 0.0
+    assert data["inertia_z"] > 0.0
+    assert data["properties"]["source"] == "sectionproperties"
+    assert data["properties"]["display_type"] == "rectangular"
+
+
+def test_sectionproperties_dialog_exposes_workbench_layout() -> None:
+    _app()
+    dlg = SectionPropertiesDialog()
+
+    tab_titles = [
+        dlg._tabs.tabText(index)
+        for index in range(dlg._tabs.count())
+    ]
+
+    assert tab_titles == [
+        "Bibliotheque",
+        "Geometrie",
+        "Coordonnees",
+        "Maillage",
+        "Resultats",
+    ]
+    assert dlg._canvas.minimumWidth() >= 560
+    assert {"select", "polygon", "rectangle", "circle", "hole", "mesh", "dxf"}.issubset(
+        dlg._tool_buttons
+    )
+    assert dlg._tool_buttons["dxf"].isEnabled() is False
+    assert dlg._capabilities_table.rowCount() >= 5
+    assert "sectionproperties" in dlg._backend_label.text()
+    assert dlg._points_table.rowCount() > 0
 
 
 def test_plate_section_dialog_result_includes_formulation() -> None:

@@ -442,19 +442,32 @@ class SectionManagerDialog(QDialog):
             return
         source = self._sections[tag]
 
-        dlg = SectionDialog(
-            self,
-            materials=self._materials,
-            name=f"{source.name} - Copie",
-            section_type=source.section_type,
-            material_tag=source.material_tag,
-            properties=source.properties,
-            allowed_types=self._allowed_types,
-        )
+        if source.section_type == "sectionproperties":
+            from gui.dialogs.sectionproperties_dlg import SectionPropertiesDialog
+
+            dlg = SectionPropertiesDialog(
+                self,
+                materials=self._materials,
+                name=f"{source.name} - Copie",
+                material_tag=source.material_tag,
+                properties=source.properties,
+            )
+        else:
+            dlg = SectionDialog(
+                self,
+                materials=self._materials,
+                name=f"{source.name} - Copie",
+                section_type=source.section_type,
+                material_tag=source.material_tag,
+                properties=source.properties,
+                allowed_types=self._allowed_types,
+            )
         if dlg.exec() != SectionDialog.Accepted:
             return
 
         data = dlg.result()
+        if not data:
+            return
         new_tag = self._next_tag()
         self._sections[new_tag] = SectionData(
             tag=new_tag,
@@ -475,19 +488,32 @@ class SectionManagerDialog(QDialog):
             return
 
         sec = self._sections[tag]
-        dlg = SectionDialog(
-            self,
-            materials=self._materials,
-            name=sec.name,
-            section_type=sec.section_type,
-            material_tag=sec.material_tag,
-            properties=sec.properties,
-            allowed_types=self._allowed_types,
-        )
+        if sec.section_type == "sectionproperties":
+            from gui.dialogs.sectionproperties_dlg import SectionPropertiesDialog
+
+            dlg = SectionPropertiesDialog(
+                self,
+                materials=self._materials,
+                name=sec.name,
+                material_tag=sec.material_tag,
+                properties=sec.properties,
+            )
+        else:
+            dlg = SectionDialog(
+                self,
+                materials=self._materials,
+                name=sec.name,
+                section_type=sec.section_type,
+                material_tag=sec.material_tag,
+                properties=sec.properties,
+                allowed_types=self._allowed_types,
+            )
         if dlg.exec() != SectionDialog.Accepted:
             return
 
         data = dlg.result()
+        if not data:
+            return
         sec.name = data["name"]
         sec.section_type = data["section_type"]
         sec.material_tag = data["material_tag"]

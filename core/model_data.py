@@ -112,7 +112,7 @@ class SectionData:
 
     tag: int
     name: str
-    section_type: str  # "rectangular" | "T" | "I_profile"
+    section_type: str  # "rectangular" | "T" | "I_profile" | "custom_polygon" | ...
     material_tag: int
     properties: dict = field(default_factory=dict)
     # Computed geometric properties (m, m2, m4)

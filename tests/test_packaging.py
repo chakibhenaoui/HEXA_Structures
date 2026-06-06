@@ -12,6 +12,16 @@ def test_pyinstaller_spec_includes_i18n_data_dir() -> None:
     assert '("i18n", "i18n")' in spec
     assert '("resources", "resources")' in spec
     assert '("gui/ui", "gui/ui")' in spec
+    assert "sectionproperties_hiddenimports" in spec
+    assert "sectionproperties_datas" in spec
+    assert "*sectionproperties_hiddenimports" in spec
+    assert "*sectionproperties_datas" in spec
+
+
+def test_optional_requirements_declares_sectionproperties() -> None:
+    optional = (ROOT / "requirements-optional.txt").read_text(encoding="utf-8")
+
+    assert "sectionproperties" in optional
 
 
 def test_installer_script_packages_build_tree_and_docs() -> None:

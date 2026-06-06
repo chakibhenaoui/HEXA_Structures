@@ -31,6 +31,13 @@ qtpy_datas = collect_data_files("qtpy")
 pyvistaqt_datas = collect_data_files("pyvistaqt")
 pyvistaqt_hiddenimports = collect_submodules("pyvistaqt")
 
+try:
+    sectionproperties_datas = collect_data_files("sectionproperties")
+    sectionproperties_hiddenimports = collect_submodules("sectionproperties")
+except Exception:
+    sectionproperties_datas = []
+    sectionproperties_hiddenimports = []
+
 
 def _qtpy_filter(name):
     return name in {
@@ -54,6 +61,7 @@ a = Analysis(
         *pyvista_datas,
         *qtpy_datas,
         *pyvistaqt_datas,
+        *sectionproperties_datas,
     ],
     hiddenimports=[
         "PySide6.QtCore",
@@ -88,6 +96,7 @@ a = Analysis(
         "utils.units",
         *qtpy_hiddenimports,
         *pyvistaqt_hiddenimports,
+        *sectionproperties_hiddenimports,
     ],
     hookspath=[],
     hooksconfig={},

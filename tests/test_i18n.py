@@ -111,6 +111,39 @@ def test_english_catalog_translates_high_visibility_labels(tmp_path) -> None:
             == "Invalid section geometry"
         )
         assert (
+            QCoreApplication.translate(
+                "SectionPropertiesDialog",
+                "Section calculee avec sectionproperties.",
+            )
+            == "Section calculated with sectionproperties."
+        )
+        assert (
+            QCoreApplication.translate("SectionPropertiesDialog", "Atelier de section")
+            == "Section workbench"
+        )
+        assert (
+            QCoreApplication.translate("MainWindow", "Atelier sectionproperties...")
+            == "sectionproperties workbench..."
+        )
+        assert (
+            QCoreApplication.translate("SectionBuilderDialog", "Section Builder HEXA")
+            == "HEXA Section Builder"
+        )
+        assert (
+            QCoreApplication.translate(
+                "SectionBuilderDialog",
+                "Calculer avec sectionproperties",
+            )
+            == "Calculate with sectionproperties"
+        )
+        assert (
+            QCoreApplication.translate(
+                "SectionBuilderDialog",
+                "Maillage : {nodes} noeuds, {triangles} triangles",
+            )
+            == "Mesh: {nodes} nodes, {triangles} triangles"
+        )
+        assert (
             QCoreApplication.translate("PropertyPanel", "Tube rectangulaire")
             == "Rectangular tube"
         )
