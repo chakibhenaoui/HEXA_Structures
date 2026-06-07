@@ -114,6 +114,86 @@ def test_section_builder_dialog_returns_custom_polygon_section() -> None:
     assert dlg._view._centroid == pytest.approx((0.10, 0.15))
 
 
+def test_section_builder_dialog_exposes_fused_sectionproperties_menu() -> None:
+    _app()
+    dlg = SectionBuilderDialog()
+
+    menu_titles = [action.text() for action in dlg._menu_bar.actions()]
+    assert menu_titles == ["Fichier", "sectionproperties"]
+
+    file_actions = [
+        action.text()
+        for action in dlg._menu_bar.actions()[0].menu().actions()
+        if not action.isSeparator()
+    ]
+    assert file_actions == [
+        "Nouveau",
+        "Ouvrir...",
+        "Importer forme",
+        "Enregistrer",
+        "Enregistrer sous...",
+        "Imprimer le rapport",
+        "Quitter",
+    ]
+
+    sectionproperties_actions = [
+        action.text()
+        for action in dlg._menu_bar.actions()[1].menu().actions()
+        if not action.isSeparator()
+    ]
+    assert sectionproperties_actions == [
+        "Inserer a partir de la bibliotheque",
+        "Calculer",
+        "Resultats",
+        "Afficher contrainte",
+    ]
+    assert dlg.act_sp_show_stress.isEnabled() is False
+
+
+def test_section_builder_dialog_inserts_sectionproperties_library_shape() -> None:
+    if not is_sectionproperties_available():
+        pytest.skip("sectionproperties is not installed")
+    _app()
+    project = ProjectModel()
+    concrete = project.add_material("Beton C30", "concrete", "C30/37")
+    project.add_material("Acier S355", "steel", "S355")
+    dlg = SectionBuilderDialog(materials=project.materials)
+
+    idx_rect = dlg._combo_shape.findData("rectangular")
+    dlg._combo_shape.setCurrentIndex(idx_rect)
+
+    assert dlg._insert_library_shape(show_errors=False) is True
+    assert dlg._combo_material.currentData() == concrete.tag
+    assert dlg._view.is_closed() is True
+    assert len(dlg._view.points()) == 4
+    assert dlg._analyze(show_errors=False) is True
+
+    data = dlg.result()
+    assert data["section_type"] == "sectionproperties"
+    assert data["properties"]["source"] == "sectionproperties"
+    assert data["properties"]["source_tool"] == "section_builder"
+    assert data["properties"]["shape"] == "rectangular"
+    assert data["area"] == pytest.approx(0.06)
+
+
+def test_section_builder_dialog_inserts_hollow_library_shape_with_hole() -> None:
+    if not is_sectionproperties_available():
+        pytest.skip("sectionproperties is not installed")
+    _app()
+    dlg = SectionBuilderDialog()
+    idx_chs = dlg._combo_shape.findData("chs")
+    dlg._combo_shape.setCurrentIndex(idx_chs)
+
+    assert dlg._insert_library_shape(show_errors=False) is True
+    assert len(dlg._view.holes()) == 1
+    assert dlg._analyze(show_errors=False) is True
+
+    data = dlg.result()
+    assert data["section_type"] == "sectionproperties"
+    assert data["properties"]["shape"] == "chs"
+    assert data["properties"]["hole_count"] == 1
+
+
 def test_section_builder_dialog_uses_sectionproperties_when_available() -> None:
     if not is_sectionproperties_available():
         pytest.skip("sectionproperties is not installed")

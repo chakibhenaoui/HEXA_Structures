@@ -81,6 +81,10 @@ Cette version utilise uniquement PySide6 pour l'edition 2D :
 
 La premiere version permet :
 
+- barre de menus interne `Fichier` avec nouveau, ouvrir, importer forme,
+  enregistrer, enregistrer sous, impression de rapport preparee et quitter ;
+- menu interne `sectionproperties` avec insertion depuis la bibliotheque,
+  calcul, resultats et affichage des contraintes prepare pour une etape future ;
 - affichage du repere local y/z ;
 - affichage d'une grille ;
 - accrochage au pas de grille ;
@@ -92,6 +96,8 @@ La premiere version permet :
 - refus des contours croises ou degeneres ;
 - analyse geometrique simple par formules polygonales ;
 - analyse optionnelle par `sectionproperties` si la bibliotheque est installee ;
+- insertion de formes parametriques depuis `sectionproperties.pre.library`
+  directement dans le canevas du Section Builder ;
 - generation et affichage du maillage triangule ;
 - affichage du centre de gravite apres analyse ;
 - insertion dans la bibliotheque des sections du projet.
@@ -116,6 +122,20 @@ properties["hole_count"] = ...
 properties["perimeter"] = ...
 properties["centroid_y"] = ...
 properties["centroid_z"] = ...
+```
+
+Une forme inseree depuis la bibliotheque `sectionproperties` reste creee depuis le
+Section Builder, mais elle est sauvegardee avec le type historique compatible :
+
+```text
+section_type = "sectionproperties"
+properties["source"] = "sectionproperties"
+properties["source_tool"] = "section_builder"
+properties["shape"] = "rectangular" | "i" | "channel" | "tee" | "angle" | "chs" | "rhs"
+properties["display_type"] = ...
+properties["dimensions"] = {...}
+properties["points"] = [...]
+properties["holes"] = [...]
 ```
 
 Quand `sectionproperties` est disponible, le Section Builder utilise le contour
@@ -154,8 +174,9 @@ avances.
 
 ## Backend sectionproperties
 
-Le menu `Modele > Atelier sectionproperties...` ouvre l'atelier experimental branche
-sur la bibliotheque `sectionproperties` lorsqu'elle est disponible dans le venv.
+Il n'y a plus d'atelier `sectionproperties` separe dans le menu principal. Les fonctions
+de cette bibliotheque sont exposees dans `Modele > Section Builder...`, via le menu
+interne `sectionproperties`.
 
 Installation optionnelle :
 
@@ -184,7 +205,7 @@ Capacites preparees pour les prochaines etapes :
 - analyse de contraintes ;
 - post-traitement ;
 - import DXF ;
-- contours multiples avec trous ;
+- contours multiples plus avances ;
 - sections composees et materiaux multiples.
 
 Le packaging PyInstaller inclut `sectionproperties` seulement si la bibliotheque est

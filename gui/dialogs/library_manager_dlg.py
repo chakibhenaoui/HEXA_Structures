@@ -443,9 +443,9 @@ class SectionManagerDialog(QDialog):
         source = self._sections[tag]
 
         if source.section_type == "sectionproperties":
-            from gui.dialogs.sectionproperties_dlg import SectionPropertiesDialog
+            from gui.dialogs.section_builder_dlg import SectionBuilderDialog
 
-            dlg = SectionPropertiesDialog(
+            dlg = SectionBuilderDialog(
                 self,
                 materials=self._materials,
                 name=f"{source.name} - Copie",
@@ -489,9 +489,9 @@ class SectionManagerDialog(QDialog):
 
         sec = self._sections[tag]
         if sec.section_type == "sectionproperties":
-            from gui.dialogs.sectionproperties_dlg import SectionPropertiesDialog
+            from gui.dialogs.section_builder_dlg import SectionBuilderDialog
 
-            dlg = SectionPropertiesDialog(
+            dlg = SectionBuilderDialog(
                 self,
                 materials=self._materials,
                 name=sec.name,

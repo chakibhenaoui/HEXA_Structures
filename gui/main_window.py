@@ -705,11 +705,6 @@ class MainWindow(QMainWindow):
             self,
         )
         self.act_add_section_builder.triggered.connect(self._add_section_builder)
-        self.act_add_sectionproperties = QAction(
-            self.tr("Atelier sectionproperties..."),
-            self,
-        )
-        self.act_add_sectionproperties.triggered.connect(self._add_sectionproperties_section)
         self.act_manage_sections = QAction(self.tr("Sections..."), self)
         self.act_manage_sections.triggered.connect(self._manage_sections)
         self.act_manage_plate_sections = QAction(self.tr("Sections plaque..."), self)
@@ -733,7 +728,6 @@ class MainWindow(QMainWindow):
             self.menu_model.addAction(self.act_add_material)
             self.menu_model.addAction(self.act_add_section)
             self.menu_model.addAction(self.act_add_section_builder)
-            self.menu_model.addAction(self.act_add_sectionproperties)
             self.menu_model.addAction(self.act_add_plate_section)
             self.menu_model.addAction(self.act_manage_materials)
             self.menu_model.addAction(self.act_manage_sections)
@@ -1515,10 +1509,6 @@ class MainWindow(QMainWindow):
             (
                 getattr(self, "act_add_section_builder", None),
                 self.tr("Section Builder..."),
-            ),
-            (
-                getattr(self, "act_add_sectionproperties", None),
-                self.tr("Atelier sectionproperties..."),
             ),
             (getattr(self, "act_manage_materials", None), self.tr("Matériaux...")),
             (getattr(self, "act_manage_sections", None), self.tr("Sections...")),
@@ -5222,7 +5212,7 @@ class MainWindow(QMainWindow):
 
     def _add_sectionproperties_section(self) -> None:
         """Add a user section calculated with sectionproperties."""
-        from gui.dialogs.sectionproperties_dlg import SectionPropertiesDialog
+        from gui.dialogs.section_builder_dlg import SectionBuilderDialog
 
         if not self.project.materials:
             QMessageBox.warning(
@@ -5232,8 +5222,8 @@ class MainWindow(QMainWindow):
             )
             return
 
-        dlg = SectionPropertiesDialog(self, materials=self.project.materials)
-        if dlg.exec() != SectionPropertiesDialog.Accepted:
+        dlg = SectionBuilderDialog(self, materials=self.project.materials)
+        if dlg.exec() != SectionBuilderDialog.Accepted:
             return
 
         data = dlg.result()

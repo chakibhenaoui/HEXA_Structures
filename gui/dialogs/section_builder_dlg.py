@@ -2,10 +2,13 @@
 
 from __future__ import annotations
 
+import json
 import math
+from pathlib import Path
 
 from PySide6.QtCore import QPointF, Qt, Signal
 from PySide6.QtGui import (
+    QAction,
     QBrush,
     QColor,
     QMouseEvent,
@@ -33,6 +36,9 @@ from PySide6.QtWidgets import (
     QHeaderView,
     QLabel,
     QLineEdit,
+    QFileDialog,
+    QMenu,
+    QMenuBar,
     QMessageBox,
     QPushButton,
     QSplitter,
@@ -55,8 +61,15 @@ from core.sectionproperties_adapter import (
     SectionPropertiesResult,
     SectionPropertiesUnavailable,
     calculate_polygon_sectionproperties_section,
-    is_sectionproperties_available,
+    calculate_sectionproperties_section,
+    default_dimensions,
+    display_properties_for_shape,
+    get_sectionproperty_shape,
+    list_sectionproperty_shapes,
+    sectionproperties_backend_info,
+    validate_sectionproperty_dimensions,
 )
+from gui.dialogs.section_dlg import _section_inner_polygon, _section_outer_polygon
 
 
 class SectionBuilderView(QGraphicsView):
@@ -200,12 +213,22 @@ class SectionBuilderView(QGraphicsView):
         """Enable or disable grid snapping."""
         self._snap_enabled = bool(enabled)
 
-    def set_points(self, points: list[Point2D], *, closed: bool = False) -> None:
-        """Set points programmatically, useful for tests and future imports."""
+    def set_geometry(
+        self,
+        points: list[Point2D],
+        *,
+        holes: list[list[Point2D]] | None = None,
+        closed: bool = False,
+    ) -> None:
+        """Set the full section geometry programmatically."""
         self._points = [(float(y), float(z)) for y, z in points]
         self._closed = bool(closed and len(self._points) >= 3)
-        self._holes.clear()
-        self._hole_closed.clear()
+        self._holes = [
+            [(float(y), float(z)) for y, z in hole]
+            for hole in (holes or [])
+            if len(hole) >= 3
+        ]
+        self._hole_closed = [bool(self._closed) for _hole in self._holes]
         self._active_contour = "outer"
         self._active_hole_index = None
         self._centroid = None
@@ -213,6 +236,10 @@ class SectionBuilderView(QGraphicsView):
         self._refresh_items()
         self.geometry_changed.emit()
         self.closed_changed.emit(self._closed)
+
+    def set_points(self, points: list[Point2D], *, closed: bool = False) -> None:
+        """Set points programmatically, useful for tests and future imports."""
+        self.set_geometry(points, closed=closed)
 
     def clear_section(self) -> None:
         """Clear the current contour."""
@@ -532,14 +559,22 @@ class SectionBuilderDialog(QDialog):
         materials: dict | None = None,
         name: str = "",
         material_tag: int | None = None,
+        properties: dict | None = None,
     ):
         super().__init__(parent)
         self._materials = materials or {}
+        self._init_properties = properties or {}
         self._properties: PolygonSectionProperties | None = None
         self._sectionproperties_result: SectionPropertiesResult | None = None
-        self._sectionproperties_available = is_sectionproperties_available()
+        self._backend_info = sectionproperties_backend_info()
+        self._sectionproperties_available = self._backend_info.available
         self._result: dict | None = None
         self._updating_points_table = False
+        self._current_file_path: Path | None = None
+        self._loading_library_shape = False
+        self._active_library_shape: str | None = None
+        self._active_library_dimensions: dict[str, float] | None = None
+        self._dimension_spins: dict[str, QDoubleSpinBox] = {}
 
         self.setWindowTitle(self.tr("Section Builder HEXA"))
         self.setMinimumSize(1120, 720)
@@ -548,6 +583,7 @@ class SectionBuilderDialog(QDialog):
         self._view = SectionBuilderView(self)
         self._edit_name = QLineEdit(name or self.tr("Section personnalisée"), self)
         self._combo_material = QComboBox(self)
+        self._menu_bar = QMenuBar(self)
         self._spin_grid = QDoubleSpinBox(self)
         self._spin_grid.setRange(0.001, 1.0)
         self._spin_grid.setDecimals(3)
@@ -560,6 +596,16 @@ class SectionBuilderDialog(QDialog):
         self._combo_contour = QComboBox(self)
         self._btn_add_hole = QPushButton(self.tr("Nouveau trou"), self)
         self._btn_delete_hole = QPushButton(self.tr("Supprimer trou"), self)
+        self._combo_shape = QComboBox(self)
+        self._library_params_group = QGroupBox(self.tr("Parametres du profile"), self)
+        self._library_params_layout = QFormLayout(self._library_params_group)
+        self._lbl_library_status = QLabel("", self)
+        self._lbl_library_status.setWordWrap(True)
+        self._btn_insert_shape = QPushButton(
+            self.tr("Inserer a partir de la bibliotheque"),
+            self,
+        )
+        self._btn_insert_shape.setEnabled(self._sectionproperties_available)
         self._chk_use_sectionproperties = QCheckBox(self.tr("Calculer avec sectionproperties"), self)
         self._chk_use_sectionproperties.setChecked(self._sectionproperties_available)
         self._chk_use_sectionproperties.setEnabled(self._sectionproperties_available)
@@ -599,9 +645,16 @@ class SectionBuilderDialog(QDialog):
             ok_button.setText(self.tr("Inserer la section"))
             ok_button.setEnabled(False)
 
+        self._create_actions()
         self._setup_ui()
+        self._populate_shapes()
         self._populate_materials(material_tag)
         self._connect_signals()
+        self._apply_initial_values()
+        self._on_shape_changed()
+        self._load_initial_geometry()
+        if material_tag is not None:
+            self._select_material_tag(material_tag)
         self._refresh_contour_combo()
         self._refresh_points()
         self._refresh_status()
@@ -618,8 +671,59 @@ class SectionBuilderDialog(QDialog):
             self._analyze(show_errors=False)
         return dict(self._result or {})
 
+    def _create_actions(self) -> None:
+        """Create Section Builder menu actions."""
+        self.act_new = QAction(self.tr("Nouveau"), self)
+        self.act_open = QAction(self.tr("Ouvrir..."), self)
+        self.act_import_shape = QAction(self.tr("Importer forme"), self)
+        self.act_save = QAction(self.tr("Enregistrer"), self)
+        self.act_save_as = QAction(self.tr("Enregistrer sous..."), self)
+        self.act_print_report = QAction(self.tr("Imprimer le rapport"), self)
+        self.act_print_report.setEnabled(False)
+        self.act_quit = QAction(self.tr("Quitter"), self)
+
+        self.act_sp_insert_library = QAction(
+            self.tr("Inserer a partir de la bibliotheque"),
+            self,
+        )
+        self.act_sp_insert_library.setEnabled(self._sectionproperties_available)
+        self.act_sp_calculate = QAction(self.tr("Calculer"), self)
+        self.act_sp_results = QAction(self.tr("Resultats"), self)
+        self.act_sp_show_stress = QAction(self.tr("Afficher contrainte"), self)
+        self.act_sp_show_stress.setEnabled(False)
+        self.act_sp_show_stress.setToolTip(
+            self.tr("L'affichage des contraintes sera branche dans une prochaine etape.")
+        )
+
+    def _setup_menu_bar(self) -> None:
+        """Build the Section Builder menu bar."""
+        self._menu_file = QMenu(self.tr("Fichier"), self._menu_bar)
+        self._menu_bar.addMenu(self._menu_file)
+        self._menu_file.addAction(self.act_new)
+        self._menu_file.addAction(self.act_open)
+        self._menu_file.addAction(self.act_import_shape)
+        self._menu_file.addSeparator()
+        self._menu_file.addAction(self.act_save)
+        self._menu_file.addAction(self.act_save_as)
+        self._menu_file.addAction(self.act_print_report)
+        self._menu_file.addSeparator()
+        self._menu_file.addAction(self.act_quit)
+
+        self._menu_sectionproperties = QMenu(
+            self.tr("sectionproperties"),
+            self._menu_bar,
+        )
+        self._menu_bar.addMenu(self._menu_sectionproperties)
+        self._menu_sectionproperties.addAction(self.act_sp_insert_library)
+        self._menu_sectionproperties.addSeparator()
+        self._menu_sectionproperties.addAction(self.act_sp_calculate)
+        self._menu_sectionproperties.addAction(self.act_sp_results)
+        self._menu_sectionproperties.addAction(self.act_sp_show_stress)
+
     def _setup_ui(self) -> None:
         main = QVBoxLayout(self)
+        main.setMenuBar(self._menu_bar)
+        self._setup_menu_bar()
         splitter = QSplitter(Qt.Horizontal, self)
         splitter.addWidget(self._build_canvas_panel())
         splitter.addWidget(self._build_side_panel())
@@ -653,6 +757,7 @@ class SectionBuilderDialog(QDialog):
         form.addRow(self.tr("Pas de grille :"), self._spin_grid)
         form.addRow("", self._chk_snap)
         layout.addWidget(info_group)
+        layout.addWidget(self._build_sectionproperties_library_group())
         points_group = QGroupBox(self.tr("Points du contour"), panel)
         points_layout = QVBoxLayout(points_group)
         contour_form = QFormLayout()
@@ -677,6 +782,17 @@ class SectionBuilderDialog(QDialog):
         layout.addWidget(results_group)
         return panel
 
+    def _build_sectionproperties_library_group(self) -> QWidget:
+        group = QGroupBox(self.tr("Bibliotheque sectionproperties"), self)
+        layout = QVBoxLayout(group)
+        form = QFormLayout()
+        form.addRow(self.tr("Forme :"), self._combo_shape)
+        layout.addLayout(form)
+        layout.addWidget(self._library_params_group)
+        layout.addWidget(self._btn_insert_shape)
+        layout.addWidget(self._lbl_library_status)
+        return group
+
     def _populate_materials(self, material_tag: int | None) -> None:
         for tag, mat in self._materials.items():
             self._combo_material.addItem(f"{mat.name} ({mat.grade})", tag)
@@ -688,11 +804,382 @@ class SectionBuilderDialog(QDialog):
             if index >= 0:
                 self._combo_material.setCurrentIndex(index)
 
+    def _populate_shapes(self) -> None:
+        """Populate sectionproperties library shape choices."""
+        self._combo_shape.clear()
+        for shape in list_sectionproperty_shapes():
+            self._combo_shape.addItem(self._shape_label(shape.key), shape.key)
+
+    def _apply_initial_values(self) -> None:
+        """Restore the sectionproperties shape selector from existing properties."""
+        shape_key = str(self._init_properties.get("shape", "") or "")
+        if not shape_key:
+            return
+        index = self._combo_shape.findData(shape_key)
+        if index >= 0:
+            self._combo_shape.setCurrentIndex(index)
+
+    def _load_initial_geometry(self) -> None:
+        """Load existing section geometry into the canvas when possible."""
+        if self._init_properties.get("source") == "sectionproperties":
+            self._insert_library_shape(show_errors=False, update_name=False)
+            return
+        points = self._init_properties.get("points")
+        if not isinstance(points, list):
+            return
+        holes = self._init_properties.get("holes")
+        normalized_holes = holes if isinstance(holes, list) else []
+        try:
+            self._view.set_geometry(points, holes=normalized_holes, closed=True)
+        except (TypeError, ValueError, IndexError):
+            self._view.clear_section()
+
+    def _shape_label(self, shape_key: str) -> str:
+        labels = {
+            "rectangular": self.tr("Rectangle"),
+            "circle": self.tr("Cercle plein"),
+            "i": self.tr("I / H"),
+            "channel": self.tr("U / Channel"),
+            "tee": self.tr("T"),
+            "angle": self.tr("Corniere L"),
+            "chs": self.tr("Tube circulaire CHS"),
+            "rhs": self.tr("Tube rectangulaire RHS/SHS"),
+        }
+        return labels.get(shape_key, shape_key)
+
+    def _field_label(self, shape_key: str, field: str) -> str:
+        if field == "d" and shape_key in {"circle", "chs"}:
+            return self.tr("Diametre d :")
+        labels = {
+            "d": self.tr("Hauteur d :"),
+            "b": self.tr("Largeur b :"),
+            "t": self.tr("Epaisseur t :"),
+            "t_f": self.tr("Epaisseur aile t_f :"),
+            "t_w": self.tr("Epaisseur ame t_w :"),
+            "r": self.tr("Rayon r :"),
+            "r_r": self.tr("Rayon interieur r_r :"),
+            "r_t": self.tr("Rayon exterieur r_t :"),
+            "r_out": self.tr("Rayon exterieur r_out :"),
+        }
+        return labels.get(field, f"{field} :")
+
+    def _make_dimension_spin(self, value: float) -> QDoubleSpinBox:
+        spin = QDoubleSpinBox(self)
+        spin.setMinimum(0.0)
+        spin.setMaximum(20.0)
+        spin.setDecimals(4)
+        spin.setSingleStep(0.001)
+        spin.setSuffix(" m")
+        spin.setValue(float(value))
+        spin.valueChanged.connect(self._on_library_dimension_changed)
+        return spin
+
+    def _clear_library_parameters(self) -> None:
+        while self._library_params_layout.count():
+            item = self._library_params_layout.takeAt(0)
+            widget = item.widget()
+            if widget is not None:
+                widget.deleteLater()
+        self._dimension_spins.clear()
+
+    def _on_shape_changed(self) -> None:
+        shape_key = str(self._combo_shape.currentData() or "rectangular")
+        shape = get_sectionproperty_shape(shape_key)
+        dimensions = self._initial_dimensions(shape_key)
+        self._clear_library_parameters()
+        for field in shape.fields:
+            spin = self._make_dimension_spin(dimensions[field])
+            self._library_params_layout.addRow(self._field_label(shape_key, field), spin)
+            self._dimension_spins[field] = spin
+        self._select_material_type(shape.default_material_type)
+        self._update_library_status()
+
+    def _initial_dimensions(self, shape_key: str) -> dict[str, float]:
+        dimensions = default_dimensions(shape_key)
+        saved = self._init_properties.get("dimensions")
+        if (
+            self._init_properties.get("source") == "sectionproperties"
+            and self._init_properties.get("shape") == shape_key
+            and isinstance(saved, dict)
+        ):
+            for key in dimensions:
+                if key in saved:
+                    dimensions[key] = float(saved[key])
+        return dimensions
+
+    def _current_dimensions(self) -> dict[str, float]:
+        return {key: spin.value() for key, spin in self._dimension_spins.items()}
+
+    def _on_library_dimension_changed(self) -> None:
+        self._active_library_shape = None
+        self._active_library_dimensions = None
+        self._invalidate_result()
+        self._update_library_status()
+
+    def _select_material_type(self, material_type: str) -> None:
+        for index in range(self._combo_material.count()):
+            tag = self._combo_material.itemData(index)
+            mat = self._materials.get(tag)
+            if mat is not None and getattr(mat, "material_type", "") == material_type:
+                self._combo_material.setCurrentIndex(index)
+                return
+
+    def _select_material_tag(self, material_tag: int) -> None:
+        index = self._combo_material.findData(material_tag)
+        if index >= 0:
+            self._combo_material.setCurrentIndex(index)
+
+    def _validation_message(self, code: str) -> str:
+        messages = {
+            "positive_dimensions": self.tr("Toutes les dimensions principales doivent etre positives."),
+            "positive_radii": self.tr("Les rayons doivent etre positifs ou nuls."),
+            "web_too_thick": self.tr("L'ame doit rester inferieure a la largeur."),
+            "flange_too_thick": self.tr("Les ailes doivent laisser une ame centrale."),
+            "angle_too_thick": self.tr("L'epaisseur de la corniere doit rester inferieure aux deux ailes."),
+            "toe_radius_too_large": self.tr("Le rayon exterieur ne doit pas depasser l'epaisseur."),
+            "hollow_too_thick": self.tr("Les dimensions interieures doivent rester positives."),
+        }
+        return messages.get(code, self.tr("Geometrie de section invalide."))
+
+    def _update_library_status(self) -> None:
+        if not self._sectionproperties_available:
+            self._lbl_library_status.setText(
+                self.tr("sectionproperties indisponible : bibliotheque non chargee.")
+            )
+            return
+        shape_key = str(self._combo_shape.currentData() or "rectangular")
+        error_code = validate_sectionproperty_dimensions(shape_key, self._current_dimensions())
+        if error_code is None:
+            count = len(self._backend_info.library_functions)
+            self._lbl_library_status.setText(
+                self.tr("Bibliotheque sectionproperties prete ({count} fonctions detectees).").format(
+                    count=count,
+                )
+            )
+        else:
+            self._lbl_library_status.setText(self._validation_message(error_code))
+
+    def _insert_library_shape(
+        self,
+        *,
+        show_errors: bool,
+        update_name: bool = True,
+    ) -> bool:
+        """Insert a sectionproperties library shape into the editable canvas."""
+        if not self._sectionproperties_available:
+            if show_errors:
+                QMessageBox.warning(
+                    self,
+                    self.tr("sectionproperties indisponible"),
+                    self.tr("Installez sectionproperties pour charger sa bibliotheque."),
+                )
+            return False
+
+        shape_key = str(self._combo_shape.currentData() or "rectangular")
+        dimensions = self._current_dimensions()
+        error_code = validate_sectionproperty_dimensions(shape_key, dimensions)
+        if error_code is not None:
+            if show_errors:
+                QMessageBox.warning(
+                    self,
+                    self.tr("Geometrie de section invalide"),
+                    self._validation_message(error_code),
+                )
+            return False
+
+        shape = get_sectionproperty_shape(shape_key)
+        display_properties = display_properties_for_shape(shape_key, dimensions)
+        outer = _section_outer_polygon(shape.display_type, display_properties)
+        inner = _section_inner_polygon(shape.display_type, display_properties)
+        if not outer:
+            if show_errors:
+                QMessageBox.warning(
+                    self,
+                    self.tr("Import impossible"),
+                    self.tr("La forme selectionnee ne peut pas etre convertie en contour."),
+                )
+            return False
+
+        self._loading_library_shape = True
+        try:
+            self._view.set_geometry(outer, holes=[inner] if inner else [], closed=True)
+        finally:
+            self._loading_library_shape = False
+        self._active_library_shape = shape_key
+        self._active_library_dimensions = dict(dimensions)
+        self._chk_use_sectionproperties.setChecked(True)
+        self._select_material_type(shape.default_material_type)
+        if update_name and self._edit_name.text().strip() in {
+            "",
+            self.tr("Section personnalisÃ©e"),
+        }:
+            self._edit_name.setText(self._shape_label(shape_key))
+        self._invalidate_result()
+        self._refresh_contour_combo()
+        self._refresh_points()
+        self._refresh_status()
+        self._lbl_status.setText(
+            self.tr("Forme {shape} inseree depuis la bibliotheque sectionproperties.").format(
+                shape=self._shape_label(shape_key),
+            )
+        )
+        return True
+
+    def _builder_state(self) -> dict:
+        """Return serializable Section Builder state."""
+        return {
+            "version": 1,
+            "name": self._edit_name.text().strip(),
+            "material_tag": self._combo_material.currentData() or 0,
+            "points": self._view.points(),
+            "holes": self._view.holes(),
+            "closed": self._view.is_closed(),
+            "grid_step": self._spin_grid.value(),
+            "snap": self._chk_snap.isChecked(),
+            "mesh_area": self._spin_mesh_area.value(),
+            "use_sectionproperties": self._chk_use_sectionproperties.isChecked(),
+            "library_shape": self._active_library_shape,
+            "library_dimensions": self._active_library_dimensions,
+        }
+
+    def _load_builder_state(self, state: dict) -> None:
+        """Load a serialized Section Builder state."""
+        self._edit_name.setText(str(state.get("name", "") or self.tr("Section personnalisÃ©e")))
+        material_tag = state.get("material_tag")
+        if isinstance(material_tag, int):
+            self._select_material_tag(material_tag)
+        self._spin_grid.setValue(float(state.get("grid_step", self._spin_grid.value())))
+        self._chk_snap.setChecked(bool(state.get("snap", True)))
+        self._spin_mesh_area.setValue(float(state.get("mesh_area", self._spin_mesh_area.value())))
+        if self._sectionproperties_available:
+            self._chk_use_sectionproperties.setChecked(
+                bool(state.get("use_sectionproperties", True))
+            )
+
+        library_shape = state.get("library_shape")
+        library_dimensions = state.get("library_dimensions")
+        if isinstance(library_shape, str):
+            index = self._combo_shape.findData(library_shape)
+            if index >= 0:
+                self._combo_shape.setCurrentIndex(index)
+                if isinstance(library_dimensions, dict):
+                    for key, value in library_dimensions.items():
+                        spin = self._dimension_spins.get(str(key))
+                        if spin is not None:
+                            spin.setValue(float(value))
+                self._insert_library_shape(show_errors=False, update_name=False)
+                return
+
+        points = state.get("points", [])
+        holes = state.get("holes", [])
+        if isinstance(points, list):
+            self._view.set_geometry(
+                points,
+                holes=holes if isinstance(holes, list) else [],
+                closed=bool(state.get("closed", False)),
+            )
+        self._active_library_shape = None
+        self._active_library_dimensions = None
+        self._invalidate_result()
+        self._refresh_contour_combo()
+        self._refresh_points()
+        self._refresh_status()
+
+    def _new_builder_file(self) -> None:
+        """Reset the current Section Builder document."""
+        self._current_file_path = None
+        self._active_library_shape = None
+        self._active_library_dimensions = None
+        self._edit_name.setText(self.tr("Section personnalisÃ©e"))
+        self._view.clear_section()
+        self._invalidate_result()
+
+    def _open_builder_file(self) -> None:
+        """Open a saved Section Builder document."""
+        file_name, _filter = QFileDialog.getOpenFileName(
+            self,
+            self.tr("Ouvrir une section"),
+            "",
+            self.tr("Section Builder (*.hexa-section-builder.json *.json)"),
+        )
+        if not file_name:
+            return
+        try:
+            state = json.loads(Path(file_name).read_text(encoding="utf-8"))
+            if not isinstance(state, dict):
+                raise ValueError("invalid_state")
+            self._load_builder_state(state)
+        except (OSError, ValueError, json.JSONDecodeError) as exc:
+            QMessageBox.warning(
+                self,
+                self.tr("Ouverture impossible"),
+                self.tr("Le fichier ne peut pas etre lu.\n{error}").format(error=str(exc)),
+            )
+            return
+        self._current_file_path = Path(file_name)
+
+    def _save_builder_file(self) -> None:
+        """Save the current Section Builder document."""
+        if self._current_file_path is None:
+            self._save_builder_file_as()
+            return
+        self._write_builder_state(self._current_file_path)
+
+    def _save_builder_file_as(self) -> None:
+        """Save the current Section Builder document under a new path."""
+        file_name, _filter = QFileDialog.getSaveFileName(
+            self,
+            self.tr("Enregistrer la section"),
+            "",
+            self.tr("Section Builder (*.hexa-section-builder.json)"),
+        )
+        if not file_name:
+            return
+        path = Path(file_name)
+        if path.suffix.lower() != ".json":
+            path = path.with_suffix(".hexa-section-builder.json")
+        self._write_builder_state(path)
+        self._current_file_path = path
+
+    def _write_builder_state(self, path: Path) -> None:
+        try:
+            path.write_text(
+                json.dumps(self._builder_state(), indent=2),
+                encoding="utf-8",
+            )
+        except OSError as exc:
+            QMessageBox.warning(
+                self,
+                self.tr("Enregistrement impossible"),
+                self.tr("Le fichier ne peut pas etre ecrit.\n{error}").format(error=str(exc)),
+            )
+
+    def _show_results_summary(self) -> None:
+        """Show current analysis results."""
+        if self._result is None and not self._analyze(show_errors=True):
+            return
+        QMessageBox.information(
+            self,
+            self.tr("Resultats"),
+            self._lbl_results.text() or self.tr("Aucun resultat disponible."),
+        )
+
     def _connect_signals(self) -> None:
+        self.act_new.triggered.connect(self._new_builder_file)
+        self.act_open.triggered.connect(self._open_builder_file)
+        self.act_import_shape.triggered.connect(lambda: self._insert_library_shape(show_errors=True))
+        self.act_save.triggered.connect(self._save_builder_file)
+        self.act_save_as.triggered.connect(self._save_builder_file_as)
+        self.act_quit.triggered.connect(self.reject)
+        self.act_sp_insert_library.triggered.connect(lambda: self._insert_library_shape(show_errors=True))
+        self.act_sp_calculate.triggered.connect(lambda: self._analyze(show_errors=True))
+        self.act_sp_results.triggered.connect(self._show_results_summary)
         self._view.geometry_changed.connect(self._on_geometry_changed)
         self._view.closed_changed.connect(lambda _closed: self._refresh_status())
         self._spin_grid.valueChanged.connect(self._view.set_grid_step)
         self._chk_snap.toggled.connect(self._on_snap_toggled)
+        self._combo_shape.currentIndexChanged.connect(self._on_shape_changed)
+        self._btn_insert_shape.clicked.connect(lambda: self._insert_library_shape(show_errors=True))
         self._chk_use_sectionproperties.toggled.connect(lambda _checked: self._invalidate_result())
         self._spin_mesh_area.valueChanged.connect(lambda _value: self._invalidate_result())
         self._chk_show_mesh.toggled.connect(self._on_mesh_visible_toggled)
@@ -710,6 +1197,9 @@ class SectionBuilderDialog(QDialog):
         self._button_box.rejected.connect(self.reject)
 
     def _on_geometry_changed(self) -> None:
+        if not self._loading_library_shape:
+            self._active_library_shape = None
+            self._active_library_dimensions = None
         self._invalidate_result()
         self._refresh_contour_combo()
         self._refresh_points()
@@ -931,6 +1421,26 @@ class SectionBuilderDialog(QDialog):
                 QMessageBox.warning(self, self.tr("Analyse impossible"), str(exc))
             return False
 
+        if self._active_library_shape is not None:
+            sp_result = self._calculate_library_sectionproperties(show_errors=show_errors)
+            if sp_result is None:
+                return False
+            self._properties = props
+            self._sectionproperties_result = sp_result
+            self._result = self._build_sectionproperties_library_result(sp_result)
+            centroid = (
+                float(sp_result.properties.get("centroid_local_y", 0.0)),
+                float(sp_result.properties.get("centroid_local_z", 0.0)),
+            )
+            self._view.set_centroid(centroid)
+            mesh = sp_result.mesh if self._chk_show_mesh.isChecked() else None
+            self._view.set_mesh(mesh)
+            self._lbl_results.setText(self._analysis_summary(props, sp_result))
+            ok_button = self._button_box.button(QDialogButtonBox.Ok)
+            if ok_button is not None:
+                ok_button.setEnabled(True)
+            return True
+
         sp_result = self._calculate_with_sectionproperties(show_errors=show_errors)
         if self._view.holes() and sp_result is None:
             if show_errors:
@@ -955,6 +1465,50 @@ class SectionBuilderDialog(QDialog):
         if ok_button is not None:
             ok_button.setEnabled(True)
         return True
+
+    def _calculate_library_sectionproperties(
+        self,
+        *,
+        show_errors: bool,
+    ) -> SectionPropertiesResult | None:
+        """Calculate the active library shape using sectionproperties directly."""
+        if self._active_library_shape is None:
+            return None
+        dimensions = self._active_library_dimensions or self._current_dimensions()
+        error_code = validate_sectionproperty_dimensions(
+            self._active_library_shape,
+            dimensions,
+        )
+        if error_code is not None:
+            if show_errors:
+                QMessageBox.warning(
+                    self,
+                    self.tr("Geometrie de section invalide"),
+                    self._validation_message(error_code),
+                )
+            return None
+        try:
+            return calculate_sectionproperties_section(
+                self._active_library_shape,
+                dimensions,
+                mesh_area=self._spin_mesh_area.value(),
+            )
+        except SectionPropertiesUnavailable:
+            if show_errors:
+                QMessageBox.warning(
+                    self,
+                    self.tr("sectionproperties indisponible"),
+                    self.tr("Installez sectionproperties pour calculer cette section."),
+                )
+            return None
+        except SectionPropertiesCalculationError as exc:
+            if show_errors:
+                QMessageBox.warning(
+                    self,
+                    self.tr("Calcul sectionproperties impossible"),
+                    str(exc),
+                )
+            return None
 
     def _calculate_with_sectionproperties(
         self,
@@ -1089,6 +1643,31 @@ class SectionBuilderDialog(QDialog):
             "area": area,
             "inertia_y": inertia_y,
             "inertia_z": inertia_z,
+        }
+
+    def _build_sectionproperties_library_result(
+        self,
+        sp_result: SectionPropertiesResult,
+    ) -> dict:
+        """Build a ProjectModel section payload for an inserted library shape."""
+        properties = dict(sp_result.properties)
+        properties["source_tool"] = "section_builder"
+        properties["points"] = self._view.points()
+        properties["holes"] = self._view.holes()
+        properties["hole_count"] = len(self._view.holes())
+        properties["analysis_engine"] = "sectionproperties"
+        if self._active_library_dimensions is not None:
+            properties["dimensions"] = dict(self._active_library_dimensions)
+        return {
+            "name": self._edit_name.text().strip() or self._shape_label(
+                str(properties.get("shape", ""))
+            ),
+            "section_type": "sectionproperties",
+            "material_tag": self._combo_material.currentData() or 0,
+            "properties": properties,
+            "area": sp_result.area,
+            "inertia_y": sp_result.inertia_y,
+            "inertia_z": sp_result.inertia_z,
         }
 
     def _accept(self) -> None:

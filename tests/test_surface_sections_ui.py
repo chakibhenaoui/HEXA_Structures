@@ -16,7 +16,7 @@ from gui.dialogs.section_dlg import (
     _section_geometry_error_code,
     _section_properties,
 )
-from gui.dialogs.sectionproperties_dlg import SectionPropertiesDialog
+from gui.dialogs.section_builder_dlg import SectionBuilderDialog
 from gui.widgets.plane_editor_view import PlaneEditorView
 from gui.widgets.property_panel import PropertyPanel
 
@@ -208,7 +208,7 @@ def test_section_dialog_keeps_explicit_initial_material() -> None:
     assert dlg._combo_material.currentData() == concrete.tag
 
 
-def test_sectionproperties_dialog_creates_user_section() -> None:
+def test_section_builder_creates_sectionproperties_user_section() -> None:
     if not is_sectionproperties_available():
         pytest.skip("sectionproperties is not installed")
     _app()
@@ -216,12 +216,13 @@ def test_sectionproperties_dialog_creates_user_section() -> None:
     concrete = project.add_material("Beton C30", "concrete", "C30/37")
     project.add_material("Acier S355", "steel", "S355")
 
-    dlg = SectionPropertiesDialog(materials=project.materials)
+    dlg = SectionBuilderDialog(materials=project.materials)
     idx_rect = dlg._combo_shape.findData("rectangular")
     dlg._combo_shape.setCurrentIndex(idx_rect)
+    dlg._insert_library_shape(show_errors=False)
 
     assert dlg._combo_material.currentData() == concrete.tag
-    assert dlg._calculate(show_errors=False) is True
+    assert dlg._analyze(show_errors=False) is True
 
     data = dlg.result()
 
@@ -233,30 +234,17 @@ def test_sectionproperties_dialog_creates_user_section() -> None:
     assert data["properties"]["display_type"] == "rectangular"
 
 
-def test_sectionproperties_dialog_exposes_workbench_layout() -> None:
+def test_section_builder_exposes_sectionproperties_workbench_layout() -> None:
     _app()
-    dlg = SectionPropertiesDialog()
+    dlg = SectionBuilderDialog()
 
-    tab_titles = [
-        dlg._tabs.tabText(index)
-        for index in range(dlg._tabs.count())
-    ]
-
-    assert tab_titles == [
-        "Bibliotheque",
-        "Geometrie",
-        "Coordonnees",
-        "Maillage",
-        "Resultats",
-    ]
-    assert dlg._canvas.minimumWidth() >= 560
-    assert {"select", "polygon", "rectangle", "circle", "hole", "mesh", "dxf"}.issubset(
-        dlg._tool_buttons
-    )
-    assert dlg._tool_buttons["dxf"].isEnabled() is False
-    assert dlg._capabilities_table.rowCount() >= 5
-    assert "sectionproperties" in dlg._backend_label.text()
-    assert dlg._points_table.rowCount() > 0
+    menu_titles = [action.text() for action in dlg._menu_bar.actions()]
+    assert menu_titles == ["Fichier", "sectionproperties"]
+    assert dlg._combo_shape.count() >= 6
+    assert dlg._library_params_layout.rowCount() >= 1
+    assert "sectionproperties" in dlg._lbl_library_status.text()
+    assert dlg.act_print_report.isEnabled() is False
+    assert dlg.act_sp_show_stress.isEnabled() is False
 
 
 def test_plate_section_dialog_result_includes_formulation() -> None:
