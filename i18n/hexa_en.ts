@@ -5420,206 +5420,281 @@ to see its properties.</translation>
 <context>
     <name>SectionBuilderDialog</name>
     <message>
-        <location filename="../gui/dialogs/section_builder_dlg.py" line="394"/>
+        <location filename="../gui/dialogs/section_builder_dlg.py" line="544"/>
         <source>Section Builder HEXA</source>
         <translation>HEXA Section Builder</translation>
     </message>
     <message>
-        <location filename="../gui/dialogs/section_builder_dlg.py" line="399"/>
-        <location filename="../gui/dialogs/section_builder_dlg.py" line="829"/>
+        <location filename="../gui/dialogs/section_builder_dlg.py" line="549"/>
+        <location filename="../gui/dialogs/section_builder_dlg.py" line="1085"/>
         <source>Section personnalisée</source>
         <translation>Custom section</translation>
     </message>
     <message>
-        <location filename="../gui/dialogs/section_builder_dlg.py" line="407"/>
-        <location filename="../gui/dialogs/section_builder_dlg.py" line="651"/>
+        <location filename="../gui/dialogs/section_builder_dlg.py" line="557"/>
+        <location filename="../gui/dialogs/section_builder_dlg.py" line="885"/>
         <source>Accrochage grille actif</source>
         <translation>Grid snap enabled</translation>
     </message>
     <message>
-        <location filename="../gui/dialogs/section_builder_dlg.py" line="410"/>
+        <location filename="../gui/dialogs/section_builder_dlg.py" line="561"/>
+        <source>Nouveau trou</source>
+        <translation>New hole</translation>
+    </message>
+    <message>
+        <location filename="../gui/dialogs/section_builder_dlg.py" line="562"/>
+        <source>Supprimer trou</source>
+        <translation>Delete hole</translation>
+    </message>
+    <message>
+        <location filename="../gui/dialogs/section_builder_dlg.py" line="563"/>
         <source>Calculer avec sectionproperties</source>
         <translation>Calculate with sectionproperties</translation>
     </message>
     <message>
-        <location filename="../gui/dialogs/section_builder_dlg.py" line="420"/>
+        <location filename="../gui/dialogs/section_builder_dlg.py" line="573"/>
         <source>Afficher le maillage</source>
         <translation>Show mesh</translation>
     </message>
     <message>
-        <location filename="../gui/dialogs/section_builder_dlg.py" line="424"/>
+        <location filename="../gui/dialogs/section_builder_dlg.py" line="577"/>
         <source>y (m)</source>
         <translation>y (m)</translation>
     </message>
     <message>
-        <location filename="../gui/dialogs/section_builder_dlg.py" line="424"/>
+        <location filename="../gui/dialogs/section_builder_dlg.py" line="577"/>
         <source>z (m)</source>
         <translation>z (m)</translation>
     </message>
     <message>
-        <location filename="../gui/dialogs/section_builder_dlg.py" line="431"/>
+        <location filename="../gui/dialogs/section_builder_dlg.py" line="584"/>
         <source>Dessinez puis fermez un contour.</source>
         <translation>Draw and close a contour.</translation>
     </message>
     <message>
-        <location filename="../gui/dialogs/section_builder_dlg.py" line="437"/>
+        <location filename="../gui/dialogs/section_builder_dlg.py" line="590"/>
         <source>Fermer le contour</source>
         <translation>Close contour</translation>
     </message>
     <message>
-        <location filename="../gui/dialogs/section_builder_dlg.py" line="438"/>
+        <location filename="../gui/dialogs/section_builder_dlg.py" line="591"/>
         <source>Annuler point</source>
         <translation>Undo point</translation>
     </message>
     <message>
-        <location filename="../gui/dialogs/section_builder_dlg.py" line="439"/>
+        <location filename="../gui/dialogs/section_builder_dlg.py" line="592"/>
         <source>Inserer point</source>
         <translation>Insert point</translation>
     </message>
     <message>
-        <location filename="../gui/dialogs/section_builder_dlg.py" line="440"/>
+        <location filename="../gui/dialogs/section_builder_dlg.py" line="593"/>
         <source>Supprimer point</source>
         <translation>Delete point</translation>
     </message>
     <message>
-        <location filename="../gui/dialogs/section_builder_dlg.py" line="441"/>
+        <location filename="../gui/dialogs/section_builder_dlg.py" line="594"/>
         <source>Effacer</source>
         <translation>Clear</translation>
     </message>
     <message>
-        <location filename="../gui/dialogs/section_builder_dlg.py" line="442"/>
+        <location filename="../gui/dialogs/section_builder_dlg.py" line="595"/>
         <source>Analyser</source>
         <translation>Analyze</translation>
     </message>
     <message>
-        <location filename="../gui/dialogs/section_builder_dlg.py" line="446"/>
+        <location filename="../gui/dialogs/section_builder_dlg.py" line="599"/>
         <source>Inserer la section</source>
         <translation>Insert section</translation>
     </message>
     <message>
-        <location filename="../gui/dialogs/section_builder_dlg.py" line="457"/>
+        <location filename="../gui/dialogs/section_builder_dlg.py" line="611"/>
         <source>sectionproperties indisponible : calcul polygonal simple utilise.</source>
         <translation>sectionproperties unavailable: simple polygon calculation is used.</translation>
     </message>
     <message>
-        <location filename="../gui/dialogs/section_builder_dlg.py" line="495"/>
+        <location filename="../gui/dialogs/section_builder_dlg.py" line="649"/>
         <source>Definition</source>
         <translation>Definition</translation>
     </message>
     <message>
-        <location filename="../gui/dialogs/section_builder_dlg.py" line="497"/>
+        <location filename="../gui/dialogs/section_builder_dlg.py" line="651"/>
         <source>Nom :</source>
         <translation>Name:</translation>
     </message>
     <message>
-        <location filename="../gui/dialogs/section_builder_dlg.py" line="498"/>
+        <location filename="../gui/dialogs/section_builder_dlg.py" line="652"/>
         <source>Materiau :</source>
         <translation>Material:</translation>
     </message>
     <message>
-        <location filename="../gui/dialogs/section_builder_dlg.py" line="499"/>
+        <location filename="../gui/dialogs/section_builder_dlg.py" line="653"/>
         <source>Pas de grille :</source>
         <translation>Grid step:</translation>
     </message>
     <message>
-        <location filename="../gui/dialogs/section_builder_dlg.py" line="502"/>
+        <location filename="../gui/dialogs/section_builder_dlg.py" line="656"/>
         <source>Points du contour</source>
         <translation>Contour points</translation>
     </message>
     <message>
-        <location filename="../gui/dialogs/section_builder_dlg.py" line="507"/>
+        <location filename="../gui/dialogs/section_builder_dlg.py" line="659"/>
+        <source>Contour :</source>
+        <translation>Contour:</translation>
+    </message>
+    <message>
+        <location filename="../gui/dialogs/section_builder_dlg.py" line="668"/>
         <source>Analyse</source>
         <translation>Analysis</translation>
     </message>
     <message>
-        <location filename="../gui/dialogs/section_builder_dlg.py" line="511"/>
+        <location filename="../gui/dialogs/section_builder_dlg.py" line="672"/>
         <source>Surface max. de maille :</source>
         <translation>Maximum mesh area:</translation>
     </message>
     <message>
-        <location filename="../gui/dialogs/section_builder_dlg.py" line="523"/>
+        <location filename="../gui/dialogs/section_builder_dlg.py" line="684"/>
         <source>(aucun materiau)</source>
         <translation>(no material)</translation>
     </message>
     <message>
-        <location filename="../gui/dialogs/section_builder_dlg.py" line="581"/>
+        <location filename="../gui/dialogs/section_builder_dlg.py" line="754"/>
+        <source>Trou {index} ferme : {count} point(s).</source>
+        <translation>Closed hole {index}: {count} point(s).</translation>
+    </message>
+    <message>
+        <location filename="../gui/dialogs/section_builder_dlg.py" line="759"/>
         <source>Contour ferme : {count} point(s).</source>
         <translation>Closed contour: {count} point(s).</translation>
     </message>
     <message>
-        <location filename="../gui/dialogs/section_builder_dlg.py" line="587"/>
+        <location filename="../gui/dialogs/section_builder_dlg.py" line="765"/>
+        <source>Dessinez le contour du trou. Cliquez pres du premier point ou utilisez Fermer le contour.</source>
+        <translation>Draw the hole contour. Click near the first point or use Close contour.</translation>
+    </message>
+    <message>
+        <location filename="../gui/dialogs/section_builder_dlg.py" line="771"/>
         <source>Cliquez sur la grille pour dessiner le contour. Cliquez pres du premier point ou utilisez Fermer le contour.</source>
         <translation>Click the grid to draw the contour. Click near the first point or use Close contour.</translation>
     </message>
     <message>
-        <location filename="../gui/dialogs/section_builder_dlg.py" line="595"/>
+        <location filename="../gui/dialogs/section_builder_dlg.py" line="780"/>
+        <source>Contour exterieur</source>
+        <translation>Outer contour</translation>
+    </message>
+    <message>
+        <location filename="../gui/dialogs/section_builder_dlg.py" line="782"/>
+        <source>Trou {index}</source>
+        <translation>Hole {index}</translation>
+    </message>
+    <message>
+        <location filename="../gui/dialogs/section_builder_dlg.py" line="784"/>
+        <source>{label} (ouvert)</source>
+        <translation>{label} (open)</translation>
+    </message>
+    <message>
+        <location filename="../gui/dialogs/section_builder_dlg.py" line="810"/>
+        <source>Contour exterieur requis</source>
+        <translation>Outer contour required</translation>
+    </message>
+    <message>
+        <location filename="../gui/dialogs/section_builder_dlg.py" line="811"/>
+        <source>Fermez le contour exterieur avant d&apos;ajouter un trou.</source>
+        <translation>Close the outer contour before adding a hole.</translation>
+    </message>
+    <message>
+        <location filename="../gui/dialogs/section_builder_dlg.py" line="829"/>
         <source>Aucun point.</source>
         <translation>No point.</translation>
     </message>
     <message>
-        <location filename="../gui/dialogs/section_builder_dlg.py" line="600"/>
+        <location filename="../gui/dialogs/section_builder_dlg.py" line="834"/>
         <source> - Perimetre : {perimeter:.3f} m</source>
         <translation> - Perimeter: {perimeter:.3f} m</translation>
     </message>
     <message>
-        <location filename="../gui/dialogs/section_builder_dlg.py" line="606"/>
+        <location filename="../gui/dialogs/section_builder_dlg.py" line="840"/>
         <source>Points : {count} - Dimensions : {width:.3f} m x {height:.3f} m{perimeter}</source>
         <translation>Points: {count} - Dimensions: {width:.3f} m x {height:.3f} m{perimeter}</translation>
     </message>
     <message>
-        <location filename="../gui/dialogs/section_builder_dlg.py" line="653"/>
+        <location filename="../gui/dialogs/section_builder_dlg.py" line="887"/>
         <source>Accrochage grille inactif</source>
         <translation>Grid snap disabled</translation>
     </message>
     <message>
-        <location filename="../gui/dialogs/section_builder_dlg.py" line="725"/>
+        <location filename="../gui/dialogs/section_builder_dlg.py" line="915"/>
+        <source>Trou incomplet</source>
+        <translation>Incomplete hole</translation>
+    </message>
+    <message>
+        <location filename="../gui/dialogs/section_builder_dlg.py" line="916"/>
+        <source>Fermez ou supprimez le trou en cours avant l&apos;analyse.</source>
+        <translation>Close or delete the current hole before analysis.</translation>
+    </message>
+    <message>
+        <location filename="../gui/dialogs/section_builder_dlg.py" line="939"/>
+        <source>sectionproperties requis</source>
+        <translation>sectionproperties required</translation>
+    </message>
+    <message>
+        <location filename="../gui/dialogs/section_builder_dlg.py" line="940"/>
+        <source>Les sections avec trous necessitent sectionproperties.</source>
+        <translation>Sections with holes require sectionproperties.</translation>
+    </message>
+    <message>
+        <location filename="../gui/dialogs/section_builder_dlg.py" line="977"/>
         <source>sectionproperties indisponible</source>
         <translation>sectionproperties unavailable</translation>
     </message>
     <message>
-        <location filename="../gui/dialogs/section_builder_dlg.py" line="726"/>
+        <location filename="../gui/dialogs/section_builder_dlg.py" line="978"/>
         <source>Le calcul polygonal simple sera utilise.</source>
         <translation>The simple polygon calculation will be used.</translation>
     </message>
     <message>
-        <location filename="../gui/dialogs/section_builder_dlg.py" line="733"/>
+        <location filename="../gui/dialogs/section_builder_dlg.py" line="985"/>
         <source>Calcul sectionproperties impossible</source>
         <translation>sectionproperties calculation unavailable</translation>
     </message>
     <message>
-        <location filename="../gui/dialogs/section_builder_dlg.py" line="734"/>
+        <location filename="../gui/dialogs/section_builder_dlg.py" line="986"/>
         <source>Le calcul polygonal simple sera utilise.
 {error}</source>
         <translation>The simple polygon calculation will be used.
 {error}</translation>
     </message>
     <message>
-        <location filename="../gui/dialogs/section_builder_dlg.py" line="758"/>
+        <location filename="../gui/dialogs/section_builder_dlg.py" line="1010"/>
         <source>polygonal</source>
         <translation>polygonal</translation>
     </message>
     <message>
-        <location filename="../gui/dialogs/section_builder_dlg.py" line="760"/>
+        <location filename="../gui/dialogs/section_builder_dlg.py" line="1012"/>
         <source>Moteur : {engine}</source>
         <translation>Engine: {engine}</translation>
     </message>
     <message>
-        <location filename="../gui/dialogs/section_builder_dlg.py" line="777"/>
+        <location filename="../gui/dialogs/section_builder_dlg.py" line="1023"/>
+        <source>Trous : {count}</source>
+        <translation>Holes: {count}</translation>
+    </message>
+    <message>
+        <location filename="../gui/dialogs/section_builder_dlg.py" line="1031"/>
         <source>Maillage : {nodes} noeuds, {triangles} triangles</source>
         <translation>Mesh: {nodes} nodes, {triangles} triangles</translation>
     </message>
     <message>
-        <location filename="../gui/dialogs/section_builder_dlg.py" line="846"/>
+        <location filename="../gui/dialogs/section_builder_dlg.py" line="1102"/>
         <source>Le contour contient deux points consecutifs identiques.</source>
         <translation>The contour contains two identical consecutive points.</translation>
     </message>
     <message>
-        <location filename="../gui/dialogs/section_builder_dlg.py" line="847"/>
+        <location filename="../gui/dialogs/section_builder_dlg.py" line="1103"/>
         <source>Le contour contient des segments qui se croisent.</source>
         <translation>The contour contains crossing segments.</translation>
     </message>
     <message>
-        <location filename="../gui/dialogs/section_builder_dlg.py" line="848"/>
+        <location filename="../gui/dialogs/section_builder_dlg.py" line="1104"/>
         <source>L&apos;aire du contour est nulle.</source>
         <translation>The contour area is zero.</translation>
     </message>
@@ -5628,29 +5703,29 @@ to see its properties.</translation>
         <translation type="vanished">Dimensions: {width:.3f} m x {height:.3f} m</translation>
     </message>
     <message>
-        <location filename="../gui/dialogs/section_builder_dlg.py" line="664"/>
+        <location filename="../gui/dialogs/section_builder_dlg.py" line="898"/>
         <source>Contour incomplet</source>
         <translation>Incomplete contour</translation>
     </message>
     <message>
-        <location filename="../gui/dialogs/section_builder_dlg.py" line="665"/>
-        <location filename="../gui/dialogs/section_builder_dlg.py" line="845"/>
+        <location filename="../gui/dialogs/section_builder_dlg.py" line="899"/>
+        <location filename="../gui/dialogs/section_builder_dlg.py" line="1101"/>
         <source>Le contour doit contenir au moins trois points.</source>
         <translation>The contour must contain at least three points.</translation>
     </message>
     <message>
-        <location filename="../gui/dialogs/section_builder_dlg.py" line="673"/>
+        <location filename="../gui/dialogs/section_builder_dlg.py" line="907"/>
         <source>Contour non ferme</source>
         <translation>Open contour</translation>
     </message>
     <message>
-        <location filename="../gui/dialogs/section_builder_dlg.py" line="674"/>
+        <location filename="../gui/dialogs/section_builder_dlg.py" line="908"/>
         <source>Fermez le contour avant l&apos;analyse.</source>
         <translation>Close the contour before analysis.</translation>
     </message>
     <message>
-        <location filename="../gui/dialogs/section_builder_dlg.py" line="683"/>
-        <location filename="../gui/dialogs/section_builder_dlg.py" line="689"/>
+        <location filename="../gui/dialogs/section_builder_dlg.py" line="925"/>
+        <location filename="../gui/dialogs/section_builder_dlg.py" line="931"/>
         <source>Analyse impossible</source>
         <translation>Analysis unavailable</translation>
     </message>

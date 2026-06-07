@@ -12,7 +12,6 @@ from PySide6.QtGui import (
     QPainter,
     QPainterPath,
     QPen,
-    QPolygonF,
     QTransform,
     QWheelEvent,
 )
@@ -27,7 +26,6 @@ from PySide6.QtWidgets import (
     QGraphicsEllipseItem,
     QGraphicsLineItem,
     QGraphicsPathItem,
-    QGraphicsPolygonItem,
     QGraphicsScene,
     QGraphicsView,
     QGroupBox,
@@ -75,9 +73,13 @@ class SectionBuilderView(QGraphicsView):
         self._snap_enabled = True
         self._points: list[Point2D] = []
         self._closed = False
+        self._holes: list[list[Point2D]] = []
+        self._hole_closed: list[bool] = []
+        self._active_contour = "outer"
+        self._active_hole_index: int | None = None
         self._path_item = QGraphicsPathItem()
         self._mesh_item: QGraphicsPathItem | None = None
-        self._polygon_item: QGraphicsPolygonItem | None = None
+        self._polygon_item: QGraphicsPathItem | None = None
         self._centroid_item: QGraphicsEllipseItem | None = None
         self._point_items: list[QGraphicsEllipseItem] = []
         self._grid_items: list[QGraphicsLineItem] = []
@@ -99,9 +101,95 @@ class SectionBuilderView(QGraphicsView):
         """Return current polygon points in local y/z coordinates."""
         return list(self._points)
 
+    def holes(self) -> list[list[Point2D]]:
+        """Return closed hole contours."""
+        return [
+            list(hole)
+            for hole, closed in zip(self._holes, self._hole_closed, strict=True)
+            if closed
+        ]
+
+    def hole_count(self) -> int:
+        """Return the number of hole contours, including open ones."""
+        return len(self._holes)
+
+    def is_hole_closed(self, index: int) -> bool:
+        """Return whether one hole is closed."""
+        return 0 <= index < len(self._hole_closed) and self._hole_closed[index]
+
+    def active_contour(self) -> tuple[str, int | None]:
+        """Return active contour identifier."""
+        return self._active_contour, self._active_hole_index
+
+    def current_points(self) -> list[Point2D]:
+        """Return points for the currently selected contour."""
+        return list(self._active_points())
+
     def is_closed(self) -> bool:
         """Return whether the contour is closed."""
         return self._closed
+
+    def current_is_closed(self) -> bool:
+        """Return whether the active contour is closed."""
+        if self._active_contour == "hole" and self._active_hole_index is not None:
+            return self.is_hole_closed(self._active_hole_index)
+        return self._closed
+
+    def has_open_holes(self) -> bool:
+        """Return whether a hole is still being drawn."""
+        return any(not closed for closed in self._hole_closed)
+
+    def select_outer_contour(self) -> None:
+        """Select the exterior contour for editing."""
+        self._active_contour = "outer"
+        self._active_hole_index = None
+        self._refresh_items()
+        self.geometry_changed.emit()
+        self.closed_changed.emit(self.current_is_closed())
+
+    def select_hole_contour(self, index: int) -> bool:
+        """Select one hole contour for editing."""
+        if index < 0 or index >= len(self._holes):
+            return False
+        self._active_contour = "hole"
+        self._active_hole_index = index
+        self._refresh_items()
+        self.geometry_changed.emit()
+        self.closed_changed.emit(self.current_is_closed())
+        return True
+
+    def start_hole(self) -> int | None:
+        """Create and select a new open hole contour."""
+        if not self._closed:
+            return None
+        self._holes.append([])
+        self._hole_closed.append(False)
+        self._active_contour = "hole"
+        self._active_hole_index = len(self._holes) - 1
+        self._centroid = None
+        self._mesh = None
+        self._refresh_items()
+        self.geometry_changed.emit()
+        self.closed_changed.emit(False)
+        return self._active_hole_index
+
+    def delete_active_hole(self) -> bool:
+        """Delete the selected hole contour."""
+        if self._active_contour != "hole" or self._active_hole_index is None:
+            return False
+        index = self._active_hole_index
+        if index < 0 or index >= len(self._holes):
+            return False
+        self._holes.pop(index)
+        self._hole_closed.pop(index)
+        self._active_contour = "outer"
+        self._active_hole_index = None
+        self._centroid = None
+        self._mesh = None
+        self._refresh_items()
+        self.geometry_changed.emit()
+        self.closed_changed.emit(self.current_is_closed())
+        return True
 
     def set_grid_step(self, step: float) -> None:
         """Set grid and snap spacing in meters."""
@@ -116,6 +204,10 @@ class SectionBuilderView(QGraphicsView):
         """Set points programmatically, useful for tests and future imports."""
         self._points = [(float(y), float(z)) for y, z in points]
         self._closed = bool(closed and len(self._points) >= 3)
+        self._holes.clear()
+        self._hole_closed.clear()
+        self._active_contour = "outer"
+        self._active_hole_index = None
         self._centroid = None
         self._mesh = None
         self._refresh_items()
@@ -125,6 +217,10 @@ class SectionBuilderView(QGraphicsView):
     def clear_section(self) -> None:
         """Clear the current contour."""
         self._points.clear()
+        self._holes.clear()
+        self._hole_closed.clear()
+        self._active_contour = "outer"
+        self._active_hole_index = None
         self._closed = False
         self._centroid = None
         self._mesh = None
@@ -134,21 +230,23 @@ class SectionBuilderView(QGraphicsView):
 
     def remove_last_point(self) -> None:
         """Remove the last drawn point."""
-        if not self._points:
+        points = self._active_points()
+        if not points:
             return
-        self._points.pop()
-        self._closed = False
+        points.pop()
+        self._set_current_closed(False)
         self._centroid = None
         self._mesh = None
         self._refresh_items()
         self.geometry_changed.emit()
-        self.closed_changed.emit(False)
+        self.closed_changed.emit(self.current_is_closed())
 
     def set_point(self, index: int, point: Point2D) -> bool:
         """Update one existing point."""
-        if index < 0 or index >= len(self._points):
+        points = self._active_points()
+        if index < 0 or index >= len(points):
             return False
-        self._points[index] = self._snap_point(QPointF(point[0], point[1]))
+        points[index] = self._snap_point(QPointF(point[0], point[1]))
         self._centroid = None
         self._mesh = None
         self._refresh_items()
@@ -157,40 +255,44 @@ class SectionBuilderView(QGraphicsView):
 
     def insert_point_after(self, index: int | None = None) -> int:
         """Insert a point after index and return the inserted row."""
-        if not self._points:
-            self._points.append((0.0, 0.0))
-            self._closed = False
+        points = self._active_points()
+        current_closed = self.current_is_closed()
+        if not points:
+            points.append((0.0, 0.0))
+            self._set_current_closed(False)
             inserted = 0
         else:
-            if index is None or index < 0 or index >= len(self._points):
-                index = len(self._points) - 1
-            y0, z0 = self._points[index]
-            if self._closed or index < len(self._points) - 1:
-                next_index = (index + 1) % len(self._points)
-                y1, z1 = self._points[next_index]
+            if index is None or index < 0 or index >= len(points):
+                index = len(points) - 1
+            y0, z0 = points[index]
+            if current_closed or index < len(points) - 1:
+                next_index = (index + 1) % len(points)
+                y1, z1 = points[next_index]
                 point = ((y0 + y1) * 0.5, (z0 + z1) * 0.5)
             else:
                 point = (y0 + self._grid_step, z0)
             inserted = index + 1
-            self._points.insert(inserted, self._snap_point(QPointF(point[0], point[1])))
+            points.insert(inserted, self._snap_point(QPointF(point[0], point[1])))
         self._centroid = None
         self._mesh = None
         self._refresh_items()
         self.geometry_changed.emit()
-        self.closed_changed.emit(self._closed)
+        self.closed_changed.emit(self.current_is_closed())
         return inserted
 
     def remove_point(self, index: int) -> bool:
         """Remove one point by index."""
-        if index < 0 or index >= len(self._points):
+        points = self._active_points()
+        if index < 0 or index >= len(points):
             return False
-        self._points.pop(index)
-        if len(self._points) < 3:
-            self._closed = False
+        points.pop(index)
+        if len(points) < 3:
+            self._set_current_closed(False)
         self._centroid = None
+        self._mesh = None
         self._refresh_items()
         self.geometry_changed.emit()
-        self.closed_changed.emit(self._closed)
+        self.closed_changed.emit(self.current_is_closed())
         return True
 
     def set_centroid(self, point: Point2D | None) -> None:
@@ -210,21 +312,22 @@ class SectionBuilderView(QGraphicsView):
 
     def close_contour(self) -> bool:
         """Close the current contour if possible."""
-        if len(self._points) < 3:
+        points = self._active_points()
+        if len(points) < 3:
             return False
-        self._closed = True
+        self._set_current_closed(True)
         self._centroid = None
         self._mesh = None
         self._refresh_items()
         self.geometry_changed.emit()
-        self.closed_changed.emit(True)
+        self.closed_changed.emit(self.current_is_closed())
         return True
 
     def add_point(self, point: Point2D) -> None:
         """Append one point to the current open contour."""
-        if self._closed:
+        if self.current_is_closed():
             return
-        self._points.append(self._snap_point(QPointF(point[0], point[1])))
+        self._active_points().append(self._snap_point(QPointF(point[0], point[1])))
         self._centroid = None
         self._mesh = None
         self._refresh_items()
@@ -234,15 +337,16 @@ class SectionBuilderView(QGraphicsView):
         if event.button() == Qt.RightButton:
             self.close_contour()
             return
-        if event.button() != Qt.LeftButton or self._closed:
+        if event.button() != Qt.LeftButton or self.current_is_closed():
             super().mousePressEvent(event)
             return
 
         point = self._snap_point(self.mapToScene(event.position().toPoint()))
-        if len(self._points) >= 3 and self._distance(point, self._points[0]) <= self._grid_step * 0.75:
+        points = self._active_points()
+        if len(points) >= 3 and self._distance(point, points[0]) <= self._grid_step * 0.75:
             self.close_contour()
             return
-        self._points.append(point)
+        points.append(point)
         self._centroid = None
         self._mesh = None
         self._refresh_items()
@@ -251,6 +355,20 @@ class SectionBuilderView(QGraphicsView):
     def wheelEvent(self, event: QWheelEvent) -> None:
         factor = 1.15 if event.angleDelta().y() > 0 else 1.0 / 1.15
         self.scale(factor, factor)
+
+    def _active_points(self) -> list[Point2D]:
+        if self._active_contour == "hole" and self._active_hole_index is not None:
+            return self._holes[self._active_hole_index]
+        return self._points
+
+    def _set_current_closed(self, closed: bool) -> None:
+        if self._active_contour == "hole" and self._active_hole_index is not None:
+            if 0 <= self._active_hole_index < len(self._hole_closed):
+                self._hole_closed[self._active_hole_index] = bool(
+                    closed and len(self._holes[self._active_hole_index]) >= 3
+                )
+            return
+        self._closed = bool(closed and len(self._points) >= 3)
 
     def _snap_point(self, point: QPointF) -> Point2D:
         if not self._snap_enabled:
@@ -315,6 +433,14 @@ class SectionBuilderView(QGraphicsView):
                 path.lineTo(*point)
             if self._closed:
                 path.closeSubpath()
+        for index, hole in enumerate(self._holes):
+            if not hole:
+                continue
+            path.moveTo(*hole[0])
+            for point in hole[1:]:
+                path.lineTo(*point)
+            if self._hole_closed[index]:
+                path.closeSubpath()
         pen = QPen(QColor("#1f2933"), 0)
         pen.setCosmetic(True)
         self._path_item.setPen(pen)
@@ -322,9 +448,21 @@ class SectionBuilderView(QGraphicsView):
         self._path_item.setZValue(5)
 
         if self._closed and len(self._points) >= 3:
-            polygon = QPolygonF([QPointF(y, z) for y, z in self._points])
-            self._polygon_item = self._scene.addPolygon(
-                polygon,
+            section_path = QPainterPath()
+            section_path.setFillRule(Qt.OddEvenFill)
+            section_path.moveTo(*self._points[0])
+            for point in self._points[1:]:
+                section_path.lineTo(*point)
+            section_path.closeSubpath()
+            for index, hole in enumerate(self._holes):
+                if not self._hole_closed[index] or len(hole) < 3:
+                    continue
+                section_path.moveTo(*hole[0])
+                for point in hole[1:]:
+                    section_path.lineTo(*point)
+                section_path.closeSubpath()
+            self._polygon_item = self._scene.addPath(
+                section_path,
                 pen,
                 QBrush(QColor(80, 150, 220, 70)),
             )
@@ -350,12 +488,24 @@ class SectionBuilderView(QGraphicsView):
 
         point_pen = QPen(QColor("#1f2933"), 0)
         point_pen.setCosmetic(True)
-        point_brush = QBrush(QColor("#ffffff"))
         radius = 0.012
-        for y, z in self._points:
-            item = self._scene.addEllipse(y - radius, z - radius, radius * 2, radius * 2, point_pen, point_brush)
-            item.setZValue(8)
-            self._point_items.append(item)
+        contours = [("outer", None, self._points)] + [
+            ("hole", index, hole) for index, hole in enumerate(self._holes)
+        ]
+        for kind, index, contour in contours:
+            active = kind == self._active_contour and index == self._active_hole_index
+            point_brush = QBrush(QColor("#ffffff") if active else QColor("#dbeafe"))
+            for y, z in contour:
+                item = self._scene.addEllipse(
+                    y - radius,
+                    z - radius,
+                    radius * 2,
+                    radius * 2,
+                    point_pen,
+                    point_brush,
+                )
+                item.setZValue(8)
+                self._point_items.append(item)
 
         if self._centroid is not None:
             y, z = self._centroid
@@ -407,6 +557,9 @@ class SectionBuilderDialog(QDialog):
         self._chk_snap = QPushButton(self.tr("Accrochage grille actif"), self)
         self._chk_snap.setCheckable(True)
         self._chk_snap.setChecked(True)
+        self._combo_contour = QComboBox(self)
+        self._btn_add_hole = QPushButton(self.tr("Nouveau trou"), self)
+        self._btn_delete_hole = QPushButton(self.tr("Supprimer trou"), self)
         self._chk_use_sectionproperties = QCheckBox(self.tr("Calculer avec sectionproperties"), self)
         self._chk_use_sectionproperties.setChecked(self._sectionproperties_available)
         self._chk_use_sectionproperties.setEnabled(self._sectionproperties_available)
@@ -449,6 +602,7 @@ class SectionBuilderDialog(QDialog):
         self._setup_ui()
         self._populate_materials(material_tag)
         self._connect_signals()
+        self._refresh_contour_combo()
         self._refresh_points()
         self._refresh_status()
         if not self._sectionproperties_available:
@@ -501,6 +655,13 @@ class SectionBuilderDialog(QDialog):
         layout.addWidget(info_group)
         points_group = QGroupBox(self.tr("Points du contour"), panel)
         points_layout = QVBoxLayout(points_group)
+        contour_form = QFormLayout()
+        contour_form.addRow(self.tr("Contour :"), self._combo_contour)
+        points_layout.addLayout(contour_form)
+        hole_buttons = QHBoxLayout()
+        hole_buttons.addWidget(self._btn_add_hole)
+        hole_buttons.addWidget(self._btn_delete_hole)
+        points_layout.addLayout(hole_buttons)
         points_layout.addWidget(self._table_points)
         points_layout.addWidget(self._lbl_dimensions)
         layout.addWidget(points_group, 1)
@@ -535,11 +696,14 @@ class SectionBuilderDialog(QDialog):
         self._chk_use_sectionproperties.toggled.connect(lambda _checked: self._invalidate_result())
         self._spin_mesh_area.valueChanged.connect(lambda _value: self._invalidate_result())
         self._chk_show_mesh.toggled.connect(self._on_mesh_visible_toggled)
+        self._combo_contour.currentIndexChanged.connect(self._on_contour_changed)
         self._table_points.itemChanged.connect(self._on_point_table_item_changed)
         self._btn_close.clicked.connect(self._close_contour)
         self._btn_undo.clicked.connect(self._view.remove_last_point)
         self._btn_insert.clicked.connect(self._insert_point)
         self._btn_delete.clicked.connect(self._delete_selected_point)
+        self._btn_add_hole.clicked.connect(self._add_hole)
+        self._btn_delete_hole.clicked.connect(self._delete_selected_hole)
         self._btn_clear.clicked.connect(self._view.clear_section)
         self._btn_analyze.clicked.connect(lambda: self._analyze(show_errors=True))
         self._button_box.accepted.connect(self._accept)
@@ -547,6 +711,7 @@ class SectionBuilderDialog(QDialog):
 
     def _on_geometry_changed(self) -> None:
         self._invalidate_result()
+        self._refresh_contour_combo()
         self._refresh_points()
         self._refresh_status()
 
@@ -561,7 +726,7 @@ class SectionBuilderDialog(QDialog):
             ok_button.setEnabled(False)
 
     def _refresh_points(self) -> None:
-        points = self._view.points()
+        points = self._view.current_points()
         self._updating_points_table = True
         try:
             self._table_points.setRowCount(len(points))
@@ -573,24 +738,93 @@ class SectionBuilderDialog(QDialog):
         self._refresh_dimensions()
 
     def _refresh_status(self) -> None:
-        points = self._view.points()
+        points = self._view.current_points()
+        contour_kind, hole_index = self._view.active_contour()
         self._btn_insert.setEnabled(bool(points))
         self._btn_delete.setEnabled(bool(points))
-        if self._view.is_closed():
-            self._lbl_status.setText(
-                self.tr("Contour ferme : {count} point(s).").format(count=len(points))
-            )
+        self._btn_delete_hole.setEnabled(contour_kind == "hole" and hole_index is not None)
+        if self._view.has_open_holes():
+            self._btn_analyze.setEnabled(False)
+        elif self._view.is_closed():
             self._btn_analyze.setEnabled(True)
+        else:
+            self._btn_analyze.setEnabled(False)
+        if self._view.current_is_closed():
+            label = (
+                self.tr("Trou {index} ferme : {count} point(s).").format(
+                    index=(hole_index or 0) + 1,
+                    count=len(points),
+                )
+                if contour_kind == "hole"
+                else self.tr("Contour ferme : {count} point(s).").format(count=len(points))
+            )
+            self._lbl_status.setText(label)
+        elif contour_kind == "hole":
+            self._lbl_status.setText(
+                self.tr(
+                    "Dessinez le contour du trou. Cliquez pres du premier point ou utilisez Fermer le contour."
+                )
+            )
         else:
             self._lbl_status.setText(
                 self.tr(
                     "Cliquez sur la grille pour dessiner le contour. Cliquez pres du premier point ou utilisez Fermer le contour."
                 )
             )
-            self._btn_analyze.setEnabled(False)
+
+    def _refresh_contour_combo(self) -> None:
+        contour_kind, hole_index = self._view.active_contour()
+        was_blocked = self._combo_contour.blockSignals(True)
+        try:
+            self._combo_contour.clear()
+            self._combo_contour.addItem(self.tr("Contour exterieur"), ("outer", -1))
+            for index in range(self._view.hole_count()):
+                label = self.tr("Trou {index}").format(index=index + 1)
+                if not self._view.is_hole_closed(index):
+                    label = self.tr("{label} (ouvert)").format(label=label)
+                self._combo_contour.addItem(label, ("hole", index))
+            target_data = (contour_kind, hole_index if hole_index is not None else -1)
+            for index in range(self._combo_contour.count()):
+                if self._combo_contour.itemData(index) == target_data:
+                    self._combo_contour.setCurrentIndex(index)
+                    break
+        finally:
+            self._combo_contour.blockSignals(was_blocked)
+
+    def _on_contour_changed(self) -> None:
+        data = self._combo_contour.currentData()
+        if not isinstance(data, tuple) or len(data) != 2:
+            return
+        kind, index = data
+        if kind == "hole":
+            self._view.select_hole_contour(int(index))
+        else:
+            self._view.select_outer_contour()
+        self._refresh_points()
+        self._refresh_status()
+
+    def _add_hole(self) -> None:
+        if not self._view.is_closed():
+            QMessageBox.warning(
+                self,
+                self.tr("Contour exterieur requis"),
+                self.tr("Fermez le contour exterieur avant d'ajouter un trou."),
+            )
+            return
+        self._view.start_hole()
+        self._refresh_contour_combo()
+        self._refresh_points()
+        self._refresh_status()
+
+    def _delete_selected_hole(self) -> None:
+        if not self._view.delete_active_hole():
+            return
+        self._refresh_contour_combo()
+        self._refresh_points()
+        self._refresh_status()
 
     def _refresh_dimensions(self) -> None:
-        points = self._view.points()
+        points = self._view.current_points()
         if not points:
             self._lbl_dimensions.setText(self.tr("Aucun point."))
             return
@@ -613,7 +847,7 @@ class SectionBuilderDialog(QDialog):
 
     def _selected_point_row(self) -> int | None:
         row = self._table_points.currentRow()
-        if row < 0 or row >= len(self._view.points()):
+        if row < 0 or row >= len(self._view.current_points()):
             return None
         return row
 
@@ -674,6 +908,14 @@ class SectionBuilderDialog(QDialog):
                     self.tr("Fermez le contour avant l'analyse."),
                 )
             return False
+        if self._view.has_open_holes():
+            if show_errors:
+                QMessageBox.warning(
+                    self,
+                    self.tr("Trou incomplet"),
+                    self.tr("Fermez ou supprimez le trou en cours avant l'analyse."),
+                )
+            return False
         try:
             props = polygon_section_properties(self._view.points())
         except SectionBuilderGeometryError as exc:
@@ -690,6 +932,14 @@ class SectionBuilderDialog(QDialog):
             return False
 
         sp_result = self._calculate_with_sectionproperties(show_errors=show_errors)
+        if self._view.holes() and sp_result is None:
+            if show_errors:
+                QMessageBox.warning(
+                    self,
+                    self.tr("sectionproperties requis"),
+                    self.tr("Les sections avec trous necessitent sectionproperties."),
+                )
+            return False
         self._properties = props
         self._sectionproperties_result = sp_result
         self._result = self._build_result(props, sp_result)
@@ -711,11 +961,13 @@ class SectionBuilderDialog(QDialog):
         *,
         show_errors: bool,
     ) -> SectionPropertiesResult | None:
-        if not self._chk_use_sectionproperties.isChecked():
+        holes = self._view.holes()
+        if not self._chk_use_sectionproperties.isChecked() and not holes:
             return None
         try:
             return calculate_polygon_sectionproperties_section(
                 self._view.points(),
+                holes=holes,
                 mesh_area=self._spin_mesh_area.value(),
             )
         except SectionPropertiesUnavailable:
@@ -767,6 +1019,8 @@ class SectionBuilderDialog(QDialog):
                 cz=centroid_z,
             ),
         ]
+        if self._view.holes():
+            lines.append(self.tr("Trous : {count}").format(count=len(self._view.holes())))
         if sp_result:
             lines.append("Iyz = {ixy:.2f} cm4".format(ixy=sp_result.ixy * 1.0e8))
             lines.append(
@@ -804,6 +1058,8 @@ class SectionBuilderDialog(QDialog):
             "source": "section_builder",
             "analysis_engine": "sectionproperties" if sp_result else "polygonal",
             "points": points,
+            "holes": self._view.holes(),
+            "hole_count": len(self._view.holes()),
             "closed": True,
             "perimeter": props.perimeter,
             "centroid_y": centroid_y,

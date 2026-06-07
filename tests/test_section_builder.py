@@ -69,6 +69,26 @@ def test_section_builder_view_can_insert_update_and_remove_points() -> None:
     assert view.points() == [(0.0, 0.0), (0.20, 0.0), (0.20, 0.20)]
 
 
+def test_section_builder_view_can_draw_hole_contour() -> None:
+    _app()
+    view = SectionBuilderView()
+    view.set_grid_step(0.05)
+    view.set_points(
+        [(0.0, 0.0), (0.30, 0.0), (0.30, 0.30), (0.0, 0.30)],
+        closed=True,
+    )
+
+    hole_index = view.start_hole()
+    assert hole_index == 0
+    view.add_point((0.10, 0.10))
+    view.add_point((0.20, 0.10))
+    view.add_point((0.20, 0.20))
+    view.add_point((0.10, 0.20))
+
+    assert view.close_contour() is True
+    assert view.holes() == [[(0.10, 0.10), (0.20, 0.10), (0.20, 0.20), (0.10, 0.20)]]
+
+
 def test_section_builder_dialog_returns_custom_polygon_section() -> None:
     _app()
     project = ProjectModel()
@@ -131,6 +151,49 @@ def test_section_builder_dialog_can_use_polygonal_fallback() -> None:
     assert data["properties"]["analysis_engine"] == "polygonal"
     assert "sectionproperties" not in data["properties"]
     assert dlg._sectionproperties_result is None
+
+
+def test_section_builder_dialog_saves_section_with_hole() -> None:
+    if not is_sectionproperties_available():
+        pytest.skip("sectionproperties is not installed")
+    _app()
+    dlg = SectionBuilderDialog()
+    dlg._view.set_points(
+        [(0.0, 0.0), (0.30, 0.0), (0.30, 0.30), (0.0, 0.30)],
+        closed=True,
+    )
+    dlg._view.start_hole()
+    for point in [(0.10, 0.10), (0.20, 0.10), (0.20, 0.20), (0.10, 0.20)]:
+        dlg._view.add_point(point)
+    assert dlg._view.close_contour() is True
+
+    assert dlg._analyze(show_errors=False) is True
+    data = dlg.result()
+
+    assert data["properties"]["analysis_engine"] == "sectionproperties"
+    assert data["properties"]["hole_count"] == 1
+    assert data["properties"]["holes"][0][0] == (0.10, 0.10)
+    assert data["area"] == pytest.approx(0.08, rel=1e-6)
+    assert data["properties"]["sectionproperties"]["mesh_triangle_count"] > 1
+
+
+def test_section_builder_dialog_forces_sectionproperties_for_holes() -> None:
+    if not is_sectionproperties_available():
+        pytest.skip("sectionproperties is not installed")
+    _app()
+    dlg = SectionBuilderDialog()
+    dlg._chk_use_sectionproperties.setChecked(False)
+    dlg._view.set_points(
+        [(0.0, 0.0), (0.30, 0.0), (0.30, 0.30), (0.0, 0.30)],
+        closed=True,
+    )
+    dlg._view.start_hole()
+    for point in [(0.10, 0.10), (0.20, 0.10), (0.20, 0.20), (0.10, 0.20)]:
+        dlg._view.add_point(point)
+    dlg._view.close_contour()
+
+    assert dlg._analyze(show_errors=False) is True
+    assert dlg.result()["properties"]["analysis_engine"] == "sectionproperties"
 
 
 def test_section_builder_dialog_edits_points_from_table() -> None:

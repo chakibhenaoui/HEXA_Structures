@@ -425,6 +425,7 @@ def calculate_sectionproperties_section(
 def calculate_polygon_sectionproperties_section(
     points: list[Point2D] | tuple[Point2D, ...],
     *,
+    holes: list[list[Point2D]] | tuple[tuple[Point2D, ...], ...] | None = None,
     mesh_area: float = 1.0e-4,
 ) -> SectionPropertiesResult:
     """Calculate a custom simple polygon section with sectionproperties.
@@ -440,13 +441,25 @@ def calculate_polygon_sectionproperties_section(
         raise SectionPropertiesCalculationError("mesh_area must be positive")
 
     normalized_points = _normalize_polygon_points(points)
+    normalized_holes = tuple(
+        _normalize_polygon_points(hole)
+        for hole in (holes or ())
+        if hole
+    )
     validate_simple_polygon(normalized_points)
+    for hole in normalized_holes:
+        validate_simple_polygon(hole)
 
     try:
         polygon_cls = getattr(import_module("shapely"), "Polygon")
         geometry_cls = getattr(import_module("sectionproperties.pre.geometry"), "Geometry")
         section_cls = getattr(import_module("sectionproperties.analysis"), "Section")
-        geometry = geometry_cls(geom=polygon_cls(normalized_points))
+        polygon = polygon_cls(normalized_points, holes=normalized_holes)
+        if not polygon.is_valid:
+            raise SectionPropertiesCalculationError("invalid_polygon_with_holes")
+        if polygon.area <= 0.0:
+            raise SectionPropertiesCalculationError("polygon_zero_area")
+        geometry = geometry_cls(geom=polygon)
         geometry.create_mesh(mesh_sizes=[float(mesh_area)])
         section = section_cls(geometry=geometry)
         section.calculate_geometric_properties()
@@ -468,6 +481,7 @@ def calculate_polygon_sectionproperties_section(
         "source": "sectionproperties",
         "shape": "custom_polygon",
         "display_type": "custom_polygon",
+        "holes": [list(hole) for hole in normalized_holes],
         "mesh_area": float(mesh_area),
         "centroid_local_y": centroid_y,
         "centroid_local_z": centroid_z,

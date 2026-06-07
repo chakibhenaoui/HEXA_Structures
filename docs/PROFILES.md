@@ -85,6 +85,7 @@ La premiere version permet :
 - affichage d'une grille ;
 - accrochage au pas de grille ;
 - dessin point par point du contour exterieur ;
+- dessin point par point de trous interieurs ;
 - edition des coordonnees dans un tableau ;
 - insertion et suppression de points ;
 - fermeture du contour par clic pres du premier point, clic droit ou bouton ;
@@ -110,14 +111,17 @@ section_type = "custom_polygon"
 properties["source"] = "section_builder"
 properties["analysis_engine"] = "polygonal" | "sectionproperties"
 properties["points"] = [...]
+properties["holes"] = [...]
+properties["hole_count"] = ...
 properties["perimeter"] = ...
 properties["centroid_y"] = ...
 properties["centroid_z"] = ...
 ```
 
-Quand `sectionproperties` est disponible, le Section Builder utilise le contour ferme
-pour creer une geometrie `sectionproperties`, generer un maillage et recalculer les
-proprietes. Les informations avancees sont conservees sous :
+Quand `sectionproperties` est disponible, le Section Builder utilise le contour
+exterieur ferme et les trous fermes pour creer une geometrie `sectionproperties`,
+generer un maillage et recalculer les proprietes. Les informations avancees sont
+conservees sous :
 
 ```text
 properties["sectionproperties"]["mesh_area"] = ...
@@ -128,7 +132,9 @@ properties["sectionproperties"]["mesh_triangle_count"] = ...
 ```
 
 Si la bibliotheque n'est pas installee, ou si le maillage echoue, HEXA conserve le
-calcul polygonal simple afin que l'outil reste utilisable.
+calcul polygonal simple pour les sections pleines. Les sections avec trous exigent
+`sectionproperties`, car le calcul polygonal simple ne soustrait pas encore les
+contours interieurs.
 
 La vue 3D reutilise directement les points du contour pour l'affichage/extrusion.
 Les solveurs continuent a lire les valeurs numeriques `area`, `inertia_y` et
@@ -136,7 +142,6 @@ Les solveurs continuent a lire les valeurs numeriques `area`, `inertia_y` et
 
 Limites volontaires de cette etape :
 
-- pas de trous ;
 - pas de sections composees ;
 - pas de contraintes internes ;
 - pas d'import DXF ;

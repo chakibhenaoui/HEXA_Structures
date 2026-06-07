@@ -10,6 +10,7 @@
 - Edition du contour dans le Section Builder : tableau de coordonnees modifiable, insertion/suppression de points et marqueur du centre de gravite.
 - Validation du Section Builder contre les contours croises ou degeneres, avec affichage du perimetre calcule.
 - Calcul optionnel des contours Section Builder par `sectionproperties`, avec generation et affichage du maillage triangule.
+- Trous interieurs dans le Section Builder, calcules par `sectionproperties` et sauvegardes dans les sections personnalisees.
 - Socle technique `sectionproperties` expose dans le menu Modele avec statut d'import, version, fonctions detectees et capacites branchees/prevues.
 - Apercu dynamique de section dans la boite de definition des sections.
 - Extrusion 3D des nouvelles sections parametriques, avec tubes creux et couleur differente par section.
