@@ -7,6 +7,7 @@ from core.sectionproperties_adapter import (
     SectionPropertiesCalculationError,
     SectionPropertiesUnavailable,
     calculate_polygon_sectionproperties_section,
+    calculate_polygon_sectionproperties_stress,
     calculate_sectionproperties_section,
     is_sectionproperties_available,
     list_sectionproperty_shapes,
@@ -121,6 +122,25 @@ def test_sectionproperties_calculates_polygon_with_hole() -> None:
     )
     assert result.properties["holes"]
     assert result.mesh is not None
+
+
+def test_sectionproperties_calculates_polygon_stress() -> None:
+    if not is_sectionproperties_available():
+        pytest.skip("sectionproperties is not installed")
+
+    result = calculate_polygon_sectionproperties_stress(
+        [(0.0, 0.0), (0.20, 0.0), (0.20, 0.30), (0.0, 0.30)],
+        mesh_area=1.0e-3,
+        stress_key="zz",
+        n=1.0e3,
+        mxx=1.0e3,
+    )
+
+    assert result.stress_key == "zz"
+    assert result.actions["n"] == pytest.approx(1.0e3)
+    assert result.max_stress > result.min_stress
+    assert result.mesh is not None
+    assert hasattr(result.stress_post, "plot_stress")
 
 
 def test_sectionproperties_rejects_hole_outside_polygon() -> None:

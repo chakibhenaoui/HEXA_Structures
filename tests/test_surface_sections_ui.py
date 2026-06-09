@@ -244,7 +244,7 @@ def test_section_builder_exposes_sectionproperties_workbench_layout() -> None:
     assert dlg._library_params_layout.rowCount() >= 1
     assert "sectionproperties" in dlg._lbl_library_status.text()
     assert dlg.act_print_report.isEnabled() is False
-    assert dlg.act_sp_show_stress.isEnabled() is False
+    assert dlg.act_sp_show_stress.isEnabled() is is_sectionproperties_available()
 
 
 def test_plate_section_dialog_result_includes_formulation() -> None:

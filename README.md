@@ -23,7 +23,7 @@ Le projet a dépassé le stade du prototype. Aujourd'hui, la base applicative es
 - une couche `core/application/` avec ports, cas d'usage et façade applicative
 - une couche `core/adapters/` pour les solveurs et le maillage
 - une couche `core/plugins/` pour découvrir des plugins par manifeste sans exécuter de code par défaut
-- une interface PySide6 structurée
+- une interface structurée
 - la gestion des matériaux, sections, conditions aux limites, charges et combinaisons
 - l'extraction de résultats et le rendu des diagrammes 2D pour les cas pris en charge
 - une vue 3D interactive connectée au modèle
@@ -42,7 +42,7 @@ Les travaux en cours portent surtout sur :
 - Bibliothèque de matériaux béton (EC2) et acier (EC3)
 - Sections rectangulaires, en T, I/H, U, L et tubes avec aperçu dynamique
 - Catalogue embarqué de plus de 200 profilés européens (`IPE`, `HEA`, `HEB`, `HEM`, `UPN`, `UPE`, `CHS`, `SHS`, `RHS`, cornières)
-- Vue 3D PyVista avec sélection interactive et symboles d'appui
+- Vue 3D avec sélection interactive et symboles d'appui
 - Arbre hiérarchique du modèle synchronisé avec la vue
 - Panneau de propriétés éditable pour les principaux objets
 - Dialogues de création : matériaux, sections, charges, combinaisons, réglages Eurocodes

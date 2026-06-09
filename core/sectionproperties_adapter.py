@@ -12,7 +12,7 @@ from importlib import metadata
 from importlib import import_module
 from importlib.util import find_spec
 from inspect import isfunction
-from typing import Mapping
+from typing import Any, Mapping
 
 from core.section_builder import Point2D, validate_simple_polygon
 
@@ -48,6 +48,18 @@ class SectionPropertiesResult:
     torsion_constant: float
     ixy: float
     properties: dict
+    mesh: "SectionPropertiesMesh | None" = None
+
+
+@dataclass(frozen=True)
+class SectionPropertiesStressResult:
+    """Stress analysis result and post-processor for a user section."""
+
+    stress_post: Any
+    stress_key: str
+    actions: dict[str, float]
+    min_stress: float
+    max_stress: float
     mesh: "SectionPropertiesMesh | None" = None
 
 
@@ -219,6 +231,25 @@ SECTIONPROPERTY_SHAPES: dict[str, SectionPropertyShape] = {
         fields=("d", "b", "t", "r_out"),
         defaults={"d": 0.20, "b": 0.10, "t": 0.006, "r_out": 0.0},
     ),
+}
+
+
+STRESS_RESULT_ATTRIBUTES: dict[str, str] = {
+    "n_zz": "sig_zz_n",
+    "mxx_zz": "sig_zz_mxx",
+    "myy_zz": "sig_zz_myy",
+    "m_zz": "sig_zz_m",
+    "mzz_zxy": "sig_zxy_mzz",
+    "vx_zxy": "sig_zxy_vx",
+    "vy_zxy": "sig_zxy_vy",
+    "v_zxy": "sig_zxy_v",
+    "zz": "sig_zz",
+    "zx": "sig_zx",
+    "zy": "sig_zy",
+    "zxy": "sig_zxy",
+    "11": "sig_11",
+    "33": "sig_33",
+    "vm": "sig_vm",
 }
 
 
@@ -440,28 +471,12 @@ def calculate_polygon_sectionproperties_section(
     if mesh_area <= 0.0:
         raise SectionPropertiesCalculationError("mesh_area must be positive")
 
-    normalized_points = _normalize_polygon_points(points)
-    normalized_holes = tuple(
-        _normalize_polygon_points(hole)
-        for hole in (holes or ())
-        if hole
-    )
-    validate_simple_polygon(normalized_points)
-    for hole in normalized_holes:
-        validate_simple_polygon(hole)
-
     try:
-        polygon_cls = getattr(import_module("shapely"), "Polygon")
-        geometry_cls = getattr(import_module("sectionproperties.pre.geometry"), "Geometry")
-        section_cls = getattr(import_module("sectionproperties.analysis"), "Section")
-        polygon = polygon_cls(normalized_points, holes=normalized_holes)
-        if not polygon.is_valid:
-            raise SectionPropertiesCalculationError("invalid_polygon_with_holes")
-        if polygon.area <= 0.0:
-            raise SectionPropertiesCalculationError("polygon_zero_area")
-        geometry = geometry_cls(geom=polygon)
-        geometry.create_mesh(mesh_sizes=[float(mesh_area)])
-        section = section_cls(geometry=geometry)
+        geometry, section, normalized_holes = _polygon_section(
+            points,
+            holes=holes,
+            mesh_area=mesh_area,
+        )
         section.calculate_geometric_properties()
         area = float(section.get_area())
         ixx, iyy, ixy = (float(value) for value in section.get_ic())
@@ -500,6 +515,64 @@ def calculate_polygon_sectionproperties_section(
         ixy=ixy,
         properties=properties,
         mesh=mesh,
+    )
+
+
+def calculate_polygon_sectionproperties_stress(
+    points: list[Point2D] | tuple[Point2D, ...],
+    *,
+    holes: list[list[Point2D]] | tuple[tuple[Point2D, ...], ...] | None = None,
+    mesh_area: float = 1.0e-4,
+    stress_key: str = "zz",
+    n: float = 0.0,
+    vx: float = 0.0,
+    vy: float = 0.0,
+    mxx: float = 0.0,
+    myy: float = 0.0,
+    mzz: float = 0.0,
+) -> SectionPropertiesStressResult:
+    """Calculate section stresses for a custom polygon section.
+
+    Actions use sectionproperties SI units: N, N, N, N.m, N.m and N.m.
+    """
+    if not is_sectionproperties_available():
+        raise SectionPropertiesUnavailable("sectionproperties is not installed")
+    if mesh_area <= 0.0:
+        raise SectionPropertiesCalculationError("mesh_area must be positive")
+    if stress_key not in STRESS_RESULT_ATTRIBUTES:
+        raise SectionPropertiesCalculationError(f"Unsupported stress result: {stress_key}")
+
+    actions = {
+        "n": float(n),
+        "vx": float(vx),
+        "vy": float(vy),
+        "mxx": float(mxx),
+        "myy": float(myy),
+        "mzz": float(mzz),
+    }
+    try:
+        geometry, section, _normalized_holes = _polygon_section(
+            points,
+            holes=holes,
+            mesh_area=mesh_area,
+        )
+        section.calculate_geometric_properties()
+        if any(abs(actions[key]) > 0.0 for key in ("vx", "vy", "mzz")):
+            section.calculate_warping_properties()
+        stress_post = section.calculate_stress(**actions)
+        stress_values = _stress_values(stress_post, stress_key)
+    except Exception as exc:
+        if isinstance(exc, SectionPropertiesCalculationError):
+            raise
+        raise SectionPropertiesCalculationError(str(exc)) from exc
+
+    return SectionPropertiesStressResult(
+        stress_post=stress_post,
+        stress_key=stress_key,
+        actions=actions,
+        min_stress=float(stress_values[0]),
+        max_stress=float(stress_values[1]),
+        mesh=_mesh_from_geometry(geometry),
     )
 
 
@@ -552,6 +625,48 @@ def _normalize_polygon_points(points: list[Point2D] | tuple[Point2D, ...]) -> li
         if abs(first[0] - last[0]) <= 1.0e-12 and abs(first[1] - last[1]) <= 1.0e-12:
             normalized.pop()
     return normalized
+
+
+def _polygon_section(
+    points: list[Point2D] | tuple[Point2D, ...],
+    *,
+    holes: list[list[Point2D]] | tuple[tuple[Point2D, ...], ...] | None,
+    mesh_area: float,
+):
+    normalized_points = _normalize_polygon_points(points)
+    normalized_holes = tuple(
+        _normalize_polygon_points(hole)
+        for hole in (holes or ())
+        if hole
+    )
+    validate_simple_polygon(normalized_points)
+    for hole in normalized_holes:
+        validate_simple_polygon(hole)
+
+    polygon_cls = getattr(import_module("shapely"), "Polygon")
+    geometry_cls = getattr(import_module("sectionproperties.pre.geometry"), "Geometry")
+    section_cls = getattr(import_module("sectionproperties.analysis"), "Section")
+    polygon = polygon_cls(normalized_points, holes=normalized_holes)
+    if not polygon.is_valid:
+        raise SectionPropertiesCalculationError("invalid_polygon_with_holes")
+    if polygon.area <= 0.0:
+        raise SectionPropertiesCalculationError("polygon_zero_area")
+    geometry = geometry_cls(geom=polygon)
+    geometry.create_mesh(mesh_sizes=[float(mesh_area)])
+    return geometry, section_cls(geometry=geometry), normalized_holes
+
+
+def _stress_values(stress_post, stress_key: str) -> tuple[float, float]:
+    attribute = STRESS_RESULT_ATTRIBUTES[stress_key]
+    values: list[float] = []
+    for material_result in stress_post.get_stress():
+        raw = material_result.get(attribute)
+        if raw is None:
+            continue
+        values.extend(float(value) for value in raw)
+    if not values:
+        raise SectionPropertiesCalculationError(f"No stress values for {stress_key}")
+    return min(values), max(values)
 
 
 def _mesh_from_geometry(geometry) -> SectionPropertiesMesh | None:

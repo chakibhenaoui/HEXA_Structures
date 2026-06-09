@@ -32,85 +32,109 @@
 <context>
     <name>BoundaryDialog</name>
     <message>
+        <location filename="../gui/ui/boundary_dlg.ui" line="6"/>
         <source>Conditions aux limites</source>
-        <translation type="vanished">Boundary conditions</translation>
+        <translation>Boundary conditions</translation>
     </message>
     <message>
+        <location filename="../gui/ui/boundary_dlg.ui" line="21"/>
         <source>Type d&apos;appui :</source>
-        <translation type="vanished">Support type:</translation>
+        <translation>Support type:</translation>
     </message>
     <message>
+        <location filename="../gui/ui/boundary_dlg.ui" line="34"/>
         <source>Degrés de liberté bloqués</source>
-        <translation type="vanished">Locked degrees of freedom</translation>
+        <translation>Locked degrees of freedom</translation>
     </message>
     <message>
+        <location filename="../gui/ui/boundary_dlg.ui" line="40"/>
         <source>Translation X (Ux)</source>
-        <translation type="vanished">Translation X (Ux)</translation>
+        <translation>Translation X (Ux)</translation>
     </message>
     <message>
+        <location filename="../gui/ui/boundary_dlg.ui" line="47"/>
         <source>Translation Y (Uy)</source>
-        <translation type="vanished">Translation Y (Uy)</translation>
+        <translation>Translation Y (Uy)</translation>
     </message>
     <message>
+        <location filename="../gui/ui/boundary_dlg.ui" line="54"/>
         <source>Translation Z (Uz)</source>
-        <translation type="vanished">Translation Z (Uz)</translation>
+        <translation>Translation Z (Uz)</translation>
     </message>
     <message>
+        <location filename="../gui/ui/boundary_dlg.ui" line="61"/>
         <source>Rotation X (Rx)</source>
-        <translation type="vanished">Rotation X (Rx)</translation>
+        <translation>Rotation X (Rx)</translation>
     </message>
     <message>
+        <location filename="../gui/ui/boundary_dlg.ui" line="68"/>
         <source>Rotation Y (Ry)</source>
-        <translation type="vanished">Rotation Y (Ry)</translation>
+        <translation>Rotation Y (Ry)</translation>
     </message>
     <message>
+        <location filename="../gui/ui/boundary_dlg.ui" line="75"/>
         <source>Rotation Z (Rz)</source>
-        <translation type="vanished">Rotation Z (Rz)</translation>
+        <translation>Rotation Z (Rz)</translation>
     </message>
     <message>
         <location filename="../gui/dialogs/boundary_dlg.py" line="100"/>
+        <location filename="../gui/ui/boundary_dlg.ui" line="86"/>
         <source>Libre</source>
         <translation>Free</translation>
     </message>
     <message>
+        <location filename="../gui/ui/boundary_dlg.ui" line="89"/>
         <source>font-weight: bold; color: #0078d4;</source>
-        <translation type="vanished">font-weight: bold; color: #0078d4;</translation>
+        <translation>font-weight: bold; color: #0078d4;</translation>
     </message>
     <message>
+        <location filename="../gui/ui/boundary_dlg.ui" line="97"/>
         <source>Appuis élastiques (optionnel)</source>
-        <translation type="vanished">Elastic supports (optional)</translation>
+        <translation>Elastic supports (optional)</translation>
     </message>
     <message>
+        <location filename="../gui/ui/boundary_dlg.ui" line="109"/>
         <source>Raideur Kx (kN/m) :</source>
-        <translation type="vanished">Stiffness Kx (kN/m):</translation>
+        <translation>Stiffness Kx (kN/m):</translation>
     </message>
     <message>
+        <location filename="../gui/ui/boundary_dlg.ui" line="122"/>
+        <location filename="../gui/ui/boundary_dlg.ui" line="142"/>
+        <location filename="../gui/ui/boundary_dlg.ui" line="162"/>
         <source> kN/m</source>
-        <translation type="vanished"> kN/m</translation>
+        <translation> kN/m</translation>
     </message>
     <message>
+        <location filename="../gui/ui/boundary_dlg.ui" line="129"/>
         <source>Raideur Ky (kN/m) :</source>
-        <translation type="vanished">Stiffness Ky (kN/m):</translation>
+        <translation>Stiffness Ky (kN/m):</translation>
     </message>
     <message>
+        <location filename="../gui/ui/boundary_dlg.ui" line="149"/>
         <source>Raideur Kz (kN/m) :</source>
-        <translation type="vanished">Stiffness Kz (kN/m):</translation>
+        <translation>Stiffness Kz (kN/m):</translation>
     </message>
     <message>
+        <location filename="../gui/ui/boundary_dlg.ui" line="169"/>
         <source>Raideur Krx (kN·m/rad) :</source>
-        <translation type="vanished">Stiffness Krx (kN.m/rad):</translation>
+        <translation>Stiffness Krx (kN.m/rad):</translation>
     </message>
     <message>
+        <location filename="../gui/ui/boundary_dlg.ui" line="182"/>
+        <location filename="../gui/ui/boundary_dlg.ui" line="202"/>
+        <location filename="../gui/ui/boundary_dlg.ui" line="222"/>
         <source> kN·m/rad</source>
-        <translation type="vanished"> kN·m/rad</translation>
+        <translation> kN·m/rad</translation>
     </message>
     <message>
+        <location filename="../gui/ui/boundary_dlg.ui" line="189"/>
         <source>Raideur Kry (kN·m/rad) :</source>
-        <translation type="vanished">Stiffness Kry (kN.m/rad):</translation>
+        <translation>Stiffness Kry (kN.m/rad):</translation>
     </message>
     <message>
+        <location filename="../gui/ui/boundary_dlg.ui" line="209"/>
         <source>Raideur Krz (kN·m/rad) :</source>
-        <translation type="vanished">Stiffness Krz (kN.m/rad):</translation>
+        <translation>Stiffness Krz (kN.m/rad):</translation>
     </message>
     <message>
         <location filename="../gui/dialogs/boundary_dlg.py" line="101"/>
@@ -362,16 +386,19 @@
         <translation>{count} generated combination(s)</translation>
     </message>
     <message>
+        <location filename="../gui/ui/combo_dlg.ui" line="6"/>
         <source>Combinaisons EC0 — NF EN 1990</source>
-        <translation type="vanished">EC0 combinations - NF EN 1990</translation>
+        <translation>EC0 combinations - NF EN 1990</translation>
     </message>
     <message>
+        <location filename="../gui/ui/combo_dlg.ui" line="28"/>
         <source>Types de combinaisons à générer</source>
-        <translation type="vanished">Combination types to generate</translation>
+        <translation>Combination types to generate</translation>
     </message>
     <message>
+        <location filename="../gui/ui/combo_dlg.ui" line="36"/>
         <source>Aperçu des combinaisons :</source>
-        <translation type="vanished">Combination preview:</translation>
+        <translation>Combination preview:</translation>
     </message>
 </context>
 <context>
@@ -1081,108 +1108,134 @@ a 2D diagram.</translation>
 <context>
     <name>EurocodeSettingsDialog</name>
     <message>
+        <location filename="../gui/ui/eurocode_dlg.ui" line="6"/>
         <source>Paramètres Eurocodes — Annexe Nationale Française</source>
-        <translation type="vanished">Eurocode settings - French National Annex</translation>
+        <translation>Eurocode settings - French National Annex</translation>
     </message>
     <message>
+        <location filename="../gui/ui/eurocode_dlg.ui" line="19"/>
         <source>Les valeurs ci-dessous correspondent à l&apos;Annexe Nationale Française (NF EN 1990, 1991, 1992, 1993). Toute modification s&apos;appliquera aux prochaines générations de combinaisons.</source>
-        <translation type="vanished">The values below correspond to the French National Annex (NF EN 1990, 1991, 1992, 1993). Any change will apply to future combination generation.</translation>
+        <translation>The values below correspond to the French National Annex (NF EN 1990, 1991, 1992, 1993). Any change will apply to future combination generation.</translation>
     </message>
     <message>
+        <location filename="../gui/ui/eurocode_dlg.ui" line="38"/>
         <source>Coefficients partiels</source>
-        <translation type="vanished">Partial factors</translation>
+        <translation>Partial factors</translation>
     </message>
     <message>
+        <location filename="../gui/ui/eurocode_dlg.ui" line="45"/>
         <source>ELU fondamental (EC0 §6.4.3.2, tableau A1.2(B))</source>
-        <translation type="vanished">Fundamental ULS (EC0 §6.4.3.2, Table A1.2(B))</translation>
+        <translation>Fundamental ULS (EC0 §6.4.3.2, Table A1.2(B))</translation>
     </message>
     <message>
+        <location filename="../gui/ui/eurocode_dlg.ui" line="53"/>
         <source>gamma_G,sup (permanent defavorable) :</source>
-        <translation type="vanished">gamma_G,sup (unfavourable permanent):</translation>
+        <translation>gamma_G,sup (unfavourable permanent):</translation>
     </message>
     <message>
+        <location filename="../gui/ui/eurocode_dlg.ui" line="86"/>
         <source>gamma_G,inf (permanent favorable) :</source>
-        <translation type="vanished">gamma_G,inf (favourable permanent):</translation>
+        <translation>gamma_G,inf (favourable permanent):</translation>
     </message>
     <message>
+        <location filename="../gui/ui/eurocode_dlg.ui" line="119"/>
         <source>gamma_Q (variable) :</source>
-        <translation type="vanished">gamma_Q (variable):</translation>
+        <translation>gamma_Q (variable):</translation>
     </message>
     <message>
+        <location filename="../gui/ui/eurocode_dlg.ui" line="154"/>
         <source>ELU accidentel / sismique (EC0 §6.4.3.3-4)</source>
-        <translation type="vanished">Accidental / seismic ULS (EC0 §6.4.3.3-4)</translation>
+        <translation>Accidental / seismic ULS (EC0 §6.4.3.3-4)</translation>
     </message>
     <message>
+        <location filename="../gui/ui/eurocode_dlg.ui" line="162"/>
         <source>gamma_G,accidentel :</source>
-        <translation type="vanished">gamma_G,accidental:</translation>
+        <translation>gamma_G,accidental:</translation>
     </message>
     <message>
+        <location filename="../gui/ui/eurocode_dlg.ui" line="195"/>
         <source>gamma_Q,accidentel :</source>
-        <translation type="vanished">gamma_Q,accidental:</translation>
+        <translation>gamma_Q,accidental:</translation>
     </message>
     <message>
+        <location filename="../gui/ui/eurocode_dlg.ui" line="245"/>
         <source>Coefficients psi</source>
-        <translation type="vanished">Psi coefficients</translation>
+        <translation>Psi coefficients</translation>
     </message>
     <message>
+        <location filename="../gui/ui/eurocode_dlg.ui" line="251"/>
         <source>EC0 tableau A1.1 — Annexe Nationale Française</source>
-        <translation type="vanished">EC0 table A1.1 - French National Annex</translation>
+        <translation>EC0 table A1.1 - French National Annex</translation>
     </message>
     <message>
+        <location filename="../gui/ui/eurocode_dlg.ui" line="265"/>
         <source>Categorie</source>
-        <translation type="vanished">Category</translation>
+        <translation>Category</translation>
     </message>
     <message>
+        <location filename="../gui/ui/eurocode_dlg.ui" line="270"/>
         <source>psi_0</source>
-        <translation type="vanished">psi_0</translation>
+        <translation>psi_0</translation>
     </message>
     <message>
+        <location filename="../gui/ui/eurocode_dlg.ui" line="275"/>
         <source>psi_1</source>
-        <translation type="vanished">psi_1</translation>
+        <translation>psi_1</translation>
     </message>
     <message>
+        <location filename="../gui/ui/eurocode_dlg.ui" line="280"/>
         <source>psi_2</source>
-        <translation type="vanished">psi_2</translation>
+        <translation>psi_2</translation>
     </message>
     <message>
+        <location filename="../gui/ui/eurocode_dlg.ui" line="290"/>
         <source>Coefficients matériaux</source>
-        <translation type="vanished">Coefficients materialx</translation>
+        <translation>Coefficients materialx</translation>
     </message>
     <message>
+        <location filename="../gui/ui/eurocode_dlg.ui" line="297"/>
         <source>EC2 — Beton arme</source>
-        <translation type="vanished">EC2 - Reinforced concrete</translation>
+        <translation>EC2 - Reinforced concrete</translation>
     </message>
     <message>
+        <location filename="../gui/ui/eurocode_dlg.ui" line="305"/>
         <source>gamma_C (beton) :</source>
-        <translation type="vanished">gamma_C (concrete):</translation>
+        <translation>gamma_C (concrete):</translation>
     </message>
     <message>
+        <location filename="../gui/ui/eurocode_dlg.ui" line="338"/>
         <source>alpha_cc :</source>
-        <translation type="vanished">alpha_cc:</translation>
+        <translation>alpha_cc:</translation>
     </message>
     <message>
+        <location filename="../gui/ui/eurocode_dlg.ui" line="371"/>
         <source>gamma_S (armatures) :</source>
-        <translation type="vanished">gamma_S (reinforcement):</translation>
+        <translation>gamma_S (reinforcement):</translation>
     </message>
     <message>
+        <location filename="../gui/ui/eurocode_dlg.ui" line="406"/>
         <source>EC3 — Acier de construction</source>
-        <translation type="vanished">EC3 - Structural steel</translation>
+        <translation>EC3 - Structural steel</translation>
     </message>
     <message>
+        <location filename="../gui/ui/eurocode_dlg.ui" line="414"/>
         <source>gamma_M0 (resistance sections) :</source>
-        <translation type="vanished">gamma_M0 (section resistance):</translation>
+        <translation>gamma_M0 (section resistance):</translation>
     </message>
     <message>
+        <location filename="../gui/ui/eurocode_dlg.ui" line="447"/>
         <source>gamma_M1 (instabilites) :</source>
-        <translation type="vanished">gamma_M1 (instabilities):</translation>
+        <translation>gamma_M1 (instabilities):</translation>
     </message>
     <message>
+        <location filename="../gui/ui/eurocode_dlg.ui" line="480"/>
         <source>gamma_M2 (sections nettes / boulons) :</source>
-        <translation type="vanished">gamma_M2 (net sections / bolts):</translation>
+        <translation>gamma_M2 (net sections / bolts):</translation>
     </message>
     <message>
+        <location filename="../gui/ui/eurocode_dlg.ui" line="535"/>
         <source>Réinitialiser (AN française)</source>
-        <translation type="vanished">Reset (French NA)</translation>
+        <translation>Reset (French NA)</translation>
     </message>
     <message>
         <location filename="../gui/dialogs/eurocode_dlg.py" line="111"/>
@@ -1370,6 +1423,7 @@ Confirm the modification?</translation>
     <name>LoadCaseDialog</name>
     <message>
         <location filename="../gui/dialogs/load_dlg.py" line="487"/>
+        <location filename="../gui/ui/load_case_dlg.ui" line="6"/>
         <source>Nouveau cas de charge</source>
         <translation>New load case</translation>
     </message>
@@ -1499,24 +1553,29 @@ Confirm the modification?</translation>
         <translation>H - Inaccessible roofs</translation>
     </message>
     <message>
+        <location filename="../gui/ui/load_case_dlg.ui" line="18"/>
         <source>Cas de charge</source>
-        <translation type="vanished">Load case</translation>
+        <translation>Load case</translation>
     </message>
     <message>
+        <location filename="../gui/ui/load_case_dlg.ui" line="24"/>
         <source>Nom :</source>
-        <translation type="vanished">Name:</translation>
+        <translation>Name:</translation>
     </message>
     <message>
+        <location filename="../gui/ui/load_case_dlg.ui" line="31"/>
         <source>Ex : Poids propre</source>
-        <translation type="vanished">Ex: Self weight</translation>
+        <translation>Ex: Self weight</translation>
     </message>
     <message>
+        <location filename="../gui/ui/load_case_dlg.ui" line="38"/>
         <source>Type :</source>
-        <translation type="vanished">Type:</translation>
+        <translation>Type:</translation>
     </message>
     <message>
+        <location filename="../gui/ui/load_case_dlg.ui" line="48"/>
         <source>Categorie EC1 :</source>
-        <translation type="vanished">EC1 category:</translation>
+        <translation>EC1 category:</translation>
     </message>
 </context>
 <context>
@@ -1722,104 +1781,135 @@ Confirm the modification?</translation>
 <context>
     <name>LoadEditorForm</name>
     <message>
+        <location filename="../gui/ui/load_editor.ui" line="20"/>
         <source>Cas de charges :</source>
-        <translation type="vanished">Load cases:</translation>
+        <translation>Load cases:</translation>
     </message>
     <message>
+        <location filename="../gui/ui/load_editor.ui" line="32"/>
         <source>+ Cas</source>
-        <translation type="vanished">+ Case</translation>
+        <translation>+ Case</translation>
     </message>
     <message>
+        <location filename="../gui/ui/load_editor.ui" line="39"/>
         <source>- Cas</source>
-        <translation type="vanished">- Case</translation>
+        <translation>- Case</translation>
     </message>
     <message>
+        <location filename="../gui/ui/load_editor.ui" line="54"/>
         <source>Cas de charge</source>
-        <translation type="vanished">Load case</translation>
+        <translation>Load case</translation>
     </message>
     <message>
+        <location filename="../gui/ui/load_editor.ui" line="60"/>
         <source>Nom :</source>
-        <translation type="vanished">Name:</translation>
+        <translation>Name:</translation>
     </message>
     <message>
+        <location filename="../gui/ui/load_editor.ui" line="70"/>
         <source>Type :</source>
-        <translation type="vanished">Type:</translation>
+        <translation>Type:</translation>
     </message>
     <message>
+        <location filename="../gui/ui/load_editor.ui" line="80"/>
         <source>Catégorie EC1 :</source>
-        <translation type="vanished">EC1 category:</translation>
+        <translation>EC1 category:</translation>
     </message>
     <message>
+        <location filename="../gui/ui/load_editor.ui" line="94"/>
         <source>Charge nodale</source>
-        <translation type="vanished">Load nodale</translation>
+        <translation>Load nodale</translation>
     </message>
     <message>
+        <location filename="../gui/ui/load_editor.ui" line="100"/>
         <source>Nœud :</source>
-        <translation type="vanished">Node:</translation>
+        <translation>Node:</translation>
     </message>
     <message>
+        <location filename="../gui/ui/load_editor.ui" line="117"/>
         <source>Fx :</source>
-        <translation type="vanished">Fx :</translation>
+        <translation>Fx :</translation>
     </message>
     <message>
+        <location filename="../gui/ui/load_editor.ui" line="133"/>
+        <location filename="../gui/ui/load_editor.ui" line="156"/>
+        <location filename="../gui/ui/load_editor.ui" line="179"/>
         <source> kN</source>
-        <translation type="vanished"> kN</translation>
+        <translation> kN</translation>
     </message>
     <message>
+        <location filename="../gui/ui/load_editor.ui" line="140"/>
         <source>Fy :</source>
-        <translation type="vanished">Fy :</translation>
+        <translation>Fy :</translation>
     </message>
     <message>
+        <location filename="../gui/ui/load_editor.ui" line="163"/>
         <source>Fz :</source>
-        <translation type="vanished">Fz :</translation>
+        <translation>Fz :</translation>
     </message>
     <message>
+        <location filename="../gui/ui/load_editor.ui" line="186"/>
         <source>Mx :</source>
-        <translation type="vanished">Mx :</translation>
+        <translation>Mx :</translation>
     </message>
     <message>
+        <location filename="../gui/ui/load_editor.ui" line="202"/>
+        <location filename="../gui/ui/load_editor.ui" line="225"/>
+        <location filename="../gui/ui/load_editor.ui" line="248"/>
         <source> kN·m</source>
-        <translation type="vanished"> kN·m</translation>
+        <translation> kN·m</translation>
     </message>
     <message>
+        <location filename="../gui/ui/load_editor.ui" line="209"/>
         <source>My :</source>
-        <translation type="vanished">My :</translation>
+        <translation>My :</translation>
     </message>
     <message>
+        <location filename="../gui/ui/load_editor.ui" line="232"/>
         <source>Mz :</source>
-        <translation type="vanished">Mz :</translation>
+        <translation>Mz :</translation>
     </message>
     <message>
+        <location filename="../gui/ui/load_editor.ui" line="255"/>
         <source>Ajouter charge nodale</source>
-        <translation type="vanished">Add load nodale</translation>
+        <translation>Add load nodale</translation>
     </message>
     <message>
+        <location filename="../gui/ui/load_editor.ui" line="266"/>
         <source>Charge répartie sur élément</source>
-        <translation type="vanished">Distributed load on element</translation>
+        <translation>Distributed load on element</translation>
     </message>
     <message>
+        <location filename="../gui/ui/load_editor.ui" line="272"/>
         <source>Élément :</source>
-        <translation type="vanished">Element :</translation>
+        <translation>Element :</translation>
     </message>
     <message>
+        <location filename="../gui/ui/load_editor.ui" line="289"/>
         <source>wx :</source>
-        <translation type="vanished">wx :</translation>
+        <translation>wx :</translation>
     </message>
     <message>
+        <location filename="../gui/ui/load_editor.ui" line="305"/>
+        <location filename="../gui/ui/load_editor.ui" line="328"/>
+        <location filename="../gui/ui/load_editor.ui" line="351"/>
         <source> kN/m</source>
-        <translation type="vanished"> kN/m</translation>
+        <translation> kN/m</translation>
     </message>
     <message>
+        <location filename="../gui/ui/load_editor.ui" line="312"/>
         <source>wy :</source>
-        <translation type="vanished">wy :</translation>
+        <translation>wy :</translation>
     </message>
     <message>
+        <location filename="../gui/ui/load_editor.ui" line="335"/>
         <source>wz :</source>
-        <translation type="vanished">wz :</translation>
+        <translation>wz :</translation>
     </message>
     <message>
+        <location filename="../gui/ui/load_editor.ui" line="358"/>
         <source>Ajouter charge répartie</source>
-        <translation type="vanished">Add distributed load</translation>
+        <translation>Add distributed load</translation>
     </message>
 </context>
 <context>
@@ -2208,6 +2298,7 @@ Confirm the modification?</translation>
         <translation>File</translation>
     </message>
     <message>
+        <location filename="../gui/ui/main_window.ui" line="30"/>
         <source>&amp;Fichier</source>
         <translation>&amp;File</translation>
     </message>
@@ -2228,6 +2319,7 @@ Confirm the modification?</translation>
         <translation>View</translation>
     </message>
     <message>
+        <location filename="../gui/ui/main_window.ui" line="84"/>
         <source>&amp;Vue</source>
         <translation>&amp;View</translation>
     </message>
@@ -2252,6 +2344,7 @@ Confirm the modification?</translation>
         <location filename="../gui/main_window.py" line="1405"/>
         <location filename="../gui/main_window.py" line="7834"/>
         <location filename="../gui/main_window.py" line="7860"/>
+        <location filename="../gui/ui/main_window.ui" line="200"/>
         <source>Résultats</source>
         <translation>Results</translation>
     </message>
@@ -2601,21 +2694,25 @@ OpenSeesPy remains available as an optional advanced engine.
     </message>
     <message>
         <location filename="../gui/main_window.py" line="1443"/>
+        <location filename="../gui/ui/main_window.ui" line="313"/>
         <source>Déplacements nodaux</source>
         <translation>Nodal displacements</translation>
     </message>
     <message>
         <location filename="../gui/main_window.py" line="1445"/>
+        <location filename="../gui/ui/main_window.ui" line="318"/>
         <source>Réactions d&apos;appui</source>
         <translation>Support reactions</translation>
     </message>
     <message>
         <location filename="../gui/main_window.py" line="1446"/>
+        <location filename="../gui/ui/main_window.ui" line="323"/>
         <source>Efforts internes</source>
         <translation>Internal forces</translation>
     </message>
     <message>
         <location filename="../gui/main_window.py" line="1447"/>
+        <location filename="../gui/ui/main_window.ui" line="328"/>
         <source>Déformée</source>
         <translation>Deformed shape</translation>
     </message>
@@ -2635,162 +2732,199 @@ OpenSeesPy remains available as an optional advanced engine.
         <translation>Plate maps...</translation>
     </message>
     <message>
+        <location filename="../gui/ui/main_window.ui" line="14"/>
         <source>HEXA Structures</source>
-        <translation type="vanished">HEXA Structures</translation>
+        <translation>HEXA Structures</translation>
     </message>
     <message>
+        <location filename="../gui/ui/main_window.ui" line="41"/>
         <source>&amp;Modèle</source>
-        <translation type="vanished">&amp;Model</translation>
+        <translation>&amp;Model</translation>
     </message>
     <message>
+        <location filename="../gui/ui/main_window.ui" line="56"/>
         <source>&amp;Analyse</source>
-        <translation type="vanished">&amp;Analysis</translation>
+        <translation>&amp;Analysis</translation>
     </message>
     <message>
+        <location filename="../gui/ui/main_window.ui" line="64"/>
         <source>&amp;Résultats</source>
-        <translation type="vanished">&amp;Results</translation>
+        <translation>&amp;Results</translation>
     </message>
     <message>
+        <location filename="../gui/ui/main_window.ui" line="97"/>
         <source>&amp;Aide</source>
-        <translation type="vanished">&amp;Help</translation>
+        <translation>&amp;Help</translation>
     </message>
     <message>
+        <location filename="../gui/ui/main_window.ui" line="110"/>
         <source>Principal</source>
-        <translation type="vanished">Main</translation>
+        <translation>Main</translation>
     </message>
     <message>
         <location filename="../gui/main_window.py" line="347"/>
         <location filename="../gui/main_window.py" line="1410"/>
+        <location filename="../gui/ui/main_window.ui" line="210"/>
         <source>Combinaisons</source>
         <translation>Combinations</translation>
     </message>
     <message>
+        <location filename="../gui/ui/main_window.ui" line="217"/>
         <source>&amp;Nouveau projet</source>
-        <translation type="vanished">&amp;New project</translation>
+        <translation>&amp;New project</translation>
     </message>
     <message>
+        <location filename="../gui/ui/main_window.ui" line="220"/>
         <source>Ctrl+N</source>
-        <translation type="vanished">Ctrl+N</translation>
+        <translation>Ctrl+N</translation>
     </message>
     <message>
+        <location filename="../gui/ui/main_window.ui" line="225"/>
         <source>&amp;Ouvrir...</source>
-        <translation type="vanished">&amp;Open...</translation>
+        <translation>&amp;Open...</translation>
     </message>
     <message>
+        <location filename="../gui/ui/main_window.ui" line="228"/>
         <source>Ctrl+O</source>
-        <translation type="vanished">Ctrl+O</translation>
+        <translation>Ctrl+O</translation>
     </message>
     <message>
+        <location filename="../gui/ui/main_window.ui" line="233"/>
         <source>&amp;Enregistrer</source>
-        <translation type="vanished">&amp;Save</translation>
+        <translation>&amp;Save</translation>
     </message>
     <message>
+        <location filename="../gui/ui/main_window.ui" line="236"/>
         <source>Ctrl+S</source>
-        <translation type="vanished">Ctrl+S</translation>
+        <translation>Ctrl+S</translation>
     </message>
     <message>
+        <location filename="../gui/ui/main_window.ui" line="241"/>
         <source>Enregistrer &amp;sous...</source>
-        <translation type="vanished">Save &amp;as...</translation>
+        <translation>Save &amp;as...</translation>
     </message>
     <message>
+        <location filename="../gui/ui/main_window.ui" line="244"/>
         <source>Ctrl+Shift+S</source>
-        <translation type="vanished">Ctrl+Shift+S</translation>
+        <translation>Ctrl+Shift+S</translation>
     </message>
     <message>
+        <location filename="../gui/ui/main_window.ui" line="249"/>
         <source>&amp;Quitter</source>
-        <translation type="vanished">&amp;Quit</translation>
+        <translation>&amp;Quit</translation>
     </message>
     <message>
+        <location filename="../gui/ui/main_window.ui" line="252"/>
         <source>Ctrl+Q</source>
-        <translation type="vanished">Ctrl+Q</translation>
+        <translation>Ctrl+Q</translation>
     </message>
     <message>
+        <location filename="../gui/ui/main_window.ui" line="257"/>
         <source>Ajouter un &amp;nœud...</source>
-        <translation type="vanished">Add &amp;node...</translation>
+        <translation>Add &amp;node...</translation>
     </message>
     <message>
+        <location filename="../gui/ui/main_window.ui" line="262"/>
         <source>Ajouter un &amp;matériau...</source>
-        <translation type="vanished">Add &amp;material...</translation>
+        <translation>Add &amp;material...</translation>
     </message>
     <message>
+        <location filename="../gui/ui/main_window.ui" line="267"/>
         <source>Ajouter une &amp;section...</source>
-        <translation type="vanished">Add &amp;section...</translation>
+        <translation>Add &amp;section...</translation>
     </message>
     <message>
+        <location filename="../gui/ui/main_window.ui" line="272"/>
         <source>Ajouter un é&amp;lément...</source>
-        <translation type="vanished">Add &amp;element...</translation>
+        <translation>Add &amp;element...</translation>
     </message>
     <message>
+        <location filename="../gui/ui/main_window.ui" line="277"/>
         <source>Conditions aux &amp;limites...</source>
-        <translation type="vanished">&amp;Boundary conditions...</translation>
+        <translation>&amp;Boundary conditions...</translation>
     </message>
     <message>
+        <location filename="../gui/ui/main_window.ui" line="282"/>
         <source>Ajouter un cas de c&amp;harge...</source>
-        <translation type="vanished">Add &amp;load case...</translation>
+        <translation>Add &amp;load case...</translation>
     </message>
     <message>
+        <location filename="../gui/ui/main_window.ui" line="287"/>
         <source>Définir les c&amp;harges...</source>
-        <translation type="vanished">Define &amp;loads...</translation>
+        <translation>Define &amp;loads...</translation>
     </message>
     <message>
+        <location filename="../gui/ui/main_window.ui" line="292"/>
         <source>Générer les com&amp;binaisons EC0...</source>
-        <translation type="vanished">Generate EC0 com&amp;binations...</translation>
+        <translation>Generate EC0 com&amp;binations...</translation>
     </message>
     <message>
+        <location filename="../gui/ui/main_window.ui" line="297"/>
         <source>&amp;Lancer l&apos;analyse</source>
-        <translation type="vanished">Run &amp;analysis</translation>
+        <translation>Run &amp;analysis</translation>
     </message>
     <message>
+        <location filename="../gui/ui/main_window.ui" line="300"/>
         <source>F5</source>
-        <translation type="vanished">F5</translation>
+        <translation>F5</translation>
     </message>
     <message>
+        <location filename="../gui/ui/main_window.ui" line="308"/>
         <source>Paramètres &amp;Eurocodes...</source>
-        <translation type="vanished">&amp;Eurocode settings...</translation>
+        <translation>&amp;Eurocode settings...</translation>
     </message>
     <message>
         <location filename="../gui/main_window.py" line="1450"/>
+        <location filename="../gui/ui/main_window.ui" line="333"/>
         <source>Diagramme N (effort normal)</source>
         <translation>N diagram (axial force)</translation>
     </message>
     <message>
         <location filename="../gui/main_window.py" line="1454"/>
+        <location filename="../gui/ui/main_window.ui" line="338"/>
         <source>Diagramme Vy (tranchant horizontal)</source>
         <translation>Vy diagram (horizontal shear)</translation>
     </message>
     <message>
         <location filename="../gui/main_window.py" line="1458"/>
+        <location filename="../gui/ui/main_window.ui" line="343"/>
         <source>Diagramme Vz (tranchant vertical/gravité)</source>
         <translation>Vz diagram (vertical/gravity shear)</translation>
     </message>
     <message>
         <location filename="../gui/main_window.py" line="1462"/>
+        <location filename="../gui/ui/main_window.ui" line="348"/>
         <source>Diagramme My (moment gravitaire)</source>
         <translation>My diagram (gravity moment)</translation>
     </message>
     <message>
         <location filename="../gui/main_window.py" line="1466"/>
+        <location filename="../gui/ui/main_window.ui" line="353"/>
         <source>Diagramme Mz (moment latéral)</source>
         <translation>Mz diagram (lateral moment)</translation>
     </message>
     <message>
         <location filename="../gui/main_window.py" line="1468"/>
+        <location filename="../gui/ui/main_window.ui" line="358"/>
         <source>Diagramme T (torsion)</source>
         <translation>T diagram (torsion)</translation>
     </message>
     <message>
         <location filename="../gui/main_window.py" line="1469"/>
+        <location filename="../gui/ui/main_window.ui" line="363"/>
         <source>Masquer diagrammes</source>
         <translation>Hide diagrams</translation>
     </message>
     <message>
         <location filename="../gui/main_window.py" line="1470"/>
+        <location filename="../gui/ui/main_window.ui" line="368"/>
         <source>Enveloppes</source>
         <translation>Envelopes</translation>
     </message>
     <message>
+        <location filename="../gui/ui/main_window.ui" line="409"/>
         <source>À &amp;propos...</source>
-        <translation type="vanished">&amp;About...</translation>
+        <translation>&amp;About...</translation>
     </message>
     <message>
         <location filename="../gui/main_window.py" line="1302"/>
@@ -2815,31 +2949,37 @@ OpenSeesPy remains available as an optional advanced engine.
     </message>
     <message>
         <location filename="../gui/main_window.py" line="1473"/>
+        <location filename="../gui/ui/main_window.ui" line="373"/>
         <source>Vue XY (dessus)</source>
         <translation>XY view (top)</translation>
     </message>
     <message>
         <location filename="../gui/main_window.py" line="1474"/>
+        <location filename="../gui/ui/main_window.ui" line="378"/>
         <source>Vue XZ (face)</source>
         <translation>XZ view (front)</translation>
     </message>
     <message>
         <location filename="../gui/main_window.py" line="1475"/>
+        <location filename="../gui/ui/main_window.ui" line="383"/>
         <source>Vue YZ (côté)</source>
         <translation>YZ view (side)</translation>
     </message>
     <message>
         <location filename="../gui/main_window.py" line="1476"/>
+        <location filename="../gui/ui/main_window.ui" line="388"/>
         <source>Vue isométrique</source>
         <translation>Isometric view</translation>
     </message>
     <message>
         <location filename="../gui/main_window.py" line="1477"/>
+        <location filename="../gui/ui/main_window.ui" line="393"/>
         <source>Numéros des nœuds</source>
         <translation>Node numbers</translation>
     </message>
     <message>
         <location filename="../gui/main_window.py" line="1478"/>
+        <location filename="../gui/ui/main_window.ui" line="401"/>
         <source>Noms des sections</source>
         <translation>Section names</translation>
     </message>
@@ -2857,6 +2997,7 @@ OpenSeesPy remains available as an optional advanced engine.
     <message>
         <location filename="../gui/main_window.py" line="296"/>
         <location filename="../gui/main_window.py" line="1396"/>
+        <location filename="../gui/ui/main_window.ui" line="145"/>
         <source>Arbre du modèle</source>
         <translation>Model tree</translation>
     </message>
@@ -2865,23 +3006,27 @@ OpenSeesPy remains available as an optional advanced engine.
         <location filename="../gui/main_window.py" line="1398"/>
         <location filename="../gui/main_window.py" line="3911"/>
         <location filename="../gui/main_window.py" line="4009"/>
+        <location filename="../gui/ui/main_window.ui" line="157"/>
         <source>Propriétés</source>
         <translation>Properties</translation>
     </message>
     <message>
         <location filename="../gui/main_window.py" line="312"/>
         <location filename="../gui/main_window.py" line="1400"/>
+        <location filename="../gui/ui/main_window.ui" line="169"/>
         <source>Informations</source>
         <translation>Information</translation>
     </message>
     <message>
         <location filename="../gui/main_window.py" line="1402"/>
+        <location filename="../gui/ui/main_window.ui" line="183"/>
         <source>Console</source>
         <translation>Console</translation>
     </message>
     <message>
         <location filename="../gui/main_window.py" line="338"/>
         <location filename="../gui/main_window.py" line="1407"/>
+        <location filename="../gui/ui/main_window.ui" line="205"/>
         <source>Nœuds</source>
         <translation>Nodes</translation>
     </message>
@@ -4219,30 +4364,36 @@ Current diagrams are limited to vertical XZ and YZ planes.</translation>
     <message>
         <location filename="../gui/dialogs/material_dlg.py" line="261"/>
         <location filename="../gui/dialogs/material_dlg.py" line="271"/>
+        <location filename="../gui/ui/material_dlg.ui" line="6"/>
         <source>Matériau</source>
         <translation>Material</translation>
     </message>
     <message>
+        <location filename="../gui/ui/material_dlg.ui" line="15"/>
         <source>Propriétés du matériau</source>
-        <translation type="vanished">Material properties</translation>
+        <translation>Material properties</translation>
     </message>
     <message>
         <location filename="../gui/dialogs/material_dlg.py" line="165"/>
+        <location filename="../gui/ui/material_dlg.ui" line="21"/>
         <source>Nom :</source>
         <translation>Name:</translation>
     </message>
     <message>
+        <location filename="../gui/ui/material_dlg.ui" line="28"/>
         <source>Ex : Béton C30/37</source>
-        <translation type="vanished">Ex: Concrete C30/37</translation>
+        <translation>Ex: Concrete C30/37</translation>
     </message>
     <message>
         <location filename="../gui/dialogs/material_dlg.py" line="166"/>
+        <location filename="../gui/ui/material_dlg.ui" line="35"/>
         <source>Type :</source>
         <translation>Type:</translation>
     </message>
     <message>
+        <location filename="../gui/ui/material_dlg.ui" line="45"/>
         <source>Nuance :</source>
-        <translation type="vanished">Grade:</translation>
+        <translation>Grade:</translation>
     </message>
 </context>
 <context>
@@ -5307,6 +5458,7 @@ to see its properties.</translation>
 <context>
     <name>ResultsPanel</name>
     <message>
+        <location filename="../gui/ui/results_panel.ui" line="34"/>
         <location filename="../gui/widgets/results_panel.py" line="170"/>
         <source>Cas / Combinaison :</source>
         <translation>Case / Combination:</translation>
@@ -5324,30 +5476,36 @@ to see its properties.</translation>
         <translation>Text, node, element, case...</translation>
     </message>
     <message>
+        <location filename="../gui/ui/results_panel.ui" line="29"/>
         <source>0,1</source>
-        <translation type="vanished">0,1</translation>
+        <translation>0,1</translation>
     </message>
     <message>
+        <location filename="../gui/ui/results_panel.ui" line="54"/>
         <location filename="../gui/widgets/results_panel.py" line="179"/>
         <source>Déplacements</source>
         <translation>Displacements</translation>
     </message>
     <message>
+        <location filename="../gui/ui/results_panel.ui" line="80"/>
         <location filename="../gui/widgets/results_panel.py" line="180"/>
         <source>Réactions</source>
         <translation>Reactions</translation>
     </message>
     <message>
+        <location filename="../gui/ui/results_panel.ui" line="106"/>
         <location filename="../gui/widgets/results_panel.py" line="181"/>
         <source>Efforts internes</source>
         <translation>Internal forces</translation>
     </message>
     <message>
+        <location filename="../gui/ui/results_panel.ui" line="132"/>
         <location filename="../gui/widgets/results_panel.py" line="182"/>
         <source>Plaques</source>
         <translation>Plates</translation>
     </message>
     <message>
+        <location filename="../gui/ui/results_panel.ui" line="158"/>
         <location filename="../gui/widgets/results_panel.py" line="183"/>
         <source>Enveloppes</source>
         <translation>Envelopes</translation>
@@ -5418,598 +5576,817 @@ to see its properties.</translation>
 <context>
     <name>SectionBuilderDialog</name>
     <message>
-        <location filename="../gui/dialogs/section_builder_dlg.py" line="579"/>
+        <location filename="../gui/dialogs/section_builder_dlg.py" line="1048"/>
         <source>Section Builder HEXA</source>
         <translation>HEXA Section Builder</translation>
     </message>
     <message>
-        <location filename="../gui/dialogs/section_builder_dlg.py" line="584"/>
-        <location filename="../gui/dialogs/section_builder_dlg.py" line="1639"/>
+        <location filename="../gui/dialogs/section_builder_dlg.py" line="1053"/>
+        <location filename="../gui/dialogs/section_builder_dlg.py" line="2507"/>
         <source>Section personnalisée</source>
         <translation>Custom section</translation>
     </message>
     <message>
-        <location filename="../gui/dialogs/section_builder_dlg.py" line="593"/>
-        <location filename="../gui/dialogs/section_builder_dlg.py" line="1375"/>
+        <location filename="../gui/dialogs/section_builder_dlg.py" line="1066"/>
+        <location filename="../gui/dialogs/section_builder_dlg.py" line="2114"/>
         <source>Accrochage grille actif</source>
         <translation>Grid snap enabled</translation>
     </message>
     <message>
-        <location filename="../gui/dialogs/section_builder_dlg.py" line="597"/>
+        <location filename="../gui/dialogs/section_builder_dlg.py" line="1070"/>
         <source>Nouveau trou</source>
         <translation>New hole</translation>
     </message>
     <message>
-        <location filename="../gui/dialogs/section_builder_dlg.py" line="598"/>
+        <location filename="../gui/dialogs/section_builder_dlg.py" line="1071"/>
         <source>Supprimer trou</source>
         <translation>Delete hole</translation>
     </message>
     <message>
-        <location filename="../gui/dialogs/section_builder_dlg.py" line="600"/>
+        <location filename="../gui/dialogs/section_builder_dlg.py" line="1073"/>
         <source>Parametres du profile</source>
         <translation>Profile parameters</translation>
     </message>
     <message>
-        <location filename="../gui/dialogs/section_builder_dlg.py" line="605"/>
-        <location filename="../gui/dialogs/section_builder_dlg.py" line="686"/>
+        <location filename="../gui/dialogs/section_builder_dlg.py" line="1078"/>
+        <location filename="../gui/dialogs/section_builder_dlg.py" line="1159"/>
         <source>Inserer a partir de la bibliotheque</source>
         <translation>Insert from library</translation>
     </message>
     <message>
-        <location filename="../gui/dialogs/section_builder_dlg.py" line="609"/>
+        <location filename="../gui/dialogs/section_builder_dlg.py" line="1082"/>
         <source>Calculer avec sectionproperties</source>
         <translation>Calculate with sectionproperties</translation>
     </message>
     <message>
-        <location filename="../gui/dialogs/section_builder_dlg.py" line="619"/>
+        <location filename="../gui/dialogs/section_builder_dlg.py" line="1092"/>
         <source>Afficher le maillage</source>
         <translation>Show mesh</translation>
     </message>
     <message>
-        <location filename="../gui/dialogs/section_builder_dlg.py" line="623"/>
+        <location filename="../gui/dialogs/section_builder_dlg.py" line="1096"/>
         <source>y (m)</source>
         <translation>y (m)</translation>
     </message>
     <message>
-        <location filename="../gui/dialogs/section_builder_dlg.py" line="623"/>
+        <location filename="../gui/dialogs/section_builder_dlg.py" line="1096"/>
         <source>z (m)</source>
         <translation>z (m)</translation>
     </message>
     <message>
-        <location filename="../gui/dialogs/section_builder_dlg.py" line="630"/>
+        <location filename="../gui/dialogs/section_builder_dlg.py" line="1103"/>
         <source>Dessinez puis fermez un contour.</source>
         <translation>Draw and close a contour.</translation>
     </message>
     <message>
-        <location filename="../gui/dialogs/section_builder_dlg.py" line="636"/>
+        <location filename="../gui/dialogs/section_builder_dlg.py" line="1109"/>
         <source>Fermer le contour</source>
         <translation>Close contour</translation>
     </message>
     <message>
-        <location filename="../gui/dialogs/section_builder_dlg.py" line="637"/>
+        <location filename="../gui/dialogs/section_builder_dlg.py" line="1110"/>
         <source>Annuler point</source>
         <translation>Undo point</translation>
     </message>
     <message>
-        <location filename="../gui/dialogs/section_builder_dlg.py" line="638"/>
+        <location filename="../gui/dialogs/section_builder_dlg.py" line="1111"/>
         <source>Inserer point</source>
         <translation>Insert point</translation>
     </message>
     <message>
-        <location filename="../gui/dialogs/section_builder_dlg.py" line="639"/>
+        <location filename="../gui/dialogs/section_builder_dlg.py" line="1112"/>
+        <location filename="../gui/dialogs/section_builder_dlg.py" line="1179"/>
+        <location filename="../gui/dialogs/section_builder_dlg.py" line="1917"/>
         <source>Supprimer point</source>
         <translation>Delete point</translation>
     </message>
     <message>
-        <location filename="../gui/dialogs/section_builder_dlg.py" line="640"/>
+        <location filename="../gui/dialogs/section_builder_dlg.py" line="1113"/>
         <source>Effacer</source>
         <translation>Clear</translation>
     </message>
     <message>
-        <location filename="../gui/dialogs/section_builder_dlg.py" line="641"/>
+        <location filename="../gui/dialogs/section_builder_dlg.py" line="1114"/>
         <source>Analyser</source>
         <translation>Analyze</translation>
     </message>
     <message>
-        <location filename="../gui/dialogs/section_builder_dlg.py" line="645"/>
+        <location filename="../gui/dialogs/section_builder_dlg.py" line="1118"/>
         <source>Inserer la section</source>
         <translation>Insert section</translation>
     </message>
     <message>
-        <location filename="../gui/dialogs/section_builder_dlg.py" line="664"/>
+        <location filename="../gui/dialogs/section_builder_dlg.py" line="1137"/>
         <source>sectionproperties indisponible : calcul polygonal simple utilise.</source>
         <translation>sectionproperties unavailable: simple polygon calculation is used.</translation>
     </message>
     <message>
-        <location filename="../gui/dialogs/section_builder_dlg.py" line="676"/>
+        <location filename="../gui/dialogs/section_builder_dlg.py" line="1149"/>
         <source>Nouveau</source>
         <translation>New</translation>
     </message>
     <message>
-        <location filename="../gui/dialogs/section_builder_dlg.py" line="677"/>
+        <location filename="../gui/dialogs/section_builder_dlg.py" line="1150"/>
         <source>Ouvrir...</source>
         <translation>Open...</translation>
     </message>
     <message>
-        <location filename="../gui/dialogs/section_builder_dlg.py" line="678"/>
         <source>Importer forme</source>
-        <translation>Import shape</translation>
+        <translation type="vanished">Import shape</translation>
     </message>
     <message>
-        <location filename="../gui/dialogs/section_builder_dlg.py" line="679"/>
+        <location filename="../gui/dialogs/section_builder_dlg.py" line="1152"/>
         <source>Enregistrer</source>
         <translation>Save</translation>
     </message>
     <message>
-        <location filename="../gui/dialogs/section_builder_dlg.py" line="680"/>
+        <location filename="../gui/dialogs/section_builder_dlg.py" line="1153"/>
         <source>Enregistrer sous...</source>
         <translation>Save as...</translation>
     </message>
     <message>
-        <location filename="../gui/dialogs/section_builder_dlg.py" line="681"/>
+        <location filename="../gui/dialogs/section_builder_dlg.py" line="1154"/>
         <source>Imprimer le rapport</source>
         <translation>Print report</translation>
     </message>
     <message>
-        <location filename="../gui/dialogs/section_builder_dlg.py" line="683"/>
+        <location filename="../gui/dialogs/section_builder_dlg.py" line="1156"/>
         <source>Quitter</source>
         <translation>Quit</translation>
     </message>
     <message>
-        <location filename="../gui/dialogs/section_builder_dlg.py" line="690"/>
+        <location filename="../gui/dialogs/section_builder_dlg.py" line="1163"/>
         <source>Calculer</source>
         <translation>Calculate</translation>
     </message>
     <message>
-        <location filename="../gui/dialogs/section_builder_dlg.py" line="691"/>
-        <location filename="../gui/dialogs/section_builder_dlg.py" line="1163"/>
+        <location filename="../gui/dialogs/section_builder_dlg.py" line="1164"/>
+        <location filename="../gui/dialogs/section_builder_dlg.py" line="1816"/>
         <source>Resultats</source>
         <translation>Results</translation>
     </message>
     <message>
-        <location filename="../gui/dialogs/section_builder_dlg.py" line="692"/>
+        <location filename="../gui/dialogs/section_builder_dlg.py" line="1165"/>
         <source>Afficher contrainte</source>
         <translation>Show stress</translation>
     </message>
     <message>
-        <location filename="../gui/dialogs/section_builder_dlg.py" line="695"/>
         <source>L&apos;affichage des contraintes sera branche dans une prochaine etape.</source>
-        <translation>Stress display will be connected in a future step.</translation>
+        <translation type="vanished">Stress display will be connected in a future step.</translation>
     </message>
     <message>
-        <location filename="../gui/dialogs/section_builder_dlg.py" line="700"/>
+        <location filename="../gui/dialogs/section_builder_dlg.py" line="1195"/>
         <source>Fichier</source>
         <translation>File</translation>
     </message>
     <message>
-        <location filename="../gui/dialogs/section_builder_dlg.py" line="713"/>
+        <location filename="../gui/dialogs/section_builder_dlg.py" line="1208"/>
         <source>sectionproperties</source>
         <translation>sectionproperties</translation>
     </message>
     <message>
-        <location filename="../gui/dialogs/section_builder_dlg.py" line="753"/>
+        <location filename="../gui/dialogs/section_builder_dlg.py" line="1266"/>
+        <source>General</source>
+        <translation>General</translation>
+    </message>
+    <message>
+        <location filename="../gui/dialogs/section_builder_dlg.py" line="1267"/>
+        <source>Contour</source>
+        <translation>Contour</translation>
+    </message>
+    <message>
+        <location filename="../gui/dialogs/section_builder_dlg.py" line="1268"/>
+        <source>Calcul</source>
+        <translation>Calculation</translation>
+    </message>
+    <message>
+        <location filename="../gui/dialogs/section_builder_dlg.py" line="1274"/>
         <source>Definition</source>
         <translation>Definition</translation>
     </message>
     <message>
-        <location filename="../gui/dialogs/section_builder_dlg.py" line="755"/>
+        <location filename="../gui/dialogs/section_builder_dlg.py" line="1276"/>
         <source>Nom :</source>
         <translation>Name:</translation>
     </message>
     <message>
-        <location filename="../gui/dialogs/section_builder_dlg.py" line="756"/>
+        <location filename="../gui/dialogs/section_builder_dlg.py" line="1277"/>
         <source>Materiau :</source>
         <translation>Material:</translation>
     </message>
     <message>
-        <location filename="../gui/dialogs/section_builder_dlg.py" line="757"/>
+        <location filename="../gui/dialogs/section_builder_dlg.py" line="1278"/>
         <source>Pas de grille :</source>
         <translation>Grid step:</translation>
     </message>
     <message>
-        <location filename="../gui/dialogs/section_builder_dlg.py" line="761"/>
+        <location filename="../gui/dialogs/section_builder_dlg.py" line="1288"/>
         <source>Points du contour</source>
         <translation>Contour points</translation>
     </message>
     <message>
-        <location filename="../gui/dialogs/section_builder_dlg.py" line="764"/>
+        <location filename="../gui/dialogs/section_builder_dlg.py" line="1291"/>
         <source>Contour :</source>
         <translation>Contour:</translation>
     </message>
     <message>
-        <location filename="../gui/dialogs/section_builder_dlg.py" line="773"/>
+        <location filename="../gui/dialogs/section_builder_dlg.py" line="1314"/>
         <source>Analyse</source>
         <translation>Analysis</translation>
     </message>
     <message>
-        <location filename="../gui/dialogs/section_builder_dlg.py" line="777"/>
+        <location filename="../gui/dialogs/section_builder_dlg.py" line="1318"/>
         <source>Surface max. de maille :</source>
         <translation>Maximum mesh area:</translation>
     </message>
     <message>
-        <location filename="../gui/dialogs/section_builder_dlg.py" line="786"/>
+        <location filename="../gui/dialogs/section_builder_dlg.py" line="1328"/>
         <source>Bibliotheque sectionproperties</source>
         <translation>sectionproperties library</translation>
     </message>
     <message>
-        <location filename="../gui/dialogs/section_builder_dlg.py" line="789"/>
+        <location filename="../gui/dialogs/section_builder_dlg.py" line="1331"/>
         <source>Forme :</source>
         <translation>Shape:</translation>
     </message>
     <message>
-        <location filename="../gui/dialogs/section_builder_dlg.py" line="800"/>
+        <location filename="../gui/dialogs/section_builder_dlg.py" line="1342"/>
         <source>(aucun materiau)</source>
         <translation>(no material)</translation>
     </message>
     <message>
-        <location filename="../gui/dialogs/section_builder_dlg.py" line="839"/>
+        <location filename="../gui/dialogs/section_builder_dlg.py" line="1175"/>
+        <location filename="../gui/dialogs/section_builder_dlg.py" line="1389"/>
+        <location filename="../gui/dialogs/section_builder_dlg.py" line="1913"/>
         <source>Rectangle</source>
         <translation>Rectangle</translation>
     </message>
     <message>
-        <location filename="../gui/dialogs/section_builder_dlg.py" line="840"/>
+        <source>Importer profile standard...</source>
+        <translation type="vanished">Import standard profile...</translation>
+    </message>
+    <message>
+        <location filename="../gui/dialogs/section_builder_dlg.py" line="1173"/>
+        <location filename="../gui/dialogs/section_builder_dlg.py" line="1911"/>
+        <source>Selection</source>
+        <translation>Select</translation>
+    </message>
+    <message>
+        <location filename="../gui/dialogs/section_builder_dlg.py" line="1174"/>
+        <location filename="../gui/dialogs/section_builder_dlg.py" line="1912"/>
+        <source>Polygone</source>
+        <translation>Polygon</translation>
+    </message>
+    <message>
+        <location filename="../gui/dialogs/section_builder_dlg.py" line="1176"/>
+        <location filename="../gui/dialogs/section_builder_dlg.py" line="1914"/>
+        <source>Cercle</source>
+        <translation>Circle</translation>
+    </message>
+    <message>
+        <location filename="../gui/dialogs/section_builder_dlg.py" line="1177"/>
+        <location filename="../gui/dialogs/section_builder_dlg.py" line="1915"/>
+        <source>Trou</source>
+        <translation>Hole</translation>
+    </message>
+    <message>
+        <location filename="../gui/dialogs/section_builder_dlg.py" line="1178"/>
+        <location filename="../gui/dialogs/section_builder_dlg.py" line="1916"/>
+        <source>Deplacer point</source>
+        <translation>Move point</translation>
+    </message>
+    <message>
+        <location filename="../gui/dialogs/section_builder_dlg.py" line="1189"/>
+        <source>Zoom +</source>
+        <translation>Zoom +</translation>
+    </message>
+    <message>
+        <location filename="../gui/dialogs/section_builder_dlg.py" line="1190"/>
+        <source>Zoom -</source>
+        <translation>Zoom -</translation>
+    </message>
+    <message>
+        <location filename="../gui/dialogs/section_builder_dlg.py" line="1191"/>
+        <source>Ajuster</source>
+        <translation>Fit</translation>
+    </message>
+    <message>
+        <source>Outils de dessin</source>
+        <translation type="vanished">Drawing tools</translation>
+    </message>
+    <message>
+        <location filename="../gui/dialogs/section_builder_dlg.py" line="1390"/>
         <source>Cercle plein</source>
         <translation>Solid circle</translation>
     </message>
     <message>
-        <location filename="../gui/dialogs/section_builder_dlg.py" line="841"/>
+        <location filename="../gui/dialogs/section_builder_dlg.py" line="1391"/>
         <source>I / H</source>
         <translation>I / H</translation>
     </message>
     <message>
-        <location filename="../gui/dialogs/section_builder_dlg.py" line="842"/>
+        <location filename="../gui/dialogs/section_builder_dlg.py" line="1392"/>
         <source>U / Channel</source>
         <translation>U / Channel</translation>
     </message>
     <message>
-        <location filename="../gui/dialogs/section_builder_dlg.py" line="843"/>
+        <location filename="../gui/dialogs/section_builder_dlg.py" line="1393"/>
         <source>T</source>
         <translation>T</translation>
     </message>
     <message>
-        <location filename="../gui/dialogs/section_builder_dlg.py" line="844"/>
+        <location filename="../gui/dialogs/section_builder_dlg.py" line="1394"/>
         <source>Corniere L</source>
         <translation>L angle</translation>
     </message>
     <message>
-        <location filename="../gui/dialogs/section_builder_dlg.py" line="845"/>
+        <location filename="../gui/dialogs/section_builder_dlg.py" line="1395"/>
         <source>Tube circulaire CHS</source>
         <translation>Circular tube CHS</translation>
     </message>
     <message>
-        <location filename="../gui/dialogs/section_builder_dlg.py" line="846"/>
+        <location filename="../gui/dialogs/section_builder_dlg.py" line="1396"/>
         <source>Tube rectangulaire RHS/SHS</source>
         <translation>Rectangular tube RHS/SHS</translation>
     </message>
     <message>
-        <location filename="../gui/dialogs/section_builder_dlg.py" line="852"/>
+        <location filename="../gui/dialogs/section_builder_dlg.py" line="1402"/>
         <source>Diametre d :</source>
         <translation>Diameter d:</translation>
     </message>
     <message>
-        <location filename="../gui/dialogs/section_builder_dlg.py" line="854"/>
+        <location filename="../gui/dialogs/section_builder_dlg.py" line="1404"/>
         <source>Hauteur d :</source>
         <translation>Depth d:</translation>
     </message>
     <message>
-        <location filename="../gui/dialogs/section_builder_dlg.py" line="855"/>
+        <location filename="../gui/dialogs/section_builder_dlg.py" line="1405"/>
         <source>Largeur b :</source>
         <translation>Width b:</translation>
     </message>
     <message>
-        <location filename="../gui/dialogs/section_builder_dlg.py" line="856"/>
+        <location filename="../gui/dialogs/section_builder_dlg.py" line="1406"/>
         <source>Epaisseur t :</source>
         <translation>Thickness t:</translation>
     </message>
     <message>
-        <location filename="../gui/dialogs/section_builder_dlg.py" line="857"/>
+        <location filename="../gui/dialogs/section_builder_dlg.py" line="1407"/>
         <source>Epaisseur aile t_f :</source>
         <translation>Flange thickness t_f:</translation>
     </message>
     <message>
-        <location filename="../gui/dialogs/section_builder_dlg.py" line="858"/>
+        <location filename="../gui/dialogs/section_builder_dlg.py" line="1408"/>
         <source>Epaisseur ame t_w :</source>
         <translation>Web thickness t_w:</translation>
     </message>
     <message>
-        <location filename="../gui/dialogs/section_builder_dlg.py" line="859"/>
+        <location filename="../gui/dialogs/section_builder_dlg.py" line="1409"/>
         <source>Rayon r :</source>
         <translation>Radius r:</translation>
     </message>
     <message>
-        <location filename="../gui/dialogs/section_builder_dlg.py" line="860"/>
+        <location filename="../gui/dialogs/section_builder_dlg.py" line="1410"/>
         <source>Rayon interieur r_r :</source>
         <translation>Root radius r_r:</translation>
     </message>
     <message>
-        <location filename="../gui/dialogs/section_builder_dlg.py" line="861"/>
+        <location filename="../gui/dialogs/section_builder_dlg.py" line="1411"/>
         <source>Rayon exterieur r_t :</source>
         <translation>Toe radius r_t:</translation>
     </message>
     <message>
-        <location filename="../gui/dialogs/section_builder_dlg.py" line="862"/>
+        <location filename="../gui/dialogs/section_builder_dlg.py" line="1412"/>
         <source>Rayon exterieur r_out :</source>
         <translation>Outer radius r_out:</translation>
     </message>
     <message>
-        <location filename="../gui/dialogs/section_builder_dlg.py" line="934"/>
+        <location filename="../gui/dialogs/section_builder_dlg.py" line="1485"/>
         <source>Toutes les dimensions principales doivent etre positives.</source>
         <translation>All main dimensions must be positive.</translation>
     </message>
     <message>
-        <location filename="../gui/dialogs/section_builder_dlg.py" line="935"/>
+        <location filename="../gui/dialogs/section_builder_dlg.py" line="1486"/>
         <source>Les rayons doivent etre positifs ou nuls.</source>
         <translation>Radii must be positive or zero.</translation>
     </message>
     <message>
-        <location filename="../gui/dialogs/section_builder_dlg.py" line="936"/>
+        <location filename="../gui/dialogs/section_builder_dlg.py" line="1487"/>
         <source>L&apos;ame doit rester inferieure a la largeur.</source>
         <translation>The web must remain smaller than the width.</translation>
     </message>
     <message>
-        <location filename="../gui/dialogs/section_builder_dlg.py" line="937"/>
+        <location filename="../gui/dialogs/section_builder_dlg.py" line="1488"/>
         <source>Les ailes doivent laisser une ame centrale.</source>
         <translation>The flanges must leave a central web.</translation>
     </message>
     <message>
-        <location filename="../gui/dialogs/section_builder_dlg.py" line="938"/>
+        <location filename="../gui/dialogs/section_builder_dlg.py" line="1489"/>
         <source>L&apos;epaisseur de la corniere doit rester inferieure aux deux ailes.</source>
         <translation>The angle thickness must remain smaller than both legs.</translation>
     </message>
     <message>
-        <location filename="../gui/dialogs/section_builder_dlg.py" line="939"/>
+        <location filename="../gui/dialogs/section_builder_dlg.py" line="1490"/>
         <source>Le rayon exterieur ne doit pas depasser l&apos;epaisseur.</source>
         <translation>The outer radius must not exceed the thickness.</translation>
     </message>
     <message>
-        <location filename="../gui/dialogs/section_builder_dlg.py" line="940"/>
+        <location filename="../gui/dialogs/section_builder_dlg.py" line="1491"/>
         <source>Les dimensions interieures doivent rester positives.</source>
         <translation>Inner dimensions must remain positive.</translation>
     </message>
     <message>
-        <location filename="../gui/dialogs/section_builder_dlg.py" line="942"/>
+        <location filename="../gui/dialogs/section_builder_dlg.py" line="1493"/>
         <source>Geometrie de section invalide.</source>
         <translation>Invalid section geometry.</translation>
     </message>
     <message>
-        <location filename="../gui/dialogs/section_builder_dlg.py" line="947"/>
+        <location filename="../gui/dialogs/section_builder_dlg.py" line="1498"/>
         <source>sectionproperties indisponible : bibliotheque non chargee.</source>
         <translation>sectionproperties unavailable: library not loaded.</translation>
     </message>
     <message>
-        <location filename="../gui/dialogs/section_builder_dlg.py" line="955"/>
+        <location filename="../gui/dialogs/section_builder_dlg.py" line="1506"/>
         <source>Bibliotheque sectionproperties prete ({count} fonctions detectees).</source>
         <translation>sectionproperties library ready ({count} functions detected).</translation>
     </message>
     <message>
-        <location filename="../gui/dialogs/section_builder_dlg.py" line="974"/>
+        <source>Profile introuvable</source>
+        <translation type="vanished">Profile not found</translation>
+    </message>
+    <message>
+        <source>Le profile selectionne n&apos;existe pas dans le catalogue.</source>
+        <translation type="vanished">The selected profile does not exist in the catalog.</translation>
+    </message>
+    <message>
+        <source>Le profile selectionne ne peut pas etre converti en contour.</source>
+        <translation type="vanished">The selected profile cannot be converted to an outline.</translation>
+    </message>
+    <message>
+        <source>Profile {profile} insere depuis la bibliotheque standard.</source>
+        <translation type="vanished">Profile {profile} inserted from the standard library.</translation>
+    </message>
+    <message>
+        <location filename="../gui/dialogs/section_builder_dlg.py" line="1590"/>
         <source>Installez sectionproperties pour charger sa bibliotheque.</source>
         <translation>Install sectionproperties to load its library.</translation>
     </message>
     <message>
-        <location filename="../gui/dialogs/section_builder_dlg.py" line="985"/>
-        <location filename="../gui/dialogs/section_builder_dlg.py" line="1486"/>
+        <location filename="../gui/dialogs/section_builder_dlg.py" line="1601"/>
+        <location filename="../gui/dialogs/section_builder_dlg.py" line="2261"/>
         <source>Geometrie de section invalide</source>
         <translation>Invalid section geometry</translation>
     </message>
     <message>
-        <location filename="../gui/dialogs/section_builder_dlg.py" line="998"/>
+        <location filename="../gui/dialogs/section_builder_dlg.py" line="1547"/>
+        <location filename="../gui/dialogs/section_builder_dlg.py" line="1614"/>
         <source>Import impossible</source>
         <translation>Import failed</translation>
     </message>
     <message>
-        <location filename="../gui/dialogs/section_builder_dlg.py" line="999"/>
+        <location filename="../gui/dialogs/section_builder_dlg.py" line="1151"/>
+        <source>Importer profil standard...</source>
+        <translation>Import standard profile...</translation>
+    </message>
+    <message>
+        <location filename="../gui/dialogs/section_builder_dlg.py" line="1168"/>
+        <source>Calculer et afficher les contraintes avec sectionproperties.</source>
+        <translation>Calculate and display stresses with sectionproperties.</translation>
+    </message>
+    <message>
+        <location filename="../gui/dialogs/section_builder_dlg.py" line="1239"/>
+        <source>Barre Section Builder</source>
+        <translation>Section Builder toolbar</translation>
+    </message>
+    <message>
+        <location filename="../gui/dialogs/section_builder_dlg.py" line="1244"/>
+        <source>Outil :</source>
+        <translation>Tool:</translation>
+    </message>
+    <message>
+        <location filename="../gui/dialogs/section_builder_dlg.py" line="1535"/>
+        <location filename="../gui/dialogs/section_builder_dlg.py" line="2170"/>
+        <source>Profil introuvable</source>
+        <translation>Profile not found</translation>
+    </message>
+    <message>
+        <location filename="../gui/dialogs/section_builder_dlg.py" line="1536"/>
+        <source>Le profil selectionne n&apos;existe pas dans le catalogue.</source>
+        <translation>The selected profile does not exist in the catalog.</translation>
+    </message>
+    <message>
+        <location filename="../gui/dialogs/section_builder_dlg.py" line="1548"/>
+        <source>Le profil selectionne ne peut pas etre converti en contour.</source>
+        <translation>The selected profile cannot be converted to an outline.</translation>
+    </message>
+    <message>
+        <location filename="../gui/dialogs/section_builder_dlg.py" line="1572"/>
+        <source>Profil {profile} insere depuis la bibliotheque standard.</source>
+        <translation>Profile {profile} inserted from the standard library.</translation>
+    </message>
+    <message>
+        <location filename="../gui/dialogs/section_builder_dlg.py" line="1615"/>
         <source>La forme selectionnee ne peut pas etre convertie en contour.</source>
         <translation>The selected shape cannot be converted to a contour.</translation>
     </message>
     <message>
-        <location filename="../gui/dialogs/section_builder_dlg.py" line="1014"/>
-        <location filename="../gui/dialogs/section_builder_dlg.py" line="1047"/>
-        <location filename="../gui/dialogs/section_builder_dlg.py" line="1093"/>
+        <location filename="../gui/dialogs/section_builder_dlg.py" line="1632"/>
+        <location filename="../gui/dialogs/section_builder_dlg.py" line="1698"/>
+        <location filename="../gui/dialogs/section_builder_dlg.py" line="1744"/>
         <source>Section personnalisÃ©e</source>
         <translation>Custom section</translation>
     </message>
     <message>
-        <location filename="../gui/dialogs/section_builder_dlg.py" line="1022"/>
+        <location filename="../gui/dialogs/section_builder_dlg.py" line="1642"/>
         <source>Forme {shape} inseree depuis la bibliotheque sectionproperties.</source>
         <translation>Shape {shape} inserted from the sectionproperties library.</translation>
     </message>
     <message>
-        <location filename="../gui/dialogs/section_builder_dlg.py" line="1101"/>
+        <location filename="../gui/dialogs/section_builder_dlg.py" line="1753"/>
         <source>Ouvrir une section</source>
         <translation>Open section</translation>
     </message>
     <message>
-        <location filename="../gui/dialogs/section_builder_dlg.py" line="1103"/>
+        <location filename="../gui/dialogs/section_builder_dlg.py" line="1755"/>
         <source>Section Builder (*.hexa-section-builder.json *.json)</source>
         <translation>Section Builder (*.hexa-section-builder.json *.json)</translation>
     </message>
     <message>
-        <location filename="../gui/dialogs/section_builder_dlg.py" line="1115"/>
+        <location filename="../gui/dialogs/section_builder_dlg.py" line="1767"/>
         <source>Ouverture impossible</source>
         <translation>Cannot open</translation>
     </message>
     <message>
-        <location filename="../gui/dialogs/section_builder_dlg.py" line="1116"/>
+        <location filename="../gui/dialogs/section_builder_dlg.py" line="1768"/>
         <source>Le fichier ne peut pas etre lu.
 {error}</source>
         <translation>The file cannot be read.
 {error}</translation>
     </message>
     <message>
-        <location filename="../gui/dialogs/section_builder_dlg.py" line="1132"/>
+        <location filename="../gui/dialogs/section_builder_dlg.py" line="1784"/>
         <source>Enregistrer la section</source>
         <translation>Save section</translation>
     </message>
     <message>
-        <location filename="../gui/dialogs/section_builder_dlg.py" line="1134"/>
+        <location filename="../gui/dialogs/section_builder_dlg.py" line="1786"/>
         <source>Section Builder (*.hexa-section-builder.json)</source>
         <translation>Section Builder (*.hexa-section-builder.json)</translation>
     </message>
     <message>
-        <location filename="../gui/dialogs/section_builder_dlg.py" line="1153"/>
+        <location filename="../gui/dialogs/section_builder_dlg.py" line="1805"/>
         <source>Enregistrement impossible</source>
         <translation>Cannot save</translation>
     </message>
     <message>
-        <location filename="../gui/dialogs/section_builder_dlg.py" line="1154"/>
+        <location filename="../gui/dialogs/section_builder_dlg.py" line="1806"/>
         <source>Le fichier ne peut pas etre ecrit.
 {error}</source>
         <translation>The file cannot be written.
 {error}</translation>
     </message>
     <message>
-        <location filename="../gui/dialogs/section_builder_dlg.py" line="1164"/>
+        <location filename="../gui/dialogs/section_builder_dlg.py" line="1817"/>
         <source>Aucun resultat disponible.</source>
         <translation>No result available.</translation>
     </message>
     <message>
-        <location filename="../gui/dialogs/section_builder_dlg.py" line="1244"/>
+        <location filename="../gui/dialogs/section_builder_dlg.py" line="1826"/>
+        <location filename="../gui/dialogs/section_builder_dlg.py" line="2346"/>
+        <source>Installez sectionproperties pour calculer les contraintes.</source>
+        <translation>Install sectionproperties to calculate stresses.</translation>
+    </message>
+    <message>
+        <location filename="../gui/dialogs/section_builder_dlg.py" line="1833"/>
+        <source>Fermez le contour avant de calculer les contraintes.</source>
+        <translation>Close the contour before calculating stresses.</translation>
+    </message>
+    <message>
+        <location filename="../gui/dialogs/section_builder_dlg.py" line="1841"/>
+        <source>Matplotlib indisponible</source>
+        <translation>Matplotlib unavailable</translation>
+    </message>
+    <message>
+        <location filename="../gui/dialogs/section_builder_dlg.py" line="1842"/>
+        <source>Matplotlib ne peut pas etre charge.
+{error}</source>
+        <translation>Matplotlib cannot be loaded.
+{error}</translation>
+    </message>
+    <message>
+        <location filename="../gui/dialogs/section_builder_dlg.py" line="1970"/>
         <source>Trou {index} ferme : {count} point(s).</source>
         <translation>Closed hole {index}: {count} point(s).</translation>
     </message>
     <message>
-        <location filename="../gui/dialogs/section_builder_dlg.py" line="1249"/>
+        <location filename="../gui/dialogs/section_builder_dlg.py" line="1975"/>
         <source>Contour ferme : {count} point(s).</source>
         <translation>Closed contour: {count} point(s).</translation>
     </message>
     <message>
-        <location filename="../gui/dialogs/section_builder_dlg.py" line="1255"/>
+        <location filename="../gui/dialogs/section_builder_dlg.py" line="1979"/>
+        <source>Rectangle : cliquez-glissez pour definir deux coins.</source>
+        <translation>Rectangle: click and drag to define two corners.</translation>
+    </message>
+    <message>
+        <location filename="../gui/dialogs/section_builder_dlg.py" line="1981"/>
+        <source>Cercle : cliquez au centre puis glissez le rayon.</source>
+        <translation>Circle: click the center, then drag the radius.</translation>
+    </message>
+    <message>
+        <location filename="../gui/dialogs/section_builder_dlg.py" line="1983"/>
+        <source>Deplacer point : glissez un point du contour actif.</source>
+        <translation>Move point: drag a point on the active contour.</translation>
+    </message>
+    <message>
+        <location filename="../gui/dialogs/section_builder_dlg.py" line="1985"/>
+        <source>Supprimer point : cliquez un point du contour actif.</source>
+        <translation>Delete point: click a point on the active contour.</translation>
+    </message>
+    <message>
+        <location filename="../gui/dialogs/section_builder_dlg.py" line="1987"/>
+        <source>Selection : cliquez un point du contour actif.</source>
+        <translation>Select: click a point on the active contour.</translation>
+    </message>
+    <message>
+        <location filename="../gui/dialogs/section_builder_dlg.py" line="1991"/>
         <source>Dessinez le contour du trou. Cliquez pres du premier point ou utilisez Fermer le contour.</source>
         <translation>Draw the hole contour. Click near the first point or use Close contour.</translation>
     </message>
     <message>
-        <location filename="../gui/dialogs/section_builder_dlg.py" line="1261"/>
+        <location filename="../gui/dialogs/section_builder_dlg.py" line="1995"/>
+        <source>Trou : fermez le contour exterieur, puis dessinez le trou.</source>
+        <translation>Hole: close the outer contour, then draw the hole.</translation>
+    </message>
+    <message>
+        <location filename="../gui/dialogs/section_builder_dlg.py" line="1999"/>
         <source>Cliquez sur la grille pour dessiner le contour. Cliquez pres du premier point ou utilisez Fermer le contour.</source>
         <translation>Click the grid to draw the contour. Click near the first point or use Close contour.</translation>
     </message>
     <message>
-        <location filename="../gui/dialogs/section_builder_dlg.py" line="1270"/>
+        <location filename="../gui/dialogs/section_builder_dlg.py" line="2008"/>
         <source>Contour exterieur</source>
         <translation>Outer contour</translation>
     </message>
     <message>
-        <location filename="../gui/dialogs/section_builder_dlg.py" line="1272"/>
+        <location filename="../gui/dialogs/section_builder_dlg.py" line="2010"/>
         <source>Trou {index}</source>
         <translation>Hole {index}</translation>
     </message>
     <message>
-        <location filename="../gui/dialogs/section_builder_dlg.py" line="1274"/>
+        <location filename="../gui/dialogs/section_builder_dlg.py" line="2012"/>
         <source>{label} (ouvert)</source>
         <translation>{label} (open)</translation>
     </message>
     <message>
-        <location filename="../gui/dialogs/section_builder_dlg.py" line="1300"/>
+        <location filename="../gui/dialogs/section_builder_dlg.py" line="2038"/>
         <source>Contour exterieur requis</source>
         <translation>Outer contour required</translation>
     </message>
     <message>
-        <location filename="../gui/dialogs/section_builder_dlg.py" line="1301"/>
+        <location filename="../gui/dialogs/section_builder_dlg.py" line="2039"/>
         <source>Fermez le contour exterieur avant d&apos;ajouter un trou.</source>
         <translation>Close the outer contour before adding a hole.</translation>
     </message>
     <message>
-        <location filename="../gui/dialogs/section_builder_dlg.py" line="1319"/>
+        <location filename="../gui/dialogs/section_builder_dlg.py" line="2058"/>
         <source>Aucun point.</source>
         <translation>No point.</translation>
     </message>
     <message>
-        <location filename="../gui/dialogs/section_builder_dlg.py" line="1324"/>
+        <location filename="../gui/dialogs/section_builder_dlg.py" line="2063"/>
         <source> - Perimetre : {perimeter:.3f} m</source>
         <translation> - Perimeter: {perimeter:.3f} m</translation>
     </message>
     <message>
-        <location filename="../gui/dialogs/section_builder_dlg.py" line="1330"/>
+        <location filename="../gui/dialogs/section_builder_dlg.py" line="2069"/>
         <source>Points : {count} - Dimensions : {width:.3f} m x {height:.3f} m{perimeter}</source>
         <translation>Points: {count} - Dimensions: {width:.3f} m x {height:.3f} m{perimeter}</translation>
     </message>
     <message>
-        <location filename="../gui/dialogs/section_builder_dlg.py" line="1377"/>
+        <location filename="../gui/dialogs/section_builder_dlg.py" line="2116"/>
         <source>Accrochage grille inactif</source>
         <translation>Grid snap disabled</translation>
     </message>
     <message>
-        <location filename="../gui/dialogs/section_builder_dlg.py" line="1405"/>
+        <location filename="../gui/dialogs/section_builder_dlg.py" line="2144"/>
         <source>Trou incomplet</source>
         <translation>Incomplete hole</translation>
     </message>
     <message>
-        <location filename="../gui/dialogs/section_builder_dlg.py" line="1406"/>
+        <location filename="../gui/dialogs/section_builder_dlg.py" line="2145"/>
         <source>Fermez ou supprimez le trou en cours avant l&apos;analyse.</source>
         <translation>Close or delete the current hole before analysis.</translation>
     </message>
     <message>
-        <location filename="../gui/dialogs/section_builder_dlg.py" line="1449"/>
+        <location filename="../gui/dialogs/section_builder_dlg.py" line="2353"/>
+        <source>Calcul des contraintes impossible</source>
+        <translation>Stress calculation failed</translation>
+    </message>
+    <message>
+        <location filename="../gui/dialogs/section_builder_dlg.py" line="2428"/>
+        <source>catalogue standard + sectionproperties</source>
+        <translation>standard catalog + sectionproperties</translation>
+    </message>
+    <message>
+        <location filename="../gui/dialogs/section_builder_dlg.py" line="2430"/>
+        <source>catalogue standard</source>
+        <translation>standard catalog</translation>
+    </message>
+    <message>
+        <source>Le profile selectionne n&apos;existe plus dans le catalogue.</source>
+        <translation type="vanished">The selected profile no longer exists in the catalog.</translation>
+    </message>
+    <message>
+        <location filename="../gui/dialogs/section_builder_dlg.py" line="2224"/>
         <source>sectionproperties requis</source>
         <translation>sectionproperties required</translation>
     </message>
     <message>
-        <location filename="../gui/dialogs/section_builder_dlg.py" line="1450"/>
+        <location filename="../gui/dialogs/section_builder_dlg.py" line="2225"/>
         <source>Les sections avec trous necessitent sectionproperties.</source>
         <translation>Sections with holes require sectionproperties.</translation>
     </message>
     <message>
-        <location filename="../gui/dialogs/section_builder_dlg.py" line="973"/>
-        <location filename="../gui/dialogs/section_builder_dlg.py" line="1500"/>
-        <location filename="../gui/dialogs/section_builder_dlg.py" line="1531"/>
+        <location filename="../gui/dialogs/section_builder_dlg.py" line="1589"/>
+        <location filename="../gui/dialogs/section_builder_dlg.py" line="1825"/>
+        <location filename="../gui/dialogs/section_builder_dlg.py" line="2275"/>
+        <location filename="../gui/dialogs/section_builder_dlg.py" line="2306"/>
+        <location filename="../gui/dialogs/section_builder_dlg.py" line="2345"/>
         <source>sectionproperties indisponible</source>
         <translation>sectionproperties unavailable</translation>
     </message>
     <message>
-        <location filename="../gui/dialogs/section_builder_dlg.py" line="1532"/>
+        <location filename="../gui/dialogs/section_builder_dlg.py" line="2307"/>
         <source>Le calcul polygonal simple sera utilise.</source>
         <translation>The simple polygon calculation will be used.</translation>
     </message>
     <message>
-        <location filename="../gui/dialogs/section_builder_dlg.py" line="1508"/>
-        <location filename="../gui/dialogs/section_builder_dlg.py" line="1539"/>
+        <location filename="../gui/dialogs/section_builder_dlg.py" line="2283"/>
+        <location filename="../gui/dialogs/section_builder_dlg.py" line="2314"/>
         <source>Calcul sectionproperties impossible</source>
         <translation>sectionproperties calculation unavailable</translation>
     </message>
     <message>
-        <location filename="../gui/dialogs/section_builder_dlg.py" line="1501"/>
+        <location filename="../gui/dialogs/section_builder_dlg.py" line="2172"/>
+        <source>Le profil selectionne n&apos;existe plus dans le catalogue.</source>
+        <translation>The selected profile no longer exists in the catalog.</translation>
+    </message>
+    <message>
+        <location filename="../gui/dialogs/section_builder_dlg.py" line="2276"/>
         <source>Installez sectionproperties pour calculer cette section.</source>
         <translation>Install sectionproperties to calculate this section.</translation>
     </message>
     <message>
-        <location filename="../gui/dialogs/section_builder_dlg.py" line="1540"/>
+        <location filename="../gui/dialogs/section_builder_dlg.py" line="2315"/>
         <source>Le calcul polygonal simple sera utilise.
 {error}</source>
         <translation>The simple polygon calculation will be used.
 {error}</translation>
     </message>
     <message>
-        <location filename="../gui/dialogs/section_builder_dlg.py" line="1564"/>
+        <location filename="../gui/dialogs/section_builder_dlg.py" line="2380"/>
         <source>polygonal</source>
         <translation>polygonal</translation>
     </message>
     <message>
-        <location filename="../gui/dialogs/section_builder_dlg.py" line="1566"/>
+        <location filename="../gui/dialogs/section_builder_dlg.py" line="2382"/>
+        <location filename="../gui/dialogs/section_builder_dlg.py" line="2433"/>
         <source>Moteur : {engine}</source>
         <translation>Engine: {engine}</translation>
     </message>
     <message>
-        <location filename="../gui/dialogs/section_builder_dlg.py" line="1577"/>
+        <location filename="../gui/dialogs/section_builder_dlg.py" line="2393"/>
+        <location filename="../gui/dialogs/section_builder_dlg.py" line="2445"/>
         <source>Trous : {count}</source>
         <translation>Holes: {count}</translation>
     </message>
     <message>
-        <location filename="../gui/dialogs/section_builder_dlg.py" line="1585"/>
+        <location filename="../gui/dialogs/section_builder_dlg.py" line="2401"/>
+        <location filename="../gui/dialogs/section_builder_dlg.py" line="2453"/>
         <source>Maillage : {nodes} noeuds, {triangles} triangles</source>
         <translation>Mesh: {nodes} nodes, {triangles} triangles</translation>
     </message>
     <message>
-        <location filename="../gui/dialogs/section_builder_dlg.py" line="1681"/>
+        <source>Moteur : catalogue standard</source>
+        <translation type="vanished">Engine: standard catalog</translation>
+    </message>
+    <message>
+        <location filename="../gui/dialogs/section_builder_dlg.py" line="2442"/>
+        <source>Catalogue : {profile}</source>
+        <translation>Catalog: {profile}</translation>
+    </message>
+    <message>
+        <location filename="../gui/dialogs/section_builder_dlg.py" line="2600"/>
         <source>Le contour contient deux points consecutifs identiques.</source>
         <translation>The contour contains two identical consecutive points.</translation>
     </message>
     <message>
-        <location filename="../gui/dialogs/section_builder_dlg.py" line="1682"/>
+        <location filename="../gui/dialogs/section_builder_dlg.py" line="2601"/>
         <source>Le contour contient des segments qui se croisent.</source>
         <translation>The contour contains crossing segments.</translation>
     </message>
     <message>
-        <location filename="../gui/dialogs/section_builder_dlg.py" line="1683"/>
+        <location filename="../gui/dialogs/section_builder_dlg.py" line="2602"/>
         <source>L&apos;aire du contour est nulle.</source>
         <translation>The contour area is zero.</translation>
     </message>
@@ -6018,29 +6395,30 @@ to see its properties.</translation>
         <translation type="vanished">Dimensions: {width:.3f} m x {height:.3f} m</translation>
     </message>
     <message>
-        <location filename="../gui/dialogs/section_builder_dlg.py" line="1388"/>
+        <location filename="../gui/dialogs/section_builder_dlg.py" line="2127"/>
         <source>Contour incomplet</source>
         <translation>Incomplete contour</translation>
     </message>
     <message>
-        <location filename="../gui/dialogs/section_builder_dlg.py" line="1389"/>
-        <location filename="../gui/dialogs/section_builder_dlg.py" line="1680"/>
+        <location filename="../gui/dialogs/section_builder_dlg.py" line="2128"/>
+        <location filename="../gui/dialogs/section_builder_dlg.py" line="2599"/>
         <source>Le contour doit contenir au moins trois points.</source>
         <translation>The contour must contain at least three points.</translation>
     </message>
     <message>
-        <location filename="../gui/dialogs/section_builder_dlg.py" line="1397"/>
+        <location filename="../gui/dialogs/section_builder_dlg.py" line="1832"/>
+        <location filename="../gui/dialogs/section_builder_dlg.py" line="2136"/>
         <source>Contour non ferme</source>
         <translation>Open contour</translation>
     </message>
     <message>
-        <location filename="../gui/dialogs/section_builder_dlg.py" line="1398"/>
+        <location filename="../gui/dialogs/section_builder_dlg.py" line="2137"/>
         <source>Fermez le contour avant l&apos;analyse.</source>
         <translation>Close the contour before analysis.</translation>
     </message>
     <message>
-        <location filename="../gui/dialogs/section_builder_dlg.py" line="1415"/>
-        <location filename="../gui/dialogs/section_builder_dlg.py" line="1421"/>
+        <location filename="../gui/dialogs/section_builder_dlg.py" line="2154"/>
+        <location filename="../gui/dialogs/section_builder_dlg.py" line="2160"/>
         <source>Analyse impossible</source>
         <translation>Analysis unavailable</translation>
     </message>
@@ -6055,6 +6433,7 @@ to see its properties.</translation>
     </message>
     <message>
         <location filename="../gui/dialogs/section_dlg.py" line="590"/>
+        <location filename="../gui/ui/section_dlg.ui" line="6"/>
         <source>Section</source>
         <translation>Section</translation>
     </message>
@@ -6233,109 +6612,140 @@ to see its properties.</translation>
         <translation>t = {thickness:.1f} cm  |  Surface section</translation>
     </message>
     <message>
+        <location filename="../gui/ui/section_dlg.ui" line="16"/>
         <source>Propriétés de la section</source>
-        <translation type="vanished">Section properties</translation>
+        <translation>Section properties</translation>
     </message>
     <message>
+        <location filename="../gui/ui/section_dlg.ui" line="22"/>
         <source>Nom :</source>
-        <translation type="vanished">Name:</translation>
+        <translation>Name:</translation>
     </message>
     <message>
+        <location filename="../gui/ui/section_dlg.ui" line="29"/>
         <source>Ex : IPE 300</source>
-        <translation type="vanished">E.g.: IPE 300</translation>
+        <translation>E.g.: IPE 300</translation>
     </message>
     <message>
+        <location filename="../gui/ui/section_dlg.ui" line="36"/>
         <source>Type :</source>
-        <translation type="vanished">Type:</translation>
+        <translation>Type:</translation>
     </message>
     <message>
+        <location filename="../gui/ui/section_dlg.ui" line="46"/>
         <source>Matériau :</source>
-        <translation type="vanished">Material:</translation>
+        <translation>Material:</translation>
     </message>
     <message>
         <location filename="../gui/dialogs/section_dlg.py" line="669"/>
         <location filename="../gui/dialogs/section_dlg.py" line="702"/>
+        <location filename="../gui/ui/section_dlg.ui" line="68"/>
         <source>Largeur b :</source>
         <translation>Width b:</translation>
     </message>
     <message>
+        <location filename="../gui/ui/section_dlg.ui" line="87"/>
+        <location filename="../gui/ui/section_dlg.ui" line="119"/>
+        <location filename="../gui/ui/section_dlg.ui" line="156"/>
+        <location filename="../gui/ui/section_dlg.ui" line="188"/>
+        <location filename="../gui/ui/section_dlg.ui" line="220"/>
+        <location filename="../gui/ui/section_dlg.ui" line="252"/>
+        <location filename="../gui/ui/section_dlg.ui" line="342"/>
         <source> m</source>
-        <translation type="vanished"> m</translation>
+        <translation> m</translation>
     </message>
     <message>
+        <location filename="../gui/ui/section_dlg.ui" line="93"/>
         <source>Largeur</source>
-        <translation type="vanished">Width</translation>
+        <translation>Width</translation>
     </message>
     <message>
         <location filename="../gui/dialogs/section_dlg.py" line="668"/>
         <location filename="../gui/dialogs/section_dlg.py" line="677"/>
         <location filename="../gui/dialogs/section_dlg.py" line="701"/>
+        <location filename="../gui/ui/section_dlg.ui" line="100"/>
         <source>Hauteur h :</source>
         <translation>Height h:</translation>
     </message>
     <message>
+        <location filename="../gui/ui/section_dlg.ui" line="125"/>
         <source>Hauteur</source>
-        <translation type="vanished">Height</translation>
+        <translation>Height</translation>
     </message>
     <message>
+        <location filename="../gui/ui/section_dlg.ui" line="137"/>
         <source>Largeur âme bw :</source>
-        <translation type="vanished">Web width bw:</translation>
+        <translation>Web width bw:</translation>
     </message>
     <message>
+        <location filename="../gui/ui/section_dlg.ui" line="162"/>
         <source>Largeur âme</source>
-        <translation type="vanished">Web width</translation>
+        <translation>Web width</translation>
     </message>
     <message>
+        <location filename="../gui/ui/section_dlg.ui" line="169"/>
         <source>Hauteur âme hw :</source>
-        <translation type="vanished">Web height hw:</translation>
+        <translation>Web height hw:</translation>
     </message>
     <message>
+        <location filename="../gui/ui/section_dlg.ui" line="194"/>
         <source>Hauteur âme</source>
-        <translation type="vanished">Web height</translation>
+        <translation>Web height</translation>
     </message>
     <message>
+        <location filename="../gui/ui/section_dlg.ui" line="201"/>
         <source>Largeur table bf :</source>
-        <translation type="vanished">Flange width bf:</translation>
+        <translation>Flange width bf:</translation>
     </message>
     <message>
+        <location filename="../gui/ui/section_dlg.ui" line="226"/>
         <source>Largeur table</source>
-        <translation type="vanished">Flange width</translation>
+        <translation>Flange width</translation>
     </message>
     <message>
+        <location filename="../gui/ui/section_dlg.ui" line="233"/>
         <source>Épaisseur table hf :</source>
-        <translation type="vanished">Flange thickness hf:</translation>
+        <translation>Flange thickness hf:</translation>
     </message>
     <message>
+        <location filename="../gui/ui/section_dlg.ui" line="258"/>
         <source>Épaisseur table</source>
-        <translation type="vanished">Flange thickness</translation>
+        <translation>Flange thickness</translation>
     </message>
     <message>
+        <location filename="../gui/ui/section_dlg.ui" line="270"/>
         <source>Famille :</source>
-        <translation type="vanished">Family:</translation>
+        <translation>Family:</translation>
     </message>
     <message>
+        <location filename="../gui/ui/section_dlg.ui" line="278"/>
         <source>IPE</source>
-        <translation type="vanished">IPE</translation>
+        <translation>IPE</translation>
     </message>
     <message>
+        <location filename="../gui/ui/section_dlg.ui" line="283"/>
         <source>HEA</source>
-        <translation type="vanished">HEA</translation>
+        <translation>HEA</translation>
     </message>
     <message>
+        <location filename="../gui/ui/section_dlg.ui" line="288"/>
         <source>HEB</source>
-        <translation type="vanished">HEB</translation>
+        <translation>HEB</translation>
     </message>
     <message>
+        <location filename="../gui/ui/section_dlg.ui" line="296"/>
         <source>Profilé :</source>
-        <translation type="vanished">Profile:</translation>
+        <translation>Profile:</translation>
     </message>
     <message>
+        <location filename="../gui/ui/section_dlg.ui" line="323"/>
         <source>Épaisseur :</source>
-        <translation type="vanished">Thickness:</translation>
+        <translation>Thickness:</translation>
     </message>
     <message>
+        <location filename="../gui/ui/section_dlg.ui" line="348"/>
         <source>Épaisseur de la dalle / voile</source>
-        <translation type="vanished">Slab / wall thickness</translation>
+        <translation>Slab / wall thickness</translation>
     </message>
 </context>
 <context>
@@ -6765,10 +7175,158 @@ to see its properties.</translation>
     </message>
 </context>
 <context>
+    <name>SectionStressDialog</name>
+    <message>
+        <location filename="../gui/dialogs/section_builder_dlg.py" line="884"/>
+        <source>Contraintes sectionproperties</source>
+        <translation>sectionproperties stresses</translation>
+    </message>
+    <message>
+        <location filename="../gui/dialogs/section_builder_dlg.py" line="899"/>
+        <source>Calculer</source>
+        <translation>Calculate</translation>
+    </message>
+    <message>
+        <location filename="../gui/dialogs/section_builder_dlg.py" line="906"/>
+        <source>Resultat :</source>
+        <translation>Result:</translation>
+    </message>
+    <message>
+        <location filename="../gui/dialogs/section_builder_dlg.py" line="907"/>
+        <source>N :</source>
+        <translation>N:</translation>
+    </message>
+    <message>
+        <location filename="../gui/dialogs/section_builder_dlg.py" line="908"/>
+        <source>Vx :</source>
+        <translation>Vx:</translation>
+    </message>
+    <message>
+        <location filename="../gui/dialogs/section_builder_dlg.py" line="909"/>
+        <source>Vy :</source>
+        <translation>Vy:</translation>
+    </message>
+    <message>
+        <location filename="../gui/dialogs/section_builder_dlg.py" line="910"/>
+        <source>Mxx :</source>
+        <translation>Mxx:</translation>
+    </message>
+    <message>
+        <location filename="../gui/dialogs/section_builder_dlg.py" line="911"/>
+        <source>Myy :</source>
+        <translation>Myy:</translation>
+    </message>
+    <message>
+        <location filename="../gui/dialogs/section_builder_dlg.py" line="912"/>
+        <source>Mzz :</source>
+        <translation>Mzz:</translation>
+    </message>
+    <message>
+        <location filename="../gui/dialogs/section_builder_dlg.py" line="914"/>
+        <source>Efforts de reference</source>
+        <translation>Reference actions</translation>
+    </message>
+    <message>
+        <location filename="../gui/dialogs/section_builder_dlg.py" line="932"/>
+        <source>Fermer</source>
+        <translation>Close</translation>
+    </message>
+    <message>
+        <location filename="../gui/dialogs/section_builder_dlg.py" line="961"/>
+        <source>Normale totale sigma_zz</source>
+        <translation>Total normal stress sigma_zz</translation>
+    </message>
+    <message>
+        <location filename="../gui/dialogs/section_builder_dlg.py" line="962"/>
+        <source>Flexion Mxx</source>
+        <translation>Bending Mxx</translation>
+    </message>
+    <message>
+        <location filename="../gui/dialogs/section_builder_dlg.py" line="963"/>
+        <source>Flexion Myy</source>
+        <translation>Bending Myy</translation>
+    </message>
+    <message>
+        <location filename="../gui/dialogs/section_builder_dlg.py" line="964"/>
+        <source>Effort normal N</source>
+        <translation>Axial force N</translation>
+    </message>
+    <message>
+        <location filename="../gui/dialogs/section_builder_dlg.py" line="965"/>
+        <source>Cisaillement total</source>
+        <translation>Total shear</translation>
+    </message>
+    <message>
+        <location filename="../gui/dialogs/section_builder_dlg.py" line="966"/>
+        <source>Von Mises</source>
+        <translation>Von Mises</translation>
+    </message>
+    <message>
+        <location filename="../gui/dialogs/section_builder_dlg.py" line="996"/>
+        <source>Contrainte (Pa)</source>
+        <translation>Stress (Pa)</translation>
+    </message>
+    <message>
+        <location filename="../gui/dialogs/section_builder_dlg.py" line="1009"/>
+        <source>Min : {min:.3f} MPa - Max : {max:.3f} MPa</source>
+        <translation>Min: {min:.3f} MPa - Max: {max:.3f} MPa</translation>
+    </message>
+</context>
+<context>
     <name>SectionWorkbenchCanvas</name>
     <message>
         <source>Aucune section a afficher</source>
         <translation type="vanished">No section to display</translation>
+    </message>
+</context>
+<context>
+    <name>StandardProfileImportDialog</name>
+    <message>
+        <source>Importer un profile standard</source>
+        <translation type="vanished">Import a standard profile</translation>
+    </message>
+    <message>
+        <location filename="../gui/dialogs/section_builder_dlg.py" line="811"/>
+        <source>Importer un profil standard</source>
+        <translation>Import a standard profile</translation>
+    </message>
+    <message>
+        <location filename="../gui/dialogs/section_builder_dlg.py" line="822"/>
+        <source>OK</source>
+        <translation>OK</translation>
+    </message>
+    <message>
+        <location filename="../gui/dialogs/section_builder_dlg.py" line="825"/>
+        <source>Annuler</source>
+        <translation>Cancel</translation>
+    </message>
+    <message>
+        <location filename="../gui/dialogs/section_builder_dlg.py" line="828"/>
+        <source>Famille :</source>
+        <translation>Family:</translation>
+    </message>
+    <message>
+        <location filename="../gui/dialogs/section_builder_dlg.py" line="829"/>
+        <source>Profil :</source>
+        <translation>Profile:</translation>
+    </message>
+    <message>
+        <location filename="../gui/dialogs/section_builder_dlg.py" line="862"/>
+        <source>(aucun profil)</source>
+        <translation>(no profile)</translation>
+    </message>
+    <message>
+        <source>Profile :</source>
+        <translation type="vanished">Profile:</translation>
+    </message>
+    <message>
+        <location filename="../gui/dialogs/section_builder_dlg.py" line="852"/>
+        <source>(aucune famille)</source>
+        <translation>(no family)</translation>
+    </message>
+    <message>
+        <source>(aucun profile)</source>
+        <translation type="vanished">(no profile)</translation>
     </message>
 </context>
 <context>

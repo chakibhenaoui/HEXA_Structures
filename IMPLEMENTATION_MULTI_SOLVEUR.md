@@ -30,7 +30,7 @@ Validation courante : `pytest -q` passe avec 460 tests.
 
 Le logiciel HEXA Structures vise un double public. D'un côté les ingénieurs BTP qui font du dimensionnement courant (statique linéaire, vérifications EC2/EC3, descente de charges), de l'autre les ingénieurs spécialisés en sismique et non-linéaire. Le premier groupe n'a pas besoin d'OpenSeesPy et de ses complications de licence. Le second veut la puissance d'OpenSees pour le pushover, les sections fibrées, l'analyse temporelle.
 
-La solution : **PyNite bundlé par défaut** (licence MIT, zéro installation supplémentaire), **OpenSeesPy en option** installé par l'utilisateur via `pip install openseespy`. On ne redistribue pas OpenSeesPy → on contourne proprement la restriction de licence UC Berkeley.
+La solution : **PyNite bundlé par défaut** (licence MIT, zéro installation supplémentaire), **OpenSeesPy en option** installé par l'utilisateur via `pip install openseespy`.
 
 ### 1.2 Principe architectural cible
 

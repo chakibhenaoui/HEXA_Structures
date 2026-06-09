@@ -5,12 +5,18 @@ import os
 os.environ.setdefault("QT_QPA_PLATFORM", "offscreen")
 
 import pytest
-from PySide6.QtWidgets import QApplication
+from PySide6.QtWidgets import QApplication, QGraphicsItem
 
 from core.model_data import ProjectModel
 from core.section_builder import SectionBuilderGeometryError, polygon_section_properties
+from core.sections import get_profile, list_profile_families, list_profiles
 from core.sectionproperties_adapter import is_sectionproperties_available
-from gui.dialogs.section_builder_dlg import SectionBuilderDialog, SectionBuilderView
+from gui.dialogs.section_builder_dlg import (
+    SectionBuilderDialog,
+    SectionBuilderView,
+    SectionStressDialog,
+    StandardProfileImportDialog,
+)
 
 
 def _app() -> QApplication:
@@ -69,6 +75,21 @@ def test_section_builder_view_can_insert_update_and_remove_points() -> None:
     assert view.points() == [(0.0, 0.0), (0.20, 0.0), (0.20, 0.20)]
 
 
+def test_section_builder_view_can_create_rectangle_and_circle_tools() -> None:
+    _app()
+    view = SectionBuilderView()
+    view.set_grid_step(0.05)
+
+    assert view.set_rectangle_from_corners((0.0, 0.0), (0.20, 0.30)) is True
+    assert view.is_closed() is True
+    assert view.points() == [(0.0, 0.0), (0.20, 0.0), (0.20, 0.30), (0.0, 0.30)]
+
+    assert view.set_circle_from_center_edge((0.0, 0.0), (0.10, 0.0)) is True
+    assert view.is_closed() is True
+    assert len(view.points()) == 48
+    assert view.points()[0] == pytest.approx((0.10, 0.0))
+
+
 def test_section_builder_view_can_draw_hole_contour() -> None:
     _app()
     view = SectionBuilderView()
@@ -120,6 +141,11 @@ def test_section_builder_dialog_exposes_fused_sectionproperties_menu() -> None:
 
     menu_titles = [action.text() for action in dlg._menu_bar.actions()]
     assert menu_titles == ["Fichier", "sectionproperties"]
+    tab_titles = [
+        dlg._side_tabs.tabText(index)
+        for index in range(dlg._side_tabs.count())
+    ]
+    assert tab_titles == ["General", "Contour", "Calcul"]
 
     file_actions = [
         action.text()
@@ -129,7 +155,7 @@ def test_section_builder_dialog_exposes_fused_sectionproperties_menu() -> None:
     assert file_actions == [
         "Nouveau",
         "Ouvrir...",
-        "Importer forme",
+        "Importer profil standard...",
         "Enregistrer",
         "Enregistrer sous...",
         "Imprimer le rapport",
@@ -147,7 +173,109 @@ def test_section_builder_dialog_exposes_fused_sectionproperties_menu() -> None:
         "Resultats",
         "Afficher contrainte",
     ]
-    assert dlg.act_sp_show_stress.isEnabled() is False
+    assert {"select", "polygon", "rectangle", "circle", "hole", "move", "delete"}.issubset(
+        dlg._tool_actions
+    )
+    circle_index = dlg._combo_tool.findData("circle")
+    assert circle_index >= 0
+    dlg._combo_tool.setCurrentIndex(circle_index)
+    assert dlg._view.tool_mode() == "circle"
+    dlg._tool_actions["rectangle"].trigger()
+    assert dlg._view.tool_mode() == "rectangle"
+    assert dlg._combo_tool.currentData() == "rectangle"
+    assert dlg.act_sp_show_stress.isEnabled() is is_sectionproperties_available()
+
+
+def test_standard_profile_import_dialog_filters_profiles_by_family() -> None:
+    _app()
+    dlg = StandardProfileImportDialog()
+    families = list_profile_families()
+
+    assert dlg._combo_family.count() == len(families)
+    assert dlg._combo_family.currentData() in families
+    assert dlg._combo_profile.count() == len(list_profiles(dlg._combo_family.currentData()))
+
+    ipe_index = dlg._combo_family.findData("IPE")
+    assert ipe_index >= 0
+    dlg._combo_family.setCurrentIndex(ipe_index)
+
+    assert dlg.selected_profile_name() in list_profiles("IPE")
+
+
+def test_section_builder_dialog_imports_standard_profile_catalog_shape() -> None:
+    _app()
+    project = ProjectModel()
+    project.add_material("Beton C30", "concrete", "C30/37")
+    steel = project.add_material("Acier S355", "steel", "S355")
+    dlg = SectionBuilderDialog(materials=project.materials)
+    profile = get_profile("IPE 300")
+
+    assert dlg._insert_standard_profile(profile.name, show_errors=False) is True
+    assert dlg._active_catalog_profile == profile.name
+    assert dlg._active_library_shape is None
+    assert dlg._combo_material.currentData() == steel.tag
+    assert dlg._view.is_closed() is True
+    assert len(dlg._view.points()) == 12
+    assert dlg._analyze(show_errors=False) is True
+
+    data = dlg.result()
+    assert data["name"] == profile.name
+    assert data["section_type"] == "I_profile"
+    assert data["material_tag"] == steel.tag
+    assert data["properties"]["profile"] == profile.name
+    assert data["properties"]["source"] == "profile_catalog"
+    assert data["properties"]["source_tool"] == "section_builder"
+    assert data["area"] == pytest.approx(profile.area)
+    assert data["inertia_y"] == pytest.approx(profile.inertia_y)
+    assert data["inertia_z"] == pytest.approx(profile.inertia_z)
+
+
+def test_section_builder_dialog_meshes_imported_standard_profile_when_available() -> None:
+    if not is_sectionproperties_available():
+        pytest.skip("sectionproperties is not installed")
+    _app()
+    project = ProjectModel()
+    project.add_material("Acier S355", "steel", "S355")
+    dlg = SectionBuilderDialog(materials=project.materials)
+
+    assert dlg._insert_standard_profile("IPE 300", show_errors=False) is True
+    assert dlg._chk_use_sectionproperties.isChecked() is True
+    assert dlg._analyze(show_errors=False) is True
+
+    data = dlg.result()
+    assert data["section_type"] == "I_profile"
+    assert data["properties"]["profile"] == "IPE 300"
+    assert data["properties"]["source"] == "profile_catalog"
+    assert data["properties"]["analysis_engine"] == "sectionproperties"
+    assert data["properties"]["sectionproperties"]["mesh_node_count"] > 0
+    assert data["properties"]["sectionproperties"]["mesh_triangle_count"] > 0
+    assert dlg._sectionproperties_result is not None
+    assert dlg._view._mesh is not None
+
+
+def test_section_builder_dialog_calculates_and_plots_stress_when_available() -> None:
+    if not is_sectionproperties_available():
+        pytest.skip("sectionproperties is not installed")
+    _app()
+    dlg = SectionBuilderDialog()
+    dlg._view.set_points(
+        [(0.0, 0.0), (0.20, 0.0), (0.20, 0.30), (0.0, 0.30)],
+        closed=True,
+    )
+
+    result = dlg._calculate_stress_result(
+        stress_key="zz",
+        actions={"n": 0.0, "vx": 0.0, "vy": 0.0, "mxx": 1.0e3, "myy": 0.0, "mzz": 0.0},
+        show_errors=False,
+    )
+
+    assert result is not None
+    assert result.max_stress > result.min_stress
+    assert dlg._sectionproperties_stress_result is result
+
+    stress_dialog = SectionStressDialog(dlg)
+    assert stress_dialog._calculate_and_plot(show_errors=False) is True
+    assert stress_dialog._stress_result is not None
 
 
 def test_section_builder_dialog_inserts_sectionproperties_library_shape() -> None:
@@ -166,6 +294,15 @@ def test_section_builder_dialog_inserts_sectionproperties_library_shape() -> Non
     assert dlg._combo_material.currentData() == concrete.tag
     assert dlg._view.is_closed() is True
     assert len(dlg._view.points()) == 4
+    ys = [point[0] for point in dlg._view.points()]
+    zs = [point[1] for point in dlg._view.points()]
+    assert max(ys) - min(ys) == pytest.approx(0.20)
+    assert max(zs) - min(zs) == pytest.approx(0.30)
+    assert dlg._spin_grid.value() == pytest.approx(0.01)
+    assert dlg._view._grid_step == pytest.approx(0.01)
+    first_marker = dlg._view._point_items[0]
+    assert first_marker.rect().width() == pytest.approx(9.0)
+    assert first_marker.flags() & QGraphicsItem.GraphicsItemFlag.ItemIgnoresTransformations
     assert dlg._analyze(show_errors=False) is True
 
     data = dlg.result()
