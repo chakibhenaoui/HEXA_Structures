@@ -148,7 +148,7 @@ def test_ops_builder_rejects_unsupported_tri31_surface(monkeypatch) -> None:
 
 def test_project_model_rejects_new_tri31_surface() -> None:
     project = ProjectModel(name="Tri31 model test")
-    project.add_material("BÃ©ton C30", "concrete", "C30/37")
+    project.add_material("Béton C30", "concrete", "C30/37")
     section = project.add_section(
         "Plaque libre",
         "surface",

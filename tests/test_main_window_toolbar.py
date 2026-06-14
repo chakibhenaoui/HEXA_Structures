@@ -254,10 +254,22 @@ def test_menu_bar_order_and_model_boundary_action() -> None:
         if not action.isSeparator()
     ]
     assert "conditions aux limites" in model_action_titles
-    assert any("section builder" in title for title in model_action_titles)
+    assert "sections" in model_action_titles
+    sections_menu = next(
+        action.menu()
+        for action in window.menu_model.actions()
+        if _normalize_label(action.text()) == "sections"
+    )
+    section_action_titles = [
+        _normalize_label(action.text())
+        for action in sections_menu.actions()
+        if not action.isSeparator()
+    ]
+    assert any("section builder" in title for title in section_action_titles)
+    assert any(title.startswith("ajouter") and "section" in title for title in section_action_titles)
     assert not any("sectionproperties" in title for title in model_action_titles)
     assert any("surface" in title for title in model_action_titles)
-    assert any("plaque" in title for title in model_action_titles)
+    assert any("plaque" in title for title in section_action_titles)
     assert any(title.startswith("modifier la surface") for title in model_action_titles)
     assert not any(title.startswith("dupliquer la selection de surfaces") for title in model_action_titles)
     assert not any(title.startswith("supprimer la selection de surfaces") for title in model_action_titles)

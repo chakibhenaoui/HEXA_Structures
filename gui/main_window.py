@@ -726,12 +726,15 @@ class MainWindow(QMainWindow):
             self.menu_model.addAction(self.act_edit_surface)
             self.menu_model.addSeparator()
             self.menu_model.addAction(self.act_add_material)
-            self.menu_model.addAction(self.act_add_section)
-            self.menu_model.addAction(self.act_add_section_builder)
-            self.menu_model.addAction(self.act_add_plate_section)
             self.menu_model.addAction(self.act_manage_materials)
-            self.menu_model.addAction(self.act_manage_sections)
-            self.menu_model.addAction(self.act_manage_plate_sections)
+            self.menu_model_sections = QMenu(self.tr("Sections"), self.menu_model)
+            self.menu_model.addMenu(self.menu_model_sections)
+            self.menu_model_sections.addAction(self.act_add_section)
+            self.menu_model_sections.addAction(self.act_add_section_builder)
+            self.menu_model_sections.addAction(self.act_add_plate_section)
+            self.menu_model_sections.addSeparator()
+            self.menu_model_sections.addAction(self.act_manage_sections)
+            self.menu_model_sections.addAction(self.act_manage_plate_sections)
             self.menu_model.addSeparator()
             self.menu_model.addAction(self.act_boundary)
             self.menu_model.addSeparator()
@@ -1532,6 +1535,8 @@ class MainWindow(QMainWindow):
         for action, text in action_texts:
             if action is not None:
                 action.setText(text)
+        if getattr(self, "menu_model_sections", None) is not None:
+            self.menu_model_sections.setTitle(self.tr("Sections"))
         if getattr(self, "act_show_local_axes", None) is not None:
             self.act_show_local_axes.setToolTip(
                 self.tr("Afficher le repère local des barres sélectionnées.")
@@ -5218,7 +5223,7 @@ class MainWindow(QMainWindow):
             QMessageBox.warning(
                 self,
                 self.tr("Attention"),
-                self.tr("CrÃ©ez d'abord un matÃ©riau avant d'ajouter une section."),
+                self.tr("Créez d'abord un matériau avant d'ajouter une section."),
             )
             return
 

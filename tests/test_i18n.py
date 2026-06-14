@@ -124,9 +124,16 @@ def test_english_catalog_translates_high_visibility_labels(tmp_path) -> None:
         assert (
             QCoreApplication.translate(
                 "SectionBuilderDialog",
-                "Inserer a partir de la bibliotheque",
+                "Appliquer la forme",
             )
-            == "Insert from library"
+            == "Apply shape"
+        )
+        assert (
+            QCoreApplication.translate(
+                "SectionBuilderDialog",
+                "Ajouter à la bibliothèque standard",
+            )
+            == "Add to standard library"
         )
         assert (
             QCoreApplication.translate("SectionBuilderDialog", "Afficher contrainte")
@@ -135,7 +142,7 @@ def test_english_catalog_translates_high_visibility_labels(tmp_path) -> None:
         assert (
             QCoreApplication.translate(
                 "SectionBuilderDialog",
-                "Maillage : {nodes} noeuds, {triangles} triangles",
+                "Maillage : {nodes} nœuds, {triangles} triangles",
             )
             == "Mesh: {nodes} nodes, {triangles} triangles"
         )

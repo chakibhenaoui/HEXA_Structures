@@ -4,21 +4,28 @@ from __future__ import annotations
 
 import json
 import math
+from datetime import datetime
+from html import escape
 from pathlib import Path
 
-from PySide6.QtCore import QPointF, QRectF, Qt, Signal
+from PySide6.QtCore import QPointF, QRectF, Qt, QUrl, Signal
 from PySide6.QtGui import (
     QAction,
     QActionGroup,
     QBrush,
     QColor,
+    QFont,
+    QImage,
     QMouseEvent,
     QPainter,
     QPainterPath,
     QPen,
+    QTextCharFormat,
+    QTextDocument,
     QTransform,
     QWheelEvent,
 )
+from PySide6.QtPrintSupport import QPrintDialog, QPrinter
 from PySide6.QtWidgets import (
     QAbstractItemView,
     QCheckBox,
@@ -27,6 +34,7 @@ from PySide6.QtWidgets import (
     QDialogButtonBox,
     QDoubleSpinBox,
     QFormLayout,
+    QFontComboBox,
     QGraphicsEllipseItem,
     QGraphicsItem,
     QGraphicsLineItem,
@@ -47,6 +55,7 @@ from PySide6.QtWidgets import (
     QTabWidget,
     QTableWidget,
     QTableWidgetItem,
+    QTextEdit,
     QToolBar,
     QVBoxLayout,
     QWidget,
@@ -70,9 +79,11 @@ from core.sectionproperties_adapter import (
     SectionPropertiesCalculationError,
     SectionPropertiesMesh,
     SectionPropertiesResult,
+    SectionPropertiesStressSummary,
     SectionPropertiesStressResult,
     SectionPropertiesUnavailable,
     calculate_polygon_sectionproperties_section,
+    calculate_polygon_sectionproperties_stress_summary,
     calculate_polygon_sectionproperties_stress,
     calculate_sectionproperties_section,
     default_dimensions,
@@ -903,7 +914,7 @@ class SectionStressDialog(QDialog):
         self._plot_toolbar = NavigationToolbar2QT(self._canvas, self)
 
         form = QFormLayout()
-        form.addRow(self.tr("Resultat :"), self._combo_stress)
+        form.addRow(self.tr("Résultat :"), self._combo_stress)
         form.addRow(self.tr("N :"), self._spin_n)
         form.addRow(self.tr("Vx :"), self._spin_vx)
         form.addRow(self.tr("Vy :"), self._spin_vy)
@@ -911,7 +922,7 @@ class SectionStressDialog(QDialog):
         form.addRow(self.tr("Myy :"), self._spin_myy)
         form.addRow(self.tr("Mzz :"), self._spin_mzz)
 
-        actions_group = QGroupBox(self.tr("Efforts de reference"), self)
+        actions_group = QGroupBox(self.tr("Efforts de référence"), self)
         actions_layout = QVBoxLayout(actions_group)
         actions_layout.addLayout(form)
         actions_layout.addWidget(self._btn_calculate)
@@ -939,6 +950,15 @@ class SectionStressDialog(QDialog):
         self._combo_stress.currentIndexChanged.connect(
             lambda _index: self._calculate_and_plot(show_errors=False)
         )
+        for spin in (
+            self._spin_n,
+            self._spin_vx,
+            self._spin_vy,
+            self._spin_mxx,
+            self._spin_myy,
+            self._spin_mzz,
+        ):
+            spin.valueChanged.connect(lambda _value: self._calculate_and_plot(show_errors=False))
         button_box.rejected.connect(self.reject)
         self._calculate_and_plot(show_errors=False)
 
@@ -1014,6 +1034,144 @@ class SectionStressDialog(QDialog):
         return True
 
 
+class SectionCalculationNoteDialog(QDialog):
+    """Editable internal preview for the Section Builder calculation report."""
+
+    def __init__(
+        self,
+        parent: "SectionBuilderDialog",
+        html: str,
+        image_resources: dict[str, QImage],
+    ):
+        super().__init__(parent)
+        self._builder = parent
+        self.setWindowTitle(self.tr("Aperçu de la note de calcul"))
+        self.resize(860, 680)
+
+        layout = QVBoxLayout(self)
+        layout.addWidget(self._build_format_toolbar())
+
+        self._viewer = QTextEdit(self)
+        self._viewer.setAcceptRichText(True)
+        self._viewer.setDocument(parent._report_document(html, image_resources))
+        self._viewer.cursorPositionChanged.connect(self._sync_format_actions)
+        layout.addWidget(self._viewer, 1)
+
+        buttons = QDialogButtonBox(self)
+        self._btn_print = buttons.addButton(
+            self.tr("Imprimer"),
+            QDialogButtonBox.ActionRole,
+        )
+        close_button = buttons.addButton(QDialogButtonBox.Close)
+        if close_button is not None:
+            close_button.setText(self.tr("Fermer"))
+        self._btn_print.clicked.connect(self._print)
+        buttons.rejected.connect(self.reject)
+        layout.addWidget(buttons)
+        self._sync_format_actions()
+
+    def _build_format_toolbar(self) -> QToolBar:
+        toolbar = QToolBar(self.tr("Mise en forme"), self)
+        toolbar.setMovable(False)
+        toolbar.setFloatable(False)
+
+        self._font_combo = QFontComboBox(self)
+        self._font_combo.currentFontChanged.connect(self._set_font_family)
+        toolbar.addWidget(self._font_combo)
+
+        self._size_combo = QComboBox(self)
+        for size in (8, 9, 10, 11, 12, 14, 16, 18, 20, 24, 28, 32):
+            self._size_combo.addItem(str(size), size)
+        self._size_combo.currentTextChanged.connect(self._set_font_size)
+        toolbar.addWidget(self._size_combo)
+
+        self._act_bold = QAction(self.tr("Gras"), self)
+        self._act_bold.setCheckable(True)
+        self._act_bold.setShortcut("Ctrl+B")
+        self._act_bold.toggled.connect(self._set_bold)
+        toolbar.addAction(self._act_bold)
+
+        self._act_italic = QAction(self.tr("Italique"), self)
+        self._act_italic.setCheckable(True)
+        self._act_italic.setShortcut("Ctrl+I")
+        self._act_italic.toggled.connect(self._set_italic)
+        toolbar.addAction(self._act_italic)
+
+        self._act_underline = QAction(self.tr("Souligné"), self)
+        self._act_underline.setCheckable(True)
+        self._act_underline.setShortcut("Ctrl+U")
+        self._act_underline.toggled.connect(self._set_underline)
+        toolbar.addAction(self._act_underline)
+        return toolbar
+
+    def _merge_char_format(self, char_format: QTextCharFormat) -> None:
+        if not hasattr(self, "_viewer"):
+            return
+        self._viewer.mergeCurrentCharFormat(char_format)
+        self._viewer.setFocus()
+
+    def _set_font_family(self, font: QFont) -> None:
+        char_format = QTextCharFormat()
+        char_format.setFontFamily(font.family())
+        self._merge_char_format(char_format)
+
+    def _set_font_size(self, text: str) -> None:
+        try:
+            size = float(text)
+        except ValueError:
+            return
+        if size <= 0.0:
+            return
+        char_format = QTextCharFormat()
+        char_format.setFontPointSize(size)
+        self._merge_char_format(char_format)
+
+    def _set_bold(self, checked: bool) -> None:
+        char_format = QTextCharFormat()
+        char_format.setFontWeight(QFont.Bold if checked else QFont.Normal)
+        self._merge_char_format(char_format)
+
+    def _set_italic(self, checked: bool) -> None:
+        char_format = QTextCharFormat()
+        char_format.setFontItalic(checked)
+        self._merge_char_format(char_format)
+
+    def _set_underline(self, checked: bool) -> None:
+        char_format = QTextCharFormat()
+        char_format.setFontUnderline(checked)
+        self._merge_char_format(char_format)
+
+    def _sync_format_actions(self) -> None:
+        char_format = self._viewer.currentCharFormat()
+        font = char_format.font()
+        self._act_bold.blockSignals(True)
+        self._act_italic.blockSignals(True)
+        self._act_underline.blockSignals(True)
+        self._font_combo.blockSignals(True)
+        self._size_combo.blockSignals(True)
+        try:
+            self._act_bold.setChecked(font.weight() >= QFont.Bold)
+            self._act_italic.setChecked(font.italic())
+            self._act_underline.setChecked(font.underline())
+            if font.family():
+                self._font_combo.setCurrentFont(font)
+            point_size = char_format.fontPointSize()
+            if point_size > 0:
+                size_text = str(int(round(point_size)))
+                index = self._size_combo.findText(size_text)
+                if index >= 0:
+                    self._size_combo.setCurrentIndex(index)
+        finally:
+            self._act_bold.blockSignals(False)
+            self._act_italic.blockSignals(False)
+            self._act_underline.blockSignals(False)
+            self._font_combo.blockSignals(False)
+            self._size_combo.blockSignals(False)
+
+    def _print(self) -> None:
+        self._builder._print_report_document(self._viewer.document())
+
+
 class SectionBuilderDialog(QDialog):
     """Dialog used to draw and analyze one custom polygon section."""
 
@@ -1039,6 +1197,7 @@ class SectionBuilderDialog(QDialog):
         self._current_file_path: Path | None = None
         self._loading_library_shape = False
         self._loading_catalog_profile = False
+        self._add_to_user_library_requested = False
         self._active_library_shape: str | None = None
         self._active_library_dimensions: dict[str, float] | None = None
         self._active_catalog_profile: str | None = None
@@ -1055,6 +1214,15 @@ class SectionBuilderDialog(QDialog):
         self._menu_bar = QMenuBar(self)
         self._side_tabs = QTabWidget(self)
         self._side_tabs.setDocumentMode(True)
+        self._lbl_builder_info = QLabel(
+            self.tr(
+                "Le Section Builder sert à créer des sections utilisateur, "
+                "importer des profils, vérifier leurs propriétés géométriques "
+                "et les insérer dans la liste des sections du projet."
+            ),
+            self,
+        )
+        self._lbl_builder_info.setWordWrap(True)
         self._combo_tool = QComboBox(self)
         self._combo_tool.setMinimumWidth(170)
         self._spin_grid = QDoubleSpinBox(self)
@@ -1070,12 +1238,12 @@ class SectionBuilderDialog(QDialog):
         self._btn_add_hole = QPushButton(self.tr("Nouveau trou"), self)
         self._btn_delete_hole = QPushButton(self.tr("Supprimer trou"), self)
         self._combo_shape = QComboBox(self)
-        self._library_params_group = QGroupBox(self.tr("Parametres du profile"), self)
+        self._library_params_group = QGroupBox(self.tr("Paramètres du profil"), self)
         self._library_params_layout = QFormLayout(self._library_params_group)
         self._lbl_library_status = QLabel("", self)
         self._lbl_library_status.setWordWrap(True)
         self._btn_insert_shape = QPushButton(
-            self.tr("Inserer a partir de la bibliotheque"),
+            self.tr("Appliquer la forme"),
             self,
         )
         self._btn_insert_shape.setEnabled(self._sectionproperties_available)
@@ -1108,15 +1276,23 @@ class SectionBuilderDialog(QDialog):
         self._lbl_status.setWordWrap(True)
         self._btn_close = QPushButton(self.tr("Fermer le contour"), self)
         self._btn_undo = QPushButton(self.tr("Annuler point"), self)
-        self._btn_insert = QPushButton(self.tr("Inserer point"), self)
+        self._btn_insert = QPushButton(self.tr("Insérer point"), self)
         self._btn_delete = QPushButton(self.tr("Supprimer point"), self)
         self._btn_clear = QPushButton(self.tr("Effacer"), self)
         self._btn_analyze = QPushButton(self.tr("Analyser"), self)
         self._button_box = QDialogButtonBox(QDialogButtonBox.Ok | QDialogButtonBox.Cancel, self)
         ok_button = self._button_box.button(QDialogButtonBox.Ok)
         if ok_button is not None:
-            ok_button.setText(self.tr("Inserer la section"))
+            ok_button.setText(self.tr("Insérer la section"))
             ok_button.setEnabled(False)
+        self._btn_add_to_user_library = QPushButton(
+            self.tr("Ajouter à la bibliothèque standard"),
+            self,
+        )
+        self._button_box.addButton(
+            self._btn_add_to_user_library,
+            QDialogButtonBox.ActionRole,
+        )
 
         self._create_actions()
         self._setup_ui()
@@ -1134,7 +1310,7 @@ class SectionBuilderDialog(QDialog):
         if not self._sectionproperties_available:
             self._lbl_results.setText(
                 self.tr(
-                    "sectionproperties indisponible : calcul polygonal simple utilise."
+                    "sectionproperties indisponible : calcul polygonal simple utilisé."
                 )
             )
 
@@ -1142,7 +1318,13 @@ class SectionBuilderDialog(QDialog):
         """Return the section payload expected by ProjectModel.add_section."""
         if self._result is None:
             self._analyze(show_errors=False)
-        return dict(self._result or {})
+        result = dict(self._result or {})
+        if self._add_to_user_library_requested and result:
+            properties = dict(result.get("properties", {}))
+            properties["user_library"] = True
+            properties["editable_with"] = "section_builder"
+            result["properties"] = properties
+        return result
 
     def _create_actions(self) -> None:
         """Create Section Builder menu actions."""
@@ -1151,17 +1333,14 @@ class SectionBuilderDialog(QDialog):
         self.act_import_shape = QAction(self.tr("Importer profil standard..."), self)
         self.act_save = QAction(self.tr("Enregistrer"), self)
         self.act_save_as = QAction(self.tr("Enregistrer sous..."), self)
+        self.act_calculation_note = QAction(self.tr("Note de calcul..."), self)
         self.act_print_report = QAction(self.tr("Imprimer le rapport"), self)
+        self.act_calculation_note.setEnabled(False)
         self.act_print_report.setEnabled(False)
         self.act_quit = QAction(self.tr("Quitter"), self)
 
-        self.act_sp_insert_library = QAction(
-            self.tr("Inserer a partir de la bibliotheque"),
-            self,
-        )
-        self.act_sp_insert_library.setEnabled(self._sectionproperties_available)
         self.act_sp_calculate = QAction(self.tr("Calculer"), self)
-        self.act_sp_results = QAction(self.tr("Resultats"), self)
+        self.act_sp_results = QAction(self.tr("Résultats"), self)
         self.act_sp_show_stress = QAction(self.tr("Afficher contrainte"), self)
         self.act_sp_show_stress.setEnabled(self._sectionproperties_available)
         self.act_sp_show_stress.setToolTip(
@@ -1170,12 +1349,12 @@ class SectionBuilderDialog(QDialog):
         self._tool_action_group = QActionGroup(self)
         self._tool_action_group.setExclusive(True)
         tool_specs = (
-            ("select", self.tr("Selection")),
+            ("select", self.tr("Sélection")),
             ("polygon", self.tr("Polygone")),
             ("rectangle", self.tr("Rectangle")),
             ("circle", self.tr("Cercle")),
             ("hole", self.tr("Trou")),
-            ("move", self.tr("Deplacer point")),
+            ("move", self.tr("Déplacer point")),
             ("delete", self.tr("Supprimer point")),
         )
         for mode, label in tool_specs:
@@ -1200,6 +1379,7 @@ class SectionBuilderDialog(QDialog):
         self._menu_file.addSeparator()
         self._menu_file.addAction(self.act_save)
         self._menu_file.addAction(self.act_save_as)
+        self._menu_file.addAction(self.act_calculation_note)
         self._menu_file.addAction(self.act_print_report)
         self._menu_file.addSeparator()
         self._menu_file.addAction(self.act_quit)
@@ -1209,8 +1389,6 @@ class SectionBuilderDialog(QDialog):
             self._menu_bar,
         )
         self._menu_bar.addMenu(self._menu_sectionproperties)
-        self._menu_sectionproperties.addAction(self.act_sp_insert_library)
-        self._menu_sectionproperties.addSeparator()
         self._menu_sectionproperties.addAction(self.act_sp_calculate)
         self._menu_sectionproperties.addAction(self.act_sp_results)
         self._menu_sectionproperties.addAction(self.act_sp_show_stress)
@@ -1263,7 +1441,7 @@ class SectionBuilderDialog(QDialog):
         layout = QVBoxLayout(panel)
         layout.setContentsMargins(6, 0, 0, 0)
         layout.addWidget(self._side_tabs, 1)
-        self._side_tabs.addTab(self._build_general_tab(), self.tr("General"))
+        self._side_tabs.addTab(self._build_general_tab(), self.tr("Général"))
         self._side_tabs.addTab(self._build_contour_tab(), self.tr("Contour"))
         self._side_tabs.addTab(self._build_calculation_tab(), self.tr("Calcul"))
         return panel
@@ -1271,10 +1449,15 @@ class SectionBuilderDialog(QDialog):
     def _build_general_tab(self) -> QWidget:
         tab = QWidget(self)
         layout = QVBoxLayout(tab)
+        builder_info_group = QGroupBox(self.tr("Info"), tab)
+        builder_info_layout = QVBoxLayout(builder_info_group)
+        builder_info_layout.addWidget(self._lbl_builder_info)
+        layout.addWidget(builder_info_group)
+
         info_group = QGroupBox(self.tr("Definition"), tab)
         form = QFormLayout(info_group)
         form.addRow(self.tr("Nom :"), self._edit_name)
-        form.addRow(self.tr("Materiau :"), self._combo_material)
+        form.addRow(self.tr("Matériau :"), self._combo_material)
         form.addRow(self.tr("Pas de grille :"), self._spin_grid)
         form.addRow("", self._chk_snap)
         layout.addWidget(info_group)
@@ -1325,7 +1508,7 @@ class SectionBuilderDialog(QDialog):
         return tab
 
     def _build_sectionproperties_library_group(self) -> QWidget:
-        group = QGroupBox(self.tr("Bibliotheque sectionproperties"), self)
+        group = QGroupBox(self.tr("Bibliothèque sectionproperties"), self)
         layout = QVBoxLayout(group)
         form = QFormLayout()
         form.addRow(self.tr("Forme :"), self._combo_shape)
@@ -1339,7 +1522,7 @@ class SectionBuilderDialog(QDialog):
         for tag, mat in self._materials.items():
             self._combo_material.addItem(f"{mat.name} ({mat.grade})", tag)
         if not self._materials:
-            self._combo_material.addItem(self.tr("(aucun materiau)"), 0)
+            self._combo_material.addItem(self.tr("(aucun matériau)"), 0)
             return
         if material_tag is not None:
             index = self._combo_material.findData(material_tag)
@@ -1391,7 +1574,7 @@ class SectionBuilderDialog(QDialog):
             "i": self.tr("I / H"),
             "channel": self.tr("U / Channel"),
             "tee": self.tr("T"),
-            "angle": self.tr("Corniere L"),
+            "angle": self.tr("Cornière L"),
             "chs": self.tr("Tube circulaire CHS"),
             "rhs": self.tr("Tube rectangulaire RHS/SHS"),
         }
@@ -1399,17 +1582,17 @@ class SectionBuilderDialog(QDialog):
 
     def _field_label(self, shape_key: str, field: str) -> str:
         if field == "d" and shape_key in {"circle", "chs"}:
-            return self.tr("Diametre d :")
+            return self.tr("Diamètre d :")
         labels = {
             "d": self.tr("Hauteur d :"),
             "b": self.tr("Largeur b :"),
-            "t": self.tr("Epaisseur t :"),
-            "t_f": self.tr("Epaisseur aile t_f :"),
-            "t_w": self.tr("Epaisseur ame t_w :"),
+            "t": self.tr("Épaisseur t :"),
+            "t_f": self.tr("Épaisseur aile t_f :"),
+            "t_w": self.tr("Épaisseur âme t_w :"),
             "r": self.tr("Rayon r :"),
-            "r_r": self.tr("Rayon interieur r_r :"),
-            "r_t": self.tr("Rayon exterieur r_t :"),
-            "r_out": self.tr("Rayon exterieur r_out :"),
+            "r_r": self.tr("Rayon intérieur r_r :"),
+            "r_t": self.tr("Rayon extérieur r_t :"),
+            "r_out": self.tr("Rayon extérieur r_out :"),
         }
         return labels.get(field, f"{field} :")
 
@@ -1482,20 +1665,20 @@ class SectionBuilderDialog(QDialog):
 
     def _validation_message(self, code: str) -> str:
         messages = {
-            "positive_dimensions": self.tr("Toutes les dimensions principales doivent etre positives."),
-            "positive_radii": self.tr("Les rayons doivent etre positifs ou nuls."),
-            "web_too_thick": self.tr("L'ame doit rester inferieure a la largeur."),
-            "flange_too_thick": self.tr("Les ailes doivent laisser une ame centrale."),
-            "angle_too_thick": self.tr("L'epaisseur de la corniere doit rester inferieure aux deux ailes."),
-            "toe_radius_too_large": self.tr("Le rayon exterieur ne doit pas depasser l'epaisseur."),
-            "hollow_too_thick": self.tr("Les dimensions interieures doivent rester positives."),
+            "positive_dimensions": self.tr("Toutes les dimensions principales doivent être positives."),
+            "positive_radii": self.tr("Les rayons doivent être positifs ou nuls."),
+            "web_too_thick": self.tr("L'âme doit rester inférieure à la largeur."),
+            "flange_too_thick": self.tr("Les ailes doivent laisser une âme centrale."),
+            "angle_too_thick": self.tr("L'épaisseur de la cornière doit rester inférieure aux deux ailes."),
+            "toe_radius_too_large": self.tr("Le rayon extérieur ne doit pas dépasser l'épaisseur."),
+            "hollow_too_thick": self.tr("Les dimensions intérieures doivent rester positives."),
         }
-        return messages.get(code, self.tr("Geometrie de section invalide."))
+        return messages.get(code, self.tr("Géométrie de section invalide."))
 
     def _update_library_status(self) -> None:
         if not self._sectionproperties_available:
             self._lbl_library_status.setText(
-                self.tr("sectionproperties indisponible : bibliotheque non chargee.")
+                self.tr("sectionproperties indisponible : bibliothèque non chargée.")
             )
             return
         shape_key = str(self._combo_shape.currentData() or "rectangular")
@@ -1503,7 +1686,7 @@ class SectionBuilderDialog(QDialog):
         if error_code is None:
             count = len(self._backend_info.library_functions)
             self._lbl_library_status.setText(
-                self.tr("Bibliotheque sectionproperties prete ({count} fonctions detectees).").format(
+                self.tr("Bibliothèque sectionproperties prête ({count} fonctions détectées).").format(
                     count=count,
                 )
             )
@@ -1533,7 +1716,7 @@ class SectionBuilderDialog(QDialog):
                 QMessageBox.warning(
                     self,
                     self.tr("Profil introuvable"),
-                    self.tr("Le profil selectionne n'existe pas dans le catalogue."),
+                    self.tr("Le profil sélectionné n'existe pas dans le catalogue."),
                 )
             return False
 
@@ -1545,7 +1728,7 @@ class SectionBuilderDialog(QDialog):
                 QMessageBox.warning(
                     self,
                     self.tr("Import impossible"),
-                    self.tr("Le profil selectionne ne peut pas etre converti en contour."),
+                    self.tr("Le profil sélectionné ne peut pas être converti en contour."),
                 )
             return False
 
@@ -1569,7 +1752,7 @@ class SectionBuilderDialog(QDialog):
         self._side_tabs.setCurrentIndex(1)
         self._view.fit_section_to_view()
         self._lbl_status.setText(
-            self.tr("Profil {profile} insere depuis la bibliotheque standard.").format(
+            self.tr("Profil {profile} inséré depuis la bibliothèque standard.").format(
                 profile=profile.name,
             )
         )
@@ -1587,7 +1770,7 @@ class SectionBuilderDialog(QDialog):
                 QMessageBox.warning(
                     self,
                     self.tr("sectionproperties indisponible"),
-                    self.tr("Installez sectionproperties pour charger sa bibliotheque."),
+                    self.tr("Installez sectionproperties pour charger sa bibliothèque."),
                 )
             return False
 
@@ -1598,7 +1781,7 @@ class SectionBuilderDialog(QDialog):
             if show_errors:
                 QMessageBox.warning(
                     self,
-                    self.tr("Geometrie de section invalide"),
+                    self.tr("Géométrie de section invalide"),
                     self._validation_message(error_code),
                 )
             return False
@@ -1612,7 +1795,7 @@ class SectionBuilderDialog(QDialog):
                 QMessageBox.warning(
                     self,
                     self.tr("Import impossible"),
-                    self.tr("La forme selectionnee ne peut pas etre convertie en contour."),
+                    self.tr("La forme sélectionnée ne peut pas être convertie en contour."),
                 )
             return False
 
@@ -1629,7 +1812,7 @@ class SectionBuilderDialog(QDialog):
         self._select_material_type(shape.default_material_type)
         if update_name and self._edit_name.text().strip() in {
             "",
-            self.tr("Section personnalisÃ©e"),
+            self.tr("Section personnalisée"),
         }:
             self._edit_name.setText(self._shape_label(shape_key))
         self._invalidate_result()
@@ -1639,7 +1822,7 @@ class SectionBuilderDialog(QDialog):
         self._side_tabs.setCurrentIndex(1)
         self._view.fit_section_to_view()
         self._lbl_status.setText(
-            self.tr("Forme {shape} inseree depuis la bibliotheque sectionproperties.").format(
+            self.tr("Forme {shape} insérée depuis la bibliothèque sectionproperties.").format(
                 shape=self._shape_label(shape_key),
             )
         )
@@ -1695,7 +1878,7 @@ class SectionBuilderDialog(QDialog):
 
     def _load_builder_state(self, state: dict) -> None:
         """Load a serialized Section Builder state."""
-        self._edit_name.setText(str(state.get("name", "") or self.tr("Section personnalisÃ©e")))
+        self._edit_name.setText(str(state.get("name", "") or self.tr("Section personnalisée")))
         material_tag = state.get("material_tag")
         if isinstance(material_tag, int):
             self._select_material_tag(material_tag)
@@ -1741,7 +1924,7 @@ class SectionBuilderDialog(QDialog):
         self._current_file_path = None
         self._active_library_shape = None
         self._active_library_dimensions = None
-        self._edit_name.setText(self.tr("Section personnalisÃ©e"))
+        self._edit_name.setText(self.tr("Section personnalisée"))
         self._view.clear_section()
         self._invalidate_result()
         self._side_tabs.setCurrentIndex(0)
@@ -1765,7 +1948,7 @@ class SectionBuilderDialog(QDialog):
             QMessageBox.warning(
                 self,
                 self.tr("Ouverture impossible"),
-                self.tr("Le fichier ne peut pas etre lu.\n{error}").format(error=str(exc)),
+                self.tr("Le fichier ne peut pas être lu.\n{error}").format(error=str(exc)),
             )
             return
         self._current_file_path = Path(file_name)
@@ -1803,8 +1986,621 @@ class SectionBuilderDialog(QDialog):
             QMessageBox.warning(
                 self,
                 self.tr("Enregistrement impossible"),
-                self.tr("Le fichier ne peut pas etre ecrit.\n{error}").format(error=str(exc)),
+                self.tr("Le fichier ne peut pas être écrit.\n{error}").format(error=str(exc)),
             )
+
+    def _show_calculation_note(self) -> None:
+        """Open the internal calculation note viewer."""
+        html, image_resources = self._calculation_report(show_errors=True)
+        if not html:
+            return
+        SectionCalculationNoteDialog(self, html, image_resources).exec()
+
+    def _print_report(self) -> None:
+        """Print the current calculation note."""
+        html, image_resources = self._calculation_report(show_errors=True)
+        if not html:
+            return
+        self._print_calculation_note(html, image_resources)
+
+    def _print_calculation_note(
+        self,
+        html: str,
+        image_resources: dict[str, QImage] | None = None,
+    ) -> None:
+        """Print the HTML calculation report with Qt print support."""
+        document = self._report_document(html, image_resources or {})
+        self._print_report_document(document)
+
+    def _print_report_document(self, document: QTextDocument) -> None:
+        """Print an editable report document with Qt print support."""
+        printer = QPrinter(QPrinter.HighResolution)
+        dialog = QPrintDialog(printer, self)
+        dialog.setWindowTitle(self.tr("Imprimer le rapport"))
+        if dialog.exec() != QDialog.Accepted:
+            return
+        print_method = getattr(document, "print_", None) or getattr(document, "print")
+        print_method(printer)
+
+    def _report_document(
+        self,
+        html: str,
+        image_resources: dict[str, QImage],
+    ) -> QTextDocument:
+        """Build a QTextDocument and attach report figures as in-memory resources."""
+        document = QTextDocument()
+        for url, image in image_resources.items():
+            document.addResource(QTextDocument.ImageResource, QUrl(url), image)
+        document.setHtml(html)
+        return document
+
+    def _calculation_note_text(self, *, show_errors: bool) -> str:
+        """Return a plain-text version of the current calculation report."""
+        html, image_resources = self._calculation_report(show_errors=show_errors)
+        if not html:
+            return ""
+        document = self._report_document(html, image_resources)
+        return document.toPlainText()
+
+    def _calculation_report_html(self, *, show_errors: bool) -> str:
+        """Return the HTML part of the current report for tests and previews."""
+        html, _image_resources = self._calculation_report(show_errors=show_errors)
+        return html
+
+    def _calculation_report(self, *, show_errors: bool) -> tuple[str, dict[str, QImage]]:
+        """Return a professional HTML report for the current calculated section."""
+        if self._result is None:
+            if show_errors:
+                QMessageBox.information(
+                    self,
+                    self.tr("Calcul requis"),
+                    self.tr(
+                        "Lancez d'abord le calcul de la section avant de générer le rapport."
+                    ),
+                )
+            return "", {}
+
+        result = dict(self._result)
+        properties = result.get("properties", {})
+        if not isinstance(properties, dict):
+            properties = {}
+        sectionproperties = (
+            properties.get("sectionproperties", {})
+            if isinstance(properties.get("sectionproperties", {}), dict)
+            else {}
+        )
+        points = properties.get("points", [])
+        if not isinstance(points, list):
+            points = []
+        holes = properties.get("holes", [])
+        if not isinstance(holes, list):
+            holes = []
+        stress_summary, stress_error = self._calculation_report_stress_summary()
+        generated_at = datetime.now().strftime("%Y-%m-%d %H:%M")
+
+        intro = self.tr(
+            "Cette note présente les données de définition, les propriétés "
+            "géométriques et une enveloppe de contraintes de référence. Elle est "
+            "produite après un calcul valide du Section Builder."
+        )
+        identity_rows = [
+            (self.tr("Nom"), result.get("name", "")),
+            (self.tr("Type"), result.get("section_type", "")),
+            (self.tr("Matériau"), self._combo_material.currentText() or "-"),
+            (self.tr("Source"), properties.get("source", "-")),
+            (self.tr("Moteur de calcul"), properties.get("analysis_engine", "-")),
+            (self.tr("Date du rapport"), generated_at),
+        ]
+        geometric_rows = [
+            (self.tr("Aire A"), self._format_area(float(result.get("area", 0.0)))),
+            (
+                self.tr("Inertie Iy"),
+                self._format_inertia(float(result.get("inertia_y", 0.0))),
+            ),
+            (
+                self.tr("Inertie Iz"),
+                self._format_inertia(float(result.get("inertia_z", 0.0))),
+            ),
+            (
+                self.tr("Périmètre"),
+                "{value:.6e} m".format(value=float(properties.get("perimeter", 0.0))),
+            ),
+            (
+                self.tr("Centre Cy"),
+                "{value:.6e} m".format(value=float(properties.get("centroid_y", 0.0))),
+            ),
+            (
+                self.tr("Centre Cz"),
+                "{value:.6e} m".format(value=float(properties.get("centroid_z", 0.0))),
+            ),
+        ]
+        if sectionproperties:
+            geometric_rows.extend(
+                [
+                    (
+                        self.tr("Produit d'inertie Iyz"),
+                        self._format_inertia(float(sectionproperties.get("ixy", 0.0))),
+                    ),
+                    (
+                        self.tr("Constante de torsion J"),
+                        self._format_inertia(
+                            float(sectionproperties.get("torsion_constant", 0.0))
+                        ),
+                    ),
+                    (
+                        self.tr("Maillage"),
+                        self.tr("{nodes} nœuds, {triangles} triangles").format(
+                            nodes=int(sectionproperties.get("mesh_node_count", 0)),
+                            triangles=int(sectionproperties.get("mesh_triangle_count", 0)),
+                        ),
+                    ),
+                ]
+            )
+
+        point_rows = []
+        for index, point in enumerate(points, start=1):
+            try:
+                y = float(point[0])
+                z = float(point[1])
+            except (TypeError, ValueError, IndexError):
+                continue
+            point_rows.append((f"P{index:02d}", f"{y:.6f}", f"{z:.6f}"))
+
+        image_resources = self._report_image_resources(points, holes, stress_summary)
+        figures_section = self._figures_report_html(stress_summary)
+        stress_section = self._stress_report_html(stress_summary, stress_error)
+        limits = self.tr(
+            "Les contraintes affichées sont des contraintes élastiques de référence "
+            "calculées sur la section seule. Elles ne remplacent pas une vérification "
+            "réglementaire EC3/EC2 ni une combinaison d'actions du modèle global."
+        )
+
+        return f"""<!doctype html>
+<html>
+<head>
+<meta charset="utf-8">
+<style>
+body {{ font-family: Arial, sans-serif; color: #202124; font-size: 10pt; }}
+.cover {{ text-align: center; padding-top: 140px; min-height: 650px; }}
+.cover h1 {{ font-size: 26pt; margin: 0; }}
+.cover h2 {{ border: 0; font-size: 18pt; margin-top: 18px; }}
+.cover-table {{ margin: 40px auto 0 auto; width: 70%; text-align: left; }}
+.page-break {{ page-break-after: always; }}
+h1 {{ font-size: 18pt; margin-bottom: 2px; }}
+h2 {{ font-size: 12pt; margin-top: 18px; border-bottom: 1px solid #9aa0a6; padding-bottom: 4px; }}
+.subtitle {{ color: #5f6368; margin-bottom: 16px; }}
+.figure {{ text-align: center; margin: 12px 0 18px 0; }}
+.figure img {{ max-width: 100%; border: 1px solid #c9d1d9; }}
+.caption {{ color: #5f6368; font-size: 9pt; margin-top: 4px; }}
+.notice {{ background: #f6f8fa; border-left: 4px solid #5f6368; padding: 8px 10px; margin: 10px 0; }}
+.warning {{ background: #fff4e5; border-left: 4px solid #d97706; padding: 8px 10px; margin: 10px 0; }}
+table {{ border-collapse: collapse; width: 100%; margin-top: 6px; }}
+th {{ background: #eef2f7; text-align: left; }}
+th, td {{ border: 1px solid #c9d1d9; padding: 5px 7px; vertical-align: top; }}
+td.num {{ text-align: right; font-family: Consolas, monospace; }}
+.small {{ color: #5f6368; font-size: 9pt; }}
+</style>
+</head>
+<body>
+<div class="cover">
+<h1>HEXA Structures</h1>
+<h2>{escape(self.tr("Note de calcul - Section Builder"))}</h2>
+<div class="subtitle">{escape(self.tr("Rapport de section utilisateur"))}</div>
+<table class="cover-table"><tbody>
+<tr><td>{escape(self.tr("Section"))}</td><td>{escape(str(result.get("name", "")))}</td></tr>
+<tr><td>{escape(self.tr("Matériau"))}</td><td>{escape(self._combo_material.currentText() or "-")}</td></tr>
+<tr><td>{escape(self.tr("Date du rapport"))}</td><td>{escape(generated_at)}</td></tr>
+</tbody></table>
+</div>
+<div class="page-break"></div>
+<h1>{escape(self.tr("Note de calcul - Section Builder HEXA"))}</h1>
+<div class="subtitle">{escape(self.tr("Rapport de section utilisateur"))}</div>
+<div class="notice">{escape(intro)}</div>
+<h2>{escape(self.tr("1. Identification"))}</h2>
+{self._definition_table_html(identity_rows)}
+<h2>{escape(self.tr("2. Figures"))}</h2>
+{figures_section}
+<h2>{escape(self.tr("3. Propriétés géométriques"))}</h2>
+{self._definition_table_html(geometric_rows)}
+<h2>{escape(self.tr("4. Contraintes de référence"))}</h2>
+{stress_section}
+<h2>{escape(self.tr("5. Contour"))}</h2>
+<p>{escape(self.tr("Points extérieurs : {count}").format(count=len(point_rows)))}<br>
+{escape(self.tr("Trous : {count}").format(count=len(holes)))}</p>
+{self._points_table_html(point_rows)}
+<h2>{escape(self.tr("6. Limites"))}</h2>
+<div class="warning">{escape(limits)}</div>
+</body>
+</html>""", image_resources
+
+    def _report_image_resources(
+        self,
+        points: list,
+        holes: list,
+        stress_summary: SectionPropertiesStressSummary | None,
+    ) -> dict[str, QImage]:
+        resources = {
+            "hexa-report:section-outline": self._section_outline_image(points, holes),
+        }
+        if stress_summary is not None:
+            resources["hexa-report:stress-envelope"] = self._stress_envelope_image(
+                stress_summary
+            )
+        return resources
+
+    def _figures_report_html(
+        self,
+        stress_summary: SectionPropertiesStressSummary | None,
+    ) -> str:
+        figures = [
+            """
+<div class="figure">
+<img src="hexa-report:section-outline" width="680">
+<div class="caption">{caption}</div>
+</div>
+""".format(
+                caption=escape(
+                    self.tr("Figure 1 - Contour de la section dans le repère local y/z.")
+                )
+            )
+        ]
+        if stress_summary is not None:
+            figures.append(
+                """
+<div class="figure">
+<img src="hexa-report:stress-envelope" width="680">
+<div class="caption">{caption}</div>
+</div>
+""".format(
+                    caption=escape(
+                        self.tr(
+                            "Figure 2 - Diagramme d'enveloppe des contraintes de référence."
+                        )
+                    )
+                )
+            )
+        return "\n".join(figures)
+
+    def _section_outline_image(self, points: list, holes: list) -> QImage:
+        outer = self._normalize_report_points(points)
+        hole_polygons = [
+            normalized
+            for hole in holes
+            if (normalized := self._normalize_report_points(hole))
+        ]
+        width, height = 760, 360
+        image = QImage(width, height, QImage.Format_ARGB32_Premultiplied)
+        image.fill(QColor("white"))
+        painter = QPainter(image)
+        painter.setRenderHint(QPainter.Antialiasing, True)
+        try:
+            painter.fillRect(0, 0, width, height, QColor("white"))
+            painter.setPen(QPen(QColor("#c9d1d9"), 1))
+            painter.drawRect(0, 0, width - 1, height - 1)
+            if not outer:
+                painter.drawText(QRectF(0, 0, width, height), Qt.AlignCenter, self.tr("Aucun point."))
+                return image
+
+            all_points = outer + [point for hole in hole_polygons for point in hole]
+            min_y = min(point[0] for point in all_points)
+            max_y = max(point[0] for point in all_points)
+            min_z = min(point[1] for point in all_points)
+            max_z = max(point[1] for point in all_points)
+            span_y = max(max_y - min_y, 1.0e-6)
+            span_z = max(max_z - min_z, 1.0e-6)
+            margin = 42.0
+            scale = min((width - 2.0 * margin) / span_y, (height - 2.0 * margin) / span_z)
+
+            def map_point(point: Point2D) -> QPointF:
+                return QPointF(
+                    margin + (point[0] - min_y) * scale,
+                    height - margin - (point[1] - min_z) * scale,
+                )
+
+            painter.setPen(QPen(QColor("#6b7280"), 1, Qt.DashLine))
+            origin = map_point((0.0, 0.0))
+            painter.drawLine(QPointF(margin, origin.y()), QPointF(width - margin, origin.y()))
+            painter.drawLine(QPointF(origin.x(), margin), QPointF(origin.x(), height - margin))
+            painter.setPen(QPen(QColor("#374151"), 1))
+            painter.drawText(QPointF(width - margin + 6, origin.y() + 4), "y")
+            painter.drawText(QPointF(origin.x() + 6, margin - 8), "z")
+
+            path = self._polygon_path(outer, map_point)
+            painter.setBrush(QBrush(QColor(197, 219, 238, 210)))
+            painter.setPen(QPen(QColor("#1f4e79"), 2))
+            painter.drawPath(path)
+            for hole in hole_polygons:
+                hole_path = self._polygon_path(hole, map_point)
+                painter.setBrush(QBrush(QColor("white")))
+                painter.setPen(QPen(QColor("#6b7280"), 1.5))
+                painter.drawPath(hole_path)
+
+            painter.setBrush(QBrush(QColor("#ffffff")))
+            painter.setPen(QPen(QColor("#374151"), 1))
+            for index, point in enumerate(outer, start=1):
+                mapped = map_point(point)
+                painter.drawEllipse(mapped, 4, 4)
+                painter.drawText(mapped + QPointF(6, -6), str(index))
+
+            centroid = self._report_centroid()
+            if centroid is not None:
+                center = map_point(centroid)
+                painter.setPen(QPen(QColor("#d1242f"), 2))
+                painter.drawLine(center + QPointF(-7, 0), center + QPointF(7, 0))
+                painter.drawLine(center + QPointF(0, -7), center + QPointF(0, 7))
+                painter.drawText(center + QPointF(8, -8), "G")
+        finally:
+            painter.end()
+        return image
+
+    def _stress_envelope_image(
+        self,
+        summary: SectionPropertiesStressSummary,
+    ) -> QImage:
+        rows = [
+            (label, summary.ranges[key])
+            for key, label in self._report_stress_choices()
+            if key in summary.ranges
+        ]
+        width = 760
+        height = max(260, 88 + len(rows) * 34)
+        image = QImage(width, height, QImage.Format_ARGB32_Premultiplied)
+        image.fill(QColor("white"))
+        painter = QPainter(image)
+        painter.setRenderHint(QPainter.Antialiasing, True)
+        try:
+            painter.fillRect(0, 0, width, height, QColor("white"))
+            painter.setPen(QPen(QColor("#c9d1d9"), 1))
+            painter.drawRect(0, 0, width - 1, height - 1)
+            painter.setPen(QPen(QColor("#202124"), 1))
+            painter.setFont(QFont("Arial", 10, QFont.Bold))
+            painter.drawText(24, 28, self.tr("Enveloppe min/max des contraintes (MPa)"))
+
+            values = [
+                abs(value / 1.0e6)
+                for _label, stress_range in rows
+                for value in (stress_range.min_stress, stress_range.max_stress)
+            ]
+            max_abs = max(values, default=1.0) or 1.0
+            label_width = 190.0
+            right_margin = 72.0
+            plot_left = label_width + 30.0
+            plot_right = width - right_margin
+            axis_x = (plot_left + plot_right) / 2.0
+            half_width = (plot_right - plot_left) / 2.0
+            top = 62.0
+
+            painter.setFont(QFont("Arial", 8))
+            painter.setPen(QPen(QColor("#6b7280"), 1))
+            painter.drawLine(QPointF(axis_x, top - 14), QPointF(axis_x, height - 30))
+            painter.drawText(QRectF(plot_left, 38, plot_right - plot_left, 18), Qt.AlignCenter, "0")
+
+            for row, (label, stress_range) in enumerate(rows):
+                y = top + row * 34.0
+                min_mpa = stress_range.min_stress / 1.0e6
+                max_mpa = stress_range.max_stress / 1.0e6
+                x_min = axis_x + (min_mpa / max_abs) * half_width
+                x_max = axis_x + (max_mpa / max_abs) * half_width
+                painter.setPen(QPen(QColor("#202124"), 1))
+                painter.drawText(QRectF(12, y - 11, label_width, 22), Qt.AlignVCenter, label)
+                painter.setPen(Qt.NoPen)
+                painter.setBrush(QBrush(QColor("#d9534f")))
+                painter.drawRect(QRectF(min(x_min, axis_x), y - 6, abs(axis_x - x_min), 12))
+                painter.setBrush(QBrush(QColor("#1f77b4")))
+                painter.drawRect(QRectF(min(axis_x, x_max), y - 6, abs(x_max - axis_x), 12))
+                painter.setPen(QPen(QColor("#374151"), 1))
+                painter.drawText(QPointF(plot_right + 8, y + 4), f"{max_mpa:.2f}")
+                painter.drawText(QPointF(plot_left - 46, y + 4), f"{min_mpa:.2f}")
+        finally:
+            painter.end()
+        return image
+
+    def _normalize_report_points(self, points: list) -> list[Point2D]:
+        normalized: list[Point2D] = []
+        for point in points:
+            try:
+                normalized.append((float(point[0]), float(point[1])))
+            except (TypeError, ValueError, IndexError):
+                continue
+        return normalized
+
+    def _polygon_path(
+        self,
+        points: list[Point2D],
+        map_point,
+    ) -> QPainterPath:
+        path = QPainterPath()
+        if not points:
+            return path
+        path.moveTo(map_point(points[0]))
+        for point in points[1:]:
+            path.lineTo(map_point(point))
+        path.closeSubpath()
+        return path
+
+    def _report_centroid(self) -> Point2D | None:
+        if self._result is None:
+            return None
+        properties = self._result.get("properties", {})
+        if not isinstance(properties, dict):
+            return None
+        try:
+            return (
+                float(properties.get("centroid_y", 0.0)),
+                float(properties.get("centroid_z", 0.0)),
+            )
+        except (TypeError, ValueError):
+            return None
+
+    def _calculation_report_stress_summary(
+        self,
+    ) -> tuple[SectionPropertiesStressSummary | None, str]:
+        """Return stress summary and an optional warning for the calculation report."""
+        if not self._sectionproperties_available:
+            return None, self.tr(
+                "sectionproperties n'est pas disponible : les contraintes ne sont pas calculées."
+            )
+        actions = self._report_stress_actions()
+        try:
+            summary = calculate_polygon_sectionproperties_stress_summary(
+                self._view.points(),
+                holes=self._view.holes(),
+                mesh_area=self._spin_mesh_area.value(),
+                stress_keys=tuple(key for key, _label in self._report_stress_choices()),
+                n=actions["n"],
+                vx=actions["vx"],
+                vy=actions["vy"],
+                mxx=actions["mxx"],
+                myy=actions["myy"],
+                mzz=actions["mzz"],
+            )
+        except (SectionPropertiesUnavailable, SectionPropertiesCalculationError) as exc:
+            return None, self.tr("Contraintes non calculées : {error}").format(
+                error=str(exc)
+            )
+        return summary, ""
+
+    def _report_stress_actions(self) -> dict[str, float]:
+        """Return SI reference actions used by the report stress table."""
+        if self._sectionproperties_stress_result is not None:
+            return dict(self._sectionproperties_stress_result.actions)
+        return {
+            "n": 0.0,
+            "vx": 0.0,
+            "vy": 0.0,
+            "mxx": 1.0e3,
+            "myy": 0.0,
+            "mzz": 0.0,
+        }
+
+    def _report_stress_choices(self) -> tuple[tuple[str, str], ...]:
+        return (
+            ("zz", self.tr("Sigma zz totale")),
+            ("n_zz", self.tr("Sigma zz - effort normal")),
+            ("mxx_zz", self.tr("Sigma zz - flexion Mxx")),
+            ("myy_zz", self.tr("Sigma zz - flexion Myy")),
+            ("zxy", self.tr("Cisaillement total")),
+            ("vm", self.tr("Von Mises")),
+        )
+
+    def _stress_report_html(
+        self,
+        summary: SectionPropertiesStressSummary | None,
+        warning: str,
+    ) -> str:
+        actions = summary.actions if summary is not None else self._report_stress_actions()
+        action_rows = [
+            ("N", self._format_force(actions.get("n", 0.0))),
+            ("Vx", self._format_force(actions.get("vx", 0.0))),
+            ("Vy", self._format_force(actions.get("vy", 0.0))),
+            ("Mxx", self._format_moment(actions.get("mxx", 0.0))),
+            ("Myy", self._format_moment(actions.get("myy", 0.0))),
+            ("Mzz", self._format_moment(actions.get("mzz", 0.0))),
+        ]
+        html = [
+            '<p class="small">',
+            escape(
+                self.tr(
+                    "Les efforts ci-dessous servent de cas de référence pour la table "
+                    "des contraintes. Modifiez-les depuis Afficher contrainte puis "
+                    "régénérez le rapport si nécessaire."
+                )
+            ),
+            "</p>",
+            self._definition_table_html(action_rows),
+        ]
+        if warning:
+            html.append(f'<div class="warning">{escape(warning)}</div>')
+            return "\n".join(html)
+        if summary is None:
+            return "\n".join(html)
+
+        rows: list[tuple[str, str, str, str, str]] = []
+        for key, label in self._report_stress_choices():
+            stress_range = summary.ranges.get(key)
+            if stress_range is None:
+                continue
+            rows.append(
+                (
+                    label,
+                    self._format_stress(stress_range.min_stress),
+                    self._format_location(stress_range.min_location),
+                    self._format_stress(stress_range.max_stress),
+                    self._format_location(stress_range.max_location),
+                )
+            )
+        html.append(
+            self._table_html(
+                (
+                    self.tr("Composante"),
+                    self.tr("Min"),
+                    self.tr("Position min."),
+                    self.tr("Max"),
+                    self.tr("Position max."),
+                ),
+                rows,
+                numeric_columns={1, 3},
+            )
+        )
+        return "\n".join(html)
+
+    def _definition_table_html(self, rows: list[tuple[str, object]]) -> str:
+        return self._table_html((self.tr("Paramètre"), self.tr("Valeur")), rows)
+
+    def _points_table_html(self, rows: list[tuple[str, str, str]]) -> str:
+        if not rows:
+            return f'<p class="small">{escape(self.tr("Aucun point."))}</p>'
+        return self._table_html(("Point", "y (m)", "z (m)"), rows, numeric_columns={1, 2})
+
+    def _table_html(
+        self,
+        headers: tuple[str, ...],
+        rows: list[tuple[object, ...]],
+        *,
+        numeric_columns: set[int] | None = None,
+    ) -> str:
+        numeric_columns = numeric_columns or set()
+        header_html = "".join(f"<th>{escape(str(header))}</th>" for header in headers)
+        row_html = []
+        for row in rows:
+            cells = []
+            for index, value in enumerate(row):
+                css_class = ' class="num"' if index in numeric_columns else ""
+                cells.append(f"<td{css_class}>{escape(str(value))}</td>")
+            row_html.append("<tr>" + "".join(cells) + "</tr>")
+        return "<table><thead><tr>{}</tr></thead><tbody>{}</tbody></table>".format(
+            header_html,
+            "".join(row_html),
+        )
+
+    def _format_area(self, value: float) -> str:
+        return "{value:.6e} m2 ({cm2:.3f} cm2)".format(
+            value=value,
+            cm2=value * 1.0e4,
+        )
+
+    def _format_inertia(self, value: float) -> str:
+        return "{value:.6e} m4 ({cm4:.3f} cm4)".format(
+            value=value,
+            cm4=value * 1.0e8,
+        )
+
+    def _format_force(self, value: float) -> str:
+        return "{value:.3f} kN".format(value=value / 1.0e3)
+
+    def _format_moment(self, value: float) -> str:
+        return "{value:.3f} kN.m".format(value=value / 1.0e3)
+
+    def _format_stress(self, value: float) -> str:
+        return "{value:.3f} MPa".format(value=value / 1.0e6)
+
+    def _format_location(self, location: Point2D | None) -> str:
+        if location is None:
+            return "-"
+        return "y={y:.4f} m, z={z:.4f} m".format(
+            y=location[0],
+            z=location[1],
+        )
 
     def _show_results_summary(self) -> None:
         """Show current analysis results."""
@@ -1813,8 +2609,8 @@ class SectionBuilderDialog(QDialog):
         self._side_tabs.setCurrentIndex(2)
         QMessageBox.information(
             self,
-            self.tr("Resultats"),
-            self._lbl_results.text() or self.tr("Aucun resultat disponible."),
+            self.tr("Résultats"),
+            self._lbl_results.text() or self.tr("Aucun résultat disponible."),
         )
 
     def _show_stress_dialog(self) -> None:
@@ -1829,7 +2625,7 @@ class SectionBuilderDialog(QDialog):
         if not self._view.is_closed():
             QMessageBox.warning(
                 self,
-                self.tr("Contour non ferme"),
+                self.tr("Contour non fermé"),
                 self.tr("Fermez le contour avant de calculer les contraintes."),
             )
             return
@@ -1839,7 +2635,7 @@ class SectionBuilderDialog(QDialog):
             QMessageBox.warning(
                 self,
                 self.tr("Matplotlib indisponible"),
-                self.tr("Matplotlib ne peut pas etre charge.\n{error}").format(
+                self.tr("Matplotlib ne peut pas être chargé.\n{error}").format(
                     error=str(exc)
                 ),
             )
@@ -1852,8 +2648,9 @@ class SectionBuilderDialog(QDialog):
         self.act_import_shape.triggered.connect(self._show_standard_profile_import_dialog)
         self.act_save.triggered.connect(self._save_builder_file)
         self.act_save_as.triggered.connect(self._save_builder_file_as)
+        self.act_calculation_note.triggered.connect(self._show_calculation_note)
+        self.act_print_report.triggered.connect(self._print_report)
         self.act_quit.triggered.connect(self.reject)
-        self.act_sp_insert_library.triggered.connect(lambda: self._insert_library_shape(show_errors=True))
         self.act_sp_calculate.triggered.connect(lambda: self._analyze(show_errors=True))
         self.act_sp_results.triggered.connect(self._show_results_summary)
         self.act_sp_show_stress.triggered.connect(self._show_stress_dialog)
@@ -1882,6 +2679,7 @@ class SectionBuilderDialog(QDialog):
         self._btn_delete_hole.clicked.connect(self._delete_selected_hole)
         self._btn_clear.clicked.connect(self._view.clear_section)
         self._btn_analyze.clicked.connect(lambda: self._analyze(show_errors=True))
+        self._btn_add_to_user_library.clicked.connect(self._accept_for_user_library)
         self._button_box.accepted.connect(self._accept)
         self._button_box.rejected.connect(self.reject)
 
@@ -1908,12 +2706,12 @@ class SectionBuilderDialog(QDialog):
 
     def _tool_label(self, mode: str) -> str:
         labels = {
-            "select": self.tr("Selection"),
+            "select": self.tr("Sélection"),
             "polygon": self.tr("Polygone"),
             "rectangle": self.tr("Rectangle"),
             "circle": self.tr("Cercle"),
             "hole": self.tr("Trou"),
-            "move": self.tr("Deplacer point"),
+            "move": self.tr("Déplacer point"),
             "delete": self.tr("Supprimer point"),
         }
         return labels.get(mode, mode)
@@ -1939,6 +2737,11 @@ class SectionBuilderDialog(QDialog):
         ok_button = self._button_box.button(QDialogButtonBox.Ok)
         if ok_button is not None:
             ok_button.setEnabled(False)
+        self._set_report_actions_enabled(False)
+
+    def _set_report_actions_enabled(self, enabled: bool) -> None:
+        self.act_calculation_note.setEnabled(enabled)
+        self.act_print_report.setEnabled(enabled)
 
     def _refresh_points(self) -> None:
         points = self._view.current_points()
@@ -1967,36 +2770,36 @@ class SectionBuilderDialog(QDialog):
             self._btn_analyze.setEnabled(False)
         if self._view.current_is_closed():
             label = (
-                self.tr("Trou {index} ferme : {count} point(s).").format(
+                self.tr("Trou {index} fermé : {count} point(s).").format(
                     index=(hole_index or 0) + 1,
                     count=len(points),
                 )
                 if contour_kind == "hole"
-                else self.tr("Contour ferme : {count} point(s).").format(count=len(points))
+                else self.tr("Contour fermé : {count} point(s).").format(count=len(points))
             )
             self._lbl_status.setText(label)
         elif mode == "rectangle":
-            self._lbl_status.setText(self.tr("Rectangle : cliquez-glissez pour definir deux coins."))
+            self._lbl_status.setText(self.tr("Rectangle : cliquez-glissez pour définir deux coins."))
         elif mode == "circle":
             self._lbl_status.setText(self.tr("Cercle : cliquez au centre puis glissez le rayon."))
         elif mode == "move":
-            self._lbl_status.setText(self.tr("Deplacer point : glissez un point du contour actif."))
+            self._lbl_status.setText(self.tr("Déplacer point : glissez un point du contour actif."))
         elif mode == "delete":
             self._lbl_status.setText(self.tr("Supprimer point : cliquez un point du contour actif."))
         elif mode == "select":
-            self._lbl_status.setText(self.tr("Selection : cliquez un point du contour actif."))
+            self._lbl_status.setText(self.tr("Sélection : cliquez un point du contour actif."))
         elif contour_kind == "hole":
             self._lbl_status.setText(
                 self.tr(
-                    "Dessinez le contour du trou. Cliquez pres du premier point ou utilisez Fermer le contour."
+                    "Dessinez le contour du trou. Cliquez près du premier point ou utilisez Fermer le contour."
                 )
             )
         elif mode == "hole":
-            self._lbl_status.setText(self.tr("Trou : fermez le contour exterieur, puis dessinez le trou."))
+            self._lbl_status.setText(self.tr("Trou : fermez le contour extérieur, puis dessinez le trou."))
         else:
             self._lbl_status.setText(
                 self.tr(
-                    "Cliquez sur la grille pour dessiner le contour. Cliquez pres du premier point ou utilisez Fermer le contour."
+                    "Cliquez sur la grille pour dessiner le contour. Cliquez près du premier point ou utilisez Fermer le contour."
                 )
             )
 
@@ -2005,7 +2808,7 @@ class SectionBuilderDialog(QDialog):
         was_blocked = self._combo_contour.blockSignals(True)
         try:
             self._combo_contour.clear()
-            self._combo_contour.addItem(self.tr("Contour exterieur"), ("outer", -1))
+            self._combo_contour.addItem(self.tr("Contour extérieur"), ("outer", -1))
             for index in range(self._view.hole_count()):
                 label = self.tr("Trou {index}").format(index=index + 1)
                 if not self._view.is_hole_closed(index):
@@ -2035,8 +2838,8 @@ class SectionBuilderDialog(QDialog):
         if not self._view.is_closed():
             QMessageBox.warning(
                 self,
-                self.tr("Contour exterieur requis"),
-                self.tr("Fermez le contour exterieur avant d'ajouter un trou."),
+                self.tr("Contour extérieur requis"),
+                self.tr("Fermez le contour extérieur avant d'ajouter un trou."),
             )
             return
         self._view.start_hole()
@@ -2060,7 +2863,7 @@ class SectionBuilderDialog(QDialog):
         ys = [point[0] for point in points]
         zs = [point[1] for point in points]
         if self._view.is_closed():
-            perimeter_text = self.tr(" - Perimetre : {perimeter:.3f} m").format(
+            perimeter_text = self.tr(" - Périmètre : {perimeter:.3f} m").format(
                 perimeter=polygon_perimeter(points)
             )
         else:
@@ -2133,7 +2936,7 @@ class SectionBuilderDialog(QDialog):
             if show_errors:
                 QMessageBox.warning(
                     self,
-                    self.tr("Contour non ferme"),
+                    self.tr("Contour non fermé"),
                     self.tr("Fermez le contour avant l'analyse."),
                 )
             return False
@@ -2169,7 +2972,7 @@ class SectionBuilderDialog(QDialog):
                         self,
                         self.tr("Profil introuvable"),
                         self.tr(
-                            "Le profil selectionne n'existe plus dans le catalogue."
+                            "Le profil sélectionné n'existe plus dans le catalogue."
                         ),
                     )
                 return False
@@ -2194,6 +2997,7 @@ class SectionBuilderDialog(QDialog):
             ok_button = self._button_box.button(QDialogButtonBox.Ok)
             if ok_button is not None:
                 ok_button.setEnabled(True)
+            self._set_report_actions_enabled(True)
             return True
 
         if self._active_library_shape is not None:
@@ -2214,6 +3018,7 @@ class SectionBuilderDialog(QDialog):
             ok_button = self._button_box.button(QDialogButtonBox.Ok)
             if ok_button is not None:
                 ok_button.setEnabled(True)
+            self._set_report_actions_enabled(True)
             return True
 
         sp_result = self._calculate_with_sectionproperties(show_errors=show_errors)
@@ -2239,6 +3044,7 @@ class SectionBuilderDialog(QDialog):
         ok_button = self._button_box.button(QDialogButtonBox.Ok)
         if ok_button is not None:
             ok_button.setEnabled(True)
+        self._set_report_actions_enabled(True)
         return True
 
     def _calculate_library_sectionproperties(
@@ -2258,7 +3064,7 @@ class SectionBuilderDialog(QDialog):
             if show_errors:
                 QMessageBox.warning(
                     self,
-                    self.tr("Geometrie de section invalide"),
+                    self.tr("Géométrie de section invalide"),
                     self._validation_message(error_code),
                 )
             return None
@@ -2304,7 +3110,7 @@ class SectionBuilderDialog(QDialog):
                 QMessageBox.warning(
                     self,
                     self.tr("sectionproperties indisponible"),
-                    self.tr("Le calcul polygonal simple sera utilise."),
+                    self.tr("Le calcul polygonal simple sera utilisé."),
                 )
             return None
         except SectionPropertiesCalculationError as exc:
@@ -2312,7 +3118,7 @@ class SectionBuilderDialog(QDialog):
                 QMessageBox.warning(
                     self,
                     self.tr("Calcul sectionproperties impossible"),
-                    self.tr("Le calcul polygonal simple sera utilise.\n{error}").format(
+                    self.tr("Le calcul polygonal simple sera utilisé.\n{error}").format(
                         error=str(exc)
                     ),
                 )
@@ -2398,7 +3204,7 @@ class SectionBuilderDialog(QDialog):
             )
             if sp_result.mesh:
                 lines.append(
-                    self.tr("Maillage : {nodes} noeuds, {triangles} triangles").format(
+                    self.tr("Maillage : {nodes} nœuds, {triangles} triangles").format(
                         nodes=len(sp_result.mesh.vertices),
                         triangles=len(sp_result.mesh.triangles),
                     )
@@ -2450,7 +3256,7 @@ class SectionBuilderDialog(QDialog):
             )
             if sp_result.mesh:
                 lines.append(
-                    self.tr("Maillage : {nodes} noeuds, {triangles} triangles").format(
+                    self.tr("Maillage : {nodes} nœuds, {triangles} triangles").format(
                         nodes=len(sp_result.mesh.vertices),
                         triangles=len(sp_result.mesh.triangles),
                     )
@@ -2478,6 +3284,8 @@ class SectionBuilderDialog(QDialog):
         )
         section_properties = {
             "source": "section_builder",
+            "source_tool": "section_builder",
+            "editable_with": "section_builder",
             "analysis_engine": "sectionproperties" if sp_result else "polygonal",
             "points": points,
             "holes": self._view.holes(),
@@ -2520,6 +3328,7 @@ class SectionBuilderDialog(QDialog):
         """Build a ProjectModel section payload for an inserted library shape."""
         properties = dict(sp_result.properties)
         properties["source_tool"] = "section_builder"
+        properties["editable_with"] = "section_builder"
         properties["points"] = self._view.points()
         properties["holes"] = self._view.holes()
         properties["hole_count"] = len(self._view.holes())
@@ -2538,6 +3347,12 @@ class SectionBuilderDialog(QDialog):
             "inertia_z": sp_result.inertia_z,
         }
 
+    def _accept_for_user_library(self) -> None:
+        if self._result is None and not self._analyze(show_errors=True):
+            return
+        self._add_to_user_library_requested = True
+        self.accept()
+
     def _build_standard_profile_result(
         self,
         profile: SteelProfile,
@@ -2549,6 +3364,7 @@ class SectionBuilderDialog(QDialog):
             "profile": profile.name,
             "source": "profile_catalog",
             "source_tool": "section_builder",
+            "editable_with": "section_builder",
             "analysis_engine": "sectionproperties" if sp_result else "profile_catalog",
             "family": profile.family,
             "shape": profile.shape,

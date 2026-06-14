@@ -60,6 +60,29 @@ class SectionPropertiesStressResult:
     actions: dict[str, float]
     min_stress: float
     max_stress: float
+    min_location: Point2D | None = None
+    max_location: Point2D | None = None
+    mesh: "SectionPropertiesMesh | None" = None
+
+
+@dataclass(frozen=True)
+class SectionPropertiesStressRange:
+    """Min/max envelope for one sectionproperties stress result."""
+
+    stress_key: str
+    min_stress: float
+    max_stress: float
+    min_location: Point2D | None = None
+    max_location: Point2D | None = None
+
+
+@dataclass(frozen=True)
+class SectionPropertiesStressSummary:
+    """Stress envelope table for a set of result components."""
+
+    stress_post: Any
+    actions: dict[str, float]
+    ranges: dict[str, SectionPropertiesStressRange]
     mesh: "SectionPropertiesMesh | None" = None
 
 
@@ -560,7 +583,12 @@ def calculate_polygon_sectionproperties_stress(
         if any(abs(actions[key]) > 0.0 for key in ("vx", "vy", "mzz")):
             section.calculate_warping_properties()
         stress_post = section.calculate_stress(**actions)
-        stress_values = _stress_values(stress_post, stress_key)
+        mesh = _mesh_from_geometry(geometry)
+        stress_range = _stress_range(
+            stress_post,
+            stress_key,
+            vertices=mesh.vertices if mesh else None,
+        )
     except Exception as exc:
         if isinstance(exc, SectionPropertiesCalculationError):
             raise
@@ -570,9 +598,72 @@ def calculate_polygon_sectionproperties_stress(
         stress_post=stress_post,
         stress_key=stress_key,
         actions=actions,
-        min_stress=float(stress_values[0]),
-        max_stress=float(stress_values[1]),
-        mesh=_mesh_from_geometry(geometry),
+        min_stress=stress_range.min_stress,
+        max_stress=stress_range.max_stress,
+        min_location=stress_range.min_location,
+        max_location=stress_range.max_location,
+        mesh=mesh,
+    )
+
+
+def calculate_polygon_sectionproperties_stress_summary(
+    points: list[Point2D] | tuple[Point2D, ...],
+    *,
+    holes: list[list[Point2D]] | tuple[tuple[Point2D, ...], ...] | None = None,
+    mesh_area: float = 1.0e-4,
+    stress_keys: tuple[str, ...] = ("zz", "n_zz", "mxx_zz", "myy_zz", "zxy", "vm"),
+    n: float = 0.0,
+    vx: float = 0.0,
+    vy: float = 0.0,
+    mxx: float = 0.0,
+    myy: float = 0.0,
+    mzz: float = 0.0,
+) -> SectionPropertiesStressSummary:
+    """Calculate stress envelopes for several result components in one pass."""
+    if not is_sectionproperties_available():
+        raise SectionPropertiesUnavailable("sectionproperties is not installed")
+    if mesh_area <= 0.0:
+        raise SectionPropertiesCalculationError("mesh_area must be positive")
+    for stress_key in stress_keys:
+        if stress_key not in STRESS_RESULT_ATTRIBUTES:
+            raise SectionPropertiesCalculationError(
+                f"Unsupported stress result: {stress_key}"
+            )
+
+    actions = {
+        "n": float(n),
+        "vx": float(vx),
+        "vy": float(vy),
+        "mxx": float(mxx),
+        "myy": float(myy),
+        "mzz": float(mzz),
+    }
+    try:
+        geometry, section, _normalized_holes = _polygon_section(
+            points,
+            holes=holes,
+            mesh_area=mesh_area,
+        )
+        section.calculate_geometric_properties()
+        if any(abs(actions[key]) > 0.0 for key in ("vx", "vy", "mzz")):
+            section.calculate_warping_properties()
+        stress_post = section.calculate_stress(**actions)
+        mesh = _mesh_from_geometry(geometry)
+        vertices = mesh.vertices if mesh else None
+        ranges = {
+            stress_key: _stress_range(stress_post, stress_key, vertices=vertices)
+            for stress_key in stress_keys
+        }
+    except Exception as exc:
+        if isinstance(exc, SectionPropertiesCalculationError):
+            raise
+        raise SectionPropertiesCalculationError(str(exc)) from exc
+
+    return SectionPropertiesStressSummary(
+        stress_post=stress_post,
+        actions=actions,
+        ranges=ranges,
+        mesh=mesh,
     )
 
 
@@ -656,17 +747,34 @@ def _polygon_section(
     return geometry, section_cls(geometry=geometry), normalized_holes
 
 
-def _stress_values(stress_post, stress_key: str) -> tuple[float, float]:
+def _stress_range(
+    stress_post,
+    stress_key: str,
+    *,
+    vertices: tuple[Point2D, ...] | None = None,
+) -> SectionPropertiesStressRange:
     attribute = STRESS_RESULT_ATTRIBUTES[stress_key]
-    values: list[float] = []
+    values: list[tuple[float, Point2D | None]] = []
     for material_result in stress_post.get_stress():
         raw = material_result.get(attribute)
         if raw is None:
             continue
-        values.extend(float(value) for value in raw)
+        raw_values = [float(value) for value in raw]
+        if vertices is not None and len(vertices) == len(raw_values):
+            values.extend(zip(raw_values, vertices))
+        else:
+            values.extend((value, None) for value in raw_values)
     if not values:
         raise SectionPropertiesCalculationError(f"No stress values for {stress_key}")
-    return min(values), max(values)
+    min_value, min_location = min(values, key=lambda item: item[0])
+    max_value, max_location = max(values, key=lambda item: item[0])
+    return SectionPropertiesStressRange(
+        stress_key=stress_key,
+        min_stress=min_value,
+        max_stress=max_value,
+        min_location=min_location,
+        max_location=max_location,
+    )
 
 
 def _mesh_from_geometry(geometry) -> SectionPropertiesMesh | None:

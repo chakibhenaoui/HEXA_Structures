@@ -24,6 +24,17 @@ from gui.dialogs.material_dlg import MaterialDialog
 from gui.dialogs.section_dlg import SectionDialog
 
 
+def _is_section_builder_section(section: SectionData) -> bool:
+    """Return whether section must be edited by Section Builder."""
+    properties = section.properties if isinstance(section.properties, dict) else {}
+    return (
+        section.section_type == "sectionproperties"
+        or properties.get("source") == "section_builder"
+        or properties.get("source_tool") == "section_builder"
+        or properties.get("editable_with") == "section_builder"
+    )
+
+
 class MaterialManagerDialog(QDialog):
     """Material manager dialog."""
 
@@ -442,7 +453,7 @@ class SectionManagerDialog(QDialog):
             return
         source = self._sections[tag]
 
-        if source.section_type == "sectionproperties":
+        if _is_section_builder_section(source):
             from gui.dialogs.section_builder_dlg import SectionBuilderDialog
 
             dlg = SectionBuilderDialog(
@@ -488,7 +499,7 @@ class SectionManagerDialog(QDialog):
             return
 
         sec = self._sections[tag]
-        if sec.section_type == "sectionproperties":
+        if _is_section_builder_section(sec):
             from gui.dialogs.section_builder_dlg import SectionBuilderDialog
 
             dlg = SectionBuilderDialog(

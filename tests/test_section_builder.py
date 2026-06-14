@@ -7,16 +7,18 @@ os.environ.setdefault("QT_QPA_PLATFORM", "offscreen")
 import pytest
 from PySide6.QtWidgets import QApplication, QGraphicsItem
 
-from core.model_data import ProjectModel
+from core.model_data import ProjectModel, SectionData
 from core.section_builder import SectionBuilderGeometryError, polygon_section_properties
 from core.sections import get_profile, list_profile_families, list_profiles
 from core.sectionproperties_adapter import is_sectionproperties_available
 from gui.dialogs.section_builder_dlg import (
+    SectionCalculationNoteDialog,
     SectionBuilderDialog,
     SectionBuilderView,
     SectionStressDialog,
     StandardProfileImportDialog,
 )
+from gui.dialogs.library_manager_dlg import _is_section_builder_section
 
 
 def _app() -> QApplication:
@@ -130,6 +132,8 @@ def test_section_builder_dialog_returns_custom_polygon_section() -> None:
     assert data["inertia_y"] == pytest.approx(0.20 * 0.30**3 / 12.0)
     assert data["inertia_z"] == pytest.approx(0.30 * 0.20**3 / 12.0)
     assert data["properties"]["source"] == "section_builder"
+    assert data["properties"]["source_tool"] == "section_builder"
+    assert data["properties"]["editable_with"] == "section_builder"
     assert data["properties"]["perimeter"] == pytest.approx(1.0)
     assert data["properties"]["points"][0] == (0.0, 0.0)
     assert dlg._view._centroid == pytest.approx((0.10, 0.15))
@@ -145,7 +149,7 @@ def test_section_builder_dialog_exposes_fused_sectionproperties_menu() -> None:
         dlg._side_tabs.tabText(index)
         for index in range(dlg._side_tabs.count())
     ]
-    assert tab_titles == ["General", "Contour", "Calcul"]
+    assert tab_titles == ["Général", "Contour", "Calcul"]
 
     file_actions = [
         action.text()
@@ -158,9 +162,14 @@ def test_section_builder_dialog_exposes_fused_sectionproperties_menu() -> None:
         "Importer profil standard...",
         "Enregistrer",
         "Enregistrer sous...",
+        "Note de calcul...",
         "Imprimer le rapport",
         "Quitter",
     ]
+    assert file_actions.index("Note de calcul...") < file_actions.index("Imprimer le rapport")
+    assert dlg.act_calculation_note.isEnabled() is False
+    assert dlg.act_print_report.isEnabled() is False
+    assert "sections utilisateur" in dlg._lbl_builder_info.text()
 
     sectionproperties_actions = [
         action.text()
@@ -168,11 +177,12 @@ def test_section_builder_dialog_exposes_fused_sectionproperties_menu() -> None:
         if not action.isSeparator()
     ]
     assert sectionproperties_actions == [
-        "Inserer a partir de la bibliotheque",
         "Calculer",
-        "Resultats",
+        "Résultats",
         "Afficher contrainte",
     ]
+    assert dlg._btn_insert_shape.text() == "Appliquer la forme"
+    assert dlg._btn_add_to_user_library.text() == "Ajouter à la bibliothèque standard"
     assert {"select", "polygon", "rectangle", "circle", "hole", "move", "delete"}.issubset(
         dlg._tool_actions
     )
@@ -184,6 +194,60 @@ def test_section_builder_dialog_exposes_fused_sectionproperties_menu() -> None:
     assert dlg._view.tool_mode() == "rectangle"
     assert dlg._combo_tool.currentData() == "rectangle"
     assert dlg.act_sp_show_stress.isEnabled() is is_sectionproperties_available()
+
+
+def test_section_builder_dialog_generates_calculation_note() -> None:
+    _app()
+    dlg = SectionBuilderDialog()
+    dlg._chk_use_sectionproperties.setChecked(False)
+    dlg._view.set_points(
+        [(0.0, 0.0), (0.20, 0.0), (0.20, 0.30), (0.0, 0.30)],
+        closed=True,
+    )
+
+    assert dlg._calculation_note_text(show_errors=False) == ""
+    assert dlg.act_calculation_note.isEnabled() is False
+    assert dlg._analyze(show_errors=False) is True
+    assert dlg.act_calculation_note.isEnabled() is True
+    assert dlg.act_print_report.isEnabled() is True
+
+    note = dlg._calculation_note_text(show_errors=False)
+
+    assert "Note de calcul - Section Builder HEXA" in note
+    assert "Rapport de section utilisateur" in note
+    assert "Aire A" in note
+    assert "6.000000e-02 m2" in note
+    assert "Figure 1" in note
+    if is_sectionproperties_available():
+        assert "Figure 2" in note
+        assert "Sigma zz totale" in note
+    assert "Contraintes de référence" in note
+    assert "Mxx" in note
+    assert "Points extérieurs : 4" in note
+    assert "vérification réglementaire" in note
+
+
+def test_section_builder_report_preview_is_editable() -> None:
+    _app()
+    dlg = SectionBuilderDialog()
+    dlg._chk_use_sectionproperties.setChecked(False)
+    dlg._view.set_points(
+        [(0.0, 0.0), (0.20, 0.0), (0.20, 0.30), (0.0, 0.30)],
+        closed=True,
+    )
+    assert dlg._analyze(show_errors=False) is True
+    html, resources = dlg._calculation_report(show_errors=False)
+
+    preview = SectionCalculationNoteDialog(dlg, html, resources)
+
+    assert "hexa-report:section-outline" in resources
+    if is_sectionproperties_available():
+        assert "hexa-report:stress-envelope" in resources
+    assert preview._viewer.isReadOnly() is False
+    assert preview._viewer.acceptRichText() is True
+    assert preview._act_bold.isCheckable() is True
+    assert preview._act_italic.isCheckable() is True
+    assert preview._act_underline.isCheckable() is True
 
 
 def test_standard_profile_import_dialog_filters_profiles_by_family() -> None:
@@ -225,6 +289,7 @@ def test_section_builder_dialog_imports_standard_profile_catalog_shape() -> None
     assert data["properties"]["profile"] == profile.name
     assert data["properties"]["source"] == "profile_catalog"
     assert data["properties"]["source_tool"] == "section_builder"
+    assert data["properties"]["editable_with"] == "section_builder"
     assert data["area"] == pytest.approx(profile.area)
     assert data["inertia_y"] == pytest.approx(profile.inertia_y)
     assert data["inertia_z"] == pytest.approx(profile.inertia_z)
@@ -276,6 +341,13 @@ def test_section_builder_dialog_calculates_and_plots_stress_when_available() -> 
     stress_dialog = SectionStressDialog(dlg)
     assert stress_dialog._calculate_and_plot(show_errors=False) is True
     assert stress_dialog._stress_result is not None
+    stress_dialog._spin_mxx.setValue(2.0)
+    assert dlg._sectionproperties_stress_result is not None
+    assert dlg._sectionproperties_stress_result.actions["mxx"] == pytest.approx(2.0e3)
+    assert dlg._analyze(show_errors=False) is True
+    report_text = dlg._calculation_note_text(show_errors=False)
+    assert "Mxx" in report_text
+    assert "2.000 kN.m" in report_text
 
 
 def test_section_builder_dialog_inserts_sectionproperties_library_shape() -> None:
@@ -309,8 +381,45 @@ def test_section_builder_dialog_inserts_sectionproperties_library_shape() -> Non
     assert data["section_type"] == "sectionproperties"
     assert data["properties"]["source"] == "sectionproperties"
     assert data["properties"]["source_tool"] == "section_builder"
+    assert data["properties"]["editable_with"] == "section_builder"
     assert data["properties"]["shape"] == "rectangular"
     assert data["area"] == pytest.approx(0.06)
+
+
+def test_section_builder_dialog_marks_user_library_sections() -> None:
+    _app()
+    dlg = SectionBuilderDialog()
+    dlg._view.set_points(
+        [(0.0, 0.0), (0.20, 0.0), (0.20, 0.30), (0.0, 0.30)],
+        closed=True,
+    )
+
+    dlg._accept_for_user_library()
+    data = dlg.result()
+
+    assert data["properties"]["user_library"] is True
+    assert data["properties"]["source_tool"] == "section_builder"
+    assert data["properties"]["editable_with"] == "section_builder"
+
+
+def test_section_manager_detects_builder_sections() -> None:
+    builder_section = SectionData(
+        tag=1,
+        name="IPE utilisateur",
+        section_type="I_profile",
+        material_tag=1,
+        properties={"source_tool": "section_builder"},
+    )
+    regular_section = SectionData(
+        tag=2,
+        name="IPE standard",
+        section_type="I_profile",
+        material_tag=1,
+        properties={"profile": "IPE 300"},
+    )
+
+    assert _is_section_builder_section(builder_section) is True
+    assert _is_section_builder_section(regular_section) is False
 
 
 def test_section_builder_dialog_inserts_hollow_library_shape_with_hole() -> None:
