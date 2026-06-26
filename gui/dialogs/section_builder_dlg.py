@@ -8,7 +8,7 @@ from datetime import datetime
 from html import escape
 from pathlib import Path
 
-from PySide6.QtCore import QPointF, QRectF, Qt, QUrl, Signal
+from PySide6.QtCore import QMarginsF, QPointF, QRectF, Qt, QUrl, Signal
 from PySide6.QtGui import (
     QAction,
     QActionGroup,
@@ -17,8 +17,11 @@ from PySide6.QtGui import (
     QFont,
     QImage,
     QMouseEvent,
+    QPageLayout,
+    QPageSize,
     QPainter,
     QPainterPath,
+    QPdfWriter,
     QPen,
     QTextCharFormat,
     QTextDocument,
@@ -1045,6 +1048,7 @@ class SectionCalculationNoteDialog(QDialog):
     ):
         super().__init__(parent)
         self._builder = parent
+        self._image_resources = dict(image_resources)
         self.setWindowTitle(self.tr("Aperçu de la note de calcul"))
         self.resize(860, 680)
 
@@ -1053,11 +1057,19 @@ class SectionCalculationNoteDialog(QDialog):
 
         self._viewer = QTextEdit(self)
         self._viewer.setAcceptRichText(True)
-        self._viewer.setDocument(parent._report_document(html, image_resources))
+        self._viewer.setDocument(parent._report_document(html, self._image_resources))
         self._viewer.cursorPositionChanged.connect(self._sync_format_actions)
         layout.addWidget(self._viewer, 1)
 
         buttons = QDialogButtonBox(self)
+        self._btn_regenerate = buttons.addButton(
+            self.tr("Régénérer depuis le calcul"),
+            QDialogButtonBox.ActionRole,
+        )
+        self._btn_export_pdf = buttons.addButton(
+            self.tr("Exporter PDF"),
+            QDialogButtonBox.ActionRole,
+        )
         self._btn_print = buttons.addButton(
             self.tr("Imprimer"),
             QDialogButtonBox.ActionRole,
@@ -1065,6 +1077,8 @@ class SectionCalculationNoteDialog(QDialog):
         close_button = buttons.addButton(QDialogButtonBox.Close)
         if close_button is not None:
             close_button.setText(self.tr("Fermer"))
+        self._btn_regenerate.clicked.connect(self._regenerate)
+        self._btn_export_pdf.clicked.connect(self._export_pdf)
         self._btn_print.clicked.connect(self._print)
         buttons.rejected.connect(self.reject)
         layout.addWidget(buttons)
@@ -1169,7 +1183,34 @@ class SectionCalculationNoteDialog(QDialog):
             self._size_combo.blockSignals(False)
 
     def _print(self) -> None:
+        self._builder._store_report_override(
+            self.report_html(),
+            self._image_resources,
+        )
         self._builder._print_report_document(self._viewer.document())
+
+    def _export_pdf(self) -> None:
+        self._builder._store_report_override(
+            self.report_html(),
+            self._image_resources,
+        )
+        self._builder._export_report_document_pdf_interactive(self._viewer.document())
+
+    def _regenerate(self) -> None:
+        html, image_resources = self._builder._calculation_report(show_errors=True)
+        if not html:
+            return
+        self._image_resources = dict(image_resources)
+        self._viewer.setDocument(self._builder._report_document(html, self._image_resources))
+        self._viewer.setFocus()
+        self._sync_format_actions()
+        self._builder._clear_report_override()
+
+    def report_html(self) -> str:
+        return self._viewer.document().toHtml()
+
+    def image_resources(self) -> dict[str, QImage]:
+        return dict(self._image_resources)
 
 
 class SectionBuilderDialog(QDialog):
@@ -1203,6 +1244,8 @@ class SectionBuilderDialog(QDialog):
         self._active_catalog_profile: str | None = None
         self._dimension_spins: dict[str, QDoubleSpinBox] = {}
         self._tool_actions: dict[str, QAction] = {}
+        self._report_override_html: str | None = None
+        self._report_override_resources: dict[str, QImage] = {}
 
         self.setWindowTitle(self.tr("Section Builder HEXA"))
         self.setMinimumSize(1120, 720)
@@ -1334,8 +1377,10 @@ class SectionBuilderDialog(QDialog):
         self.act_save = QAction(self.tr("Enregistrer"), self)
         self.act_save_as = QAction(self.tr("Enregistrer sous..."), self)
         self.act_calculation_note = QAction(self.tr("Note de calcul..."), self)
+        self.act_export_pdf = QAction(self.tr("Exporter PDF..."), self)
         self.act_print_report = QAction(self.tr("Imprimer le rapport"), self)
         self.act_calculation_note.setEnabled(False)
+        self.act_export_pdf.setEnabled(False)
         self.act_print_report.setEnabled(False)
         self.act_quit = QAction(self.tr("Quitter"), self)
 
@@ -1380,6 +1425,7 @@ class SectionBuilderDialog(QDialog):
         self._menu_file.addAction(self.act_save)
         self._menu_file.addAction(self.act_save_as)
         self._menu_file.addAction(self.act_calculation_note)
+        self._menu_file.addAction(self.act_export_pdf)
         self._menu_file.addAction(self.act_print_report)
         self._menu_file.addSeparator()
         self._menu_file.addAction(self.act_quit)
@@ -1991,17 +2037,26 @@ class SectionBuilderDialog(QDialog):
 
     def _show_calculation_note(self) -> None:
         """Open the internal calculation note viewer."""
-        html, image_resources = self._calculation_report(show_errors=True)
+        html, image_resources = self._current_report_payload(show_errors=True)
         if not html:
             return
-        SectionCalculationNoteDialog(self, html, image_resources).exec()
+        dialog = SectionCalculationNoteDialog(self, html, image_resources)
+        dialog.exec()
+        self._store_report_override(dialog.report_html(), dialog.image_resources())
 
     def _print_report(self) -> None:
         """Print the current calculation note."""
-        html, image_resources = self._calculation_report(show_errors=True)
-        if not html:
+        document = self._current_report_document(show_errors=True)
+        if document is None:
             return
-        self._print_calculation_note(html, image_resources)
+        self._print_report_document(document)
+
+    def _export_report_pdf(self) -> None:
+        """Export the current calculation note to a PDF file."""
+        document = self._current_report_document(show_errors=True)
+        if document is None:
+            return
+        self._export_report_document_pdf_interactive(document)
 
     def _print_calculation_note(
         self,
@@ -2014,13 +2069,76 @@ class SectionBuilderDialog(QDialog):
 
     def _print_report_document(self, document: QTextDocument) -> None:
         """Print an editable report document with Qt print support."""
-        printer = QPrinter(QPrinter.HighResolution)
+        printer = QPrinter(QPrinter.PrinterMode.HighResolution)
+        self._configure_report_printer(printer)
         dialog = QPrintDialog(printer, self)
         dialog.setWindowTitle(self.tr("Imprimer le rapport"))
         if dialog.exec() != QDialog.Accepted:
             return
         print_method = getattr(document, "print_", None) or getattr(document, "print")
         print_method(printer)
+
+    def _export_report_document_pdf_interactive(self, document: QTextDocument) -> None:
+        file_name, _filter = QFileDialog.getSaveFileName(
+            self,
+            self.tr("Exporter la note de calcul"),
+            self._default_report_pdf_name(),
+            self.tr("PDF (*.pdf)"),
+        )
+        if not file_name:
+            return
+        path = Path(file_name)
+        if path.suffix.lower() != ".pdf":
+            path = path.with_suffix(".pdf")
+        self._export_report_document_pdf(document, path)
+
+    def _export_report_document_pdf(self, document: QTextDocument, path: Path) -> None:
+        printer = QPdfWriter(str(path))
+        self._configure_report_printer(printer)
+        print_method = getattr(document, "print_", None) or getattr(document, "print")
+        print_method(printer)
+
+    def _configure_report_printer(self, printer) -> None:
+        printer.setPageSize(QPageSize(QPageSize.PageSizeId.A4))
+        printer.setPageMargins(
+            QMarginsF(10.0, 10.0, 10.0, 10.0),
+            QPageLayout.Unit.Millimeter,
+        )
+
+    def _default_report_pdf_name(self) -> str:
+        section_name = self._edit_name.text().strip() or self.tr("section")
+        safe_name = "".join(
+            char if char.isalnum() or char in ("-", "_") else "_"
+            for char in section_name
+        ).strip("_")
+        return f"{safe_name or 'section'}_note_calcul.pdf"
+
+    def _current_report_payload(
+        self,
+        *,
+        show_errors: bool,
+    ) -> tuple[str, dict[str, QImage]]:
+        if self._report_override_html is not None:
+            return self._report_override_html, dict(self._report_override_resources)
+        return self._calculation_report(show_errors=show_errors)
+
+    def _current_report_document(self, *, show_errors: bool) -> QTextDocument | None:
+        html, image_resources = self._current_report_payload(show_errors=show_errors)
+        if not html:
+            return None
+        return self._report_document(html, image_resources)
+
+    def _store_report_override(
+        self,
+        html: str,
+        image_resources: dict[str, QImage],
+    ) -> None:
+        self._report_override_html = html
+        self._report_override_resources = dict(image_resources)
+
+    def _clear_report_override(self) -> None:
+        self._report_override_html = None
+        self._report_override_resources = {}
 
     def _report_document(
         self,
@@ -2036,7 +2154,7 @@ class SectionBuilderDialog(QDialog):
 
     def _calculation_note_text(self, *, show_errors: bool) -> str:
         """Return a plain-text version of the current calculation report."""
-        html, image_resources = self._calculation_report(show_errors=show_errors)
+        html, image_resources = self._current_report_payload(show_errors=show_errors)
         if not html:
             return ""
         document = self._report_document(html, image_resources)
@@ -2077,6 +2195,7 @@ class SectionBuilderDialog(QDialog):
             holes = []
         stress_summary, stress_error = self._calculation_report_stress_summary()
         generated_at = datetime.now().strftime("%Y-%m-%d %H:%M")
+        project_name = self._report_project_name()
 
         intro = self.tr(
             "Cette note présente les données de définition, les propriétés "
@@ -2084,6 +2203,7 @@ class SectionBuilderDialog(QDialog):
             "produite après un calcul valide du Section Builder."
         )
         identity_rows = [
+            (self.tr("Projet"), project_name or "-"),
             (self.tr("Nom"), result.get("name", "")),
             (self.tr("Type"), result.get("section_type", "")),
             (self.tr("Matériau"), self._combo_material.currentText() or "-"),
@@ -2146,6 +2266,23 @@ class SectionBuilderDialog(QDialog):
                 continue
             point_rows.append((f"P{index:02d}", f"{y:.6f}", f"{z:.6f}"))
 
+        summary_cards = [
+            (self.tr("Aire"), self._format_area(float(result.get("area", 0.0)))),
+            (
+                self.tr("Inertie Iy"),
+                self._format_inertia(float(result.get("inertia_y", 0.0))),
+            ),
+            (
+                self.tr("Inertie Iz"),
+                self._format_inertia(float(result.get("inertia_z", 0.0))),
+            ),
+            (self.tr("Moteur"), str(properties.get("analysis_engine", "-"))),
+            (
+                self.tr("Points extérieurs"),
+                str(len(point_rows)),
+            ),
+            (self.tr("Trous"), str(len(holes))),
+        ]
         image_resources = self._report_image_resources(points, holes, stress_summary)
         figures_section = self._figures_report_html(stress_summary)
         stress_section = self._stress_report_html(stress_summary, stress_error)
@@ -2160,58 +2297,80 @@ class SectionBuilderDialog(QDialog):
 <head>
 <meta charset="utf-8">
 <style>
-body {{ font-family: Arial, sans-serif; color: #202124; font-size: 10pt; }}
-.cover {{ text-align: center; padding-top: 140px; min-height: 650px; }}
-.cover h1 {{ font-size: 26pt; margin: 0; }}
-.cover h2 {{ border: 0; font-size: 18pt; margin-top: 18px; }}
-.cover-table {{ margin: 40px auto 0 auto; width: 70%; text-align: left; }}
-.page-break {{ page-break-after: always; }}
-h1 {{ font-size: 18pt; margin-bottom: 2px; }}
-h2 {{ font-size: 12pt; margin-top: 18px; border-bottom: 1px solid #9aa0a6; padding-bottom: 4px; }}
+body {{ font-family: Arial, sans-serif; color: #1f2933; font-size: 10pt; line-height: 1.32; }}
+.cover {{ padding-top: 112px; min-height: 650px; }}
+.cover-brand {{ color: #1f4e79; font-size: 26pt; font-weight: bold; letter-spacing: 0; text-align: center; }}
+.cover-title {{ font-size: 22pt; font-weight: bold; margin-top: 58px; text-align: center; }}
+.cover-subtitle {{ color: #5f6368; font-size: 13pt; margin-top: 8px; text-align: center; }}
+.cover-rule {{ background: #1f4e79; height: 4px; margin: 34px auto 28px auto; width: 68%; }}
+.cover-table {{ margin: 0 auto; width: 48%; text-align: left; }}
+.cover-table td:first-child {{ color: #5f6368; font-weight: bold; width: 34%; }}
+.cover-footer {{ color: #5f6368; font-size: 8.5pt; margin-top: 88px; text-align: center; }}
+h2 {{ color: #1f4e79; font-size: 14pt; margin-top: 18px; margin-bottom: 9px; }}
+.report-header {{ color: #5f6368; font-size: 8.5pt; margin-bottom: 42px; page-break-before: always; text-align: right; }}
+.report-footer {{ color: #5f6368; font-size: 8pt; margin-top: 24px; text-align: center; }}
 .subtitle {{ color: #5f6368; margin-bottom: 16px; }}
-.figure {{ text-align: center; margin: 12px 0 18px 0; }}
-.figure img {{ max-width: 100%; border: 1px solid #c9d1d9; }}
+.summary-grid {{ border-collapse: separate; border-spacing: 3px; margin-top: 8px; width: 100%; }}
+.summary-grid td {{ background: #f6f8fa; border: 1px solid #d0d7de; padding: 7px 9px; width: 33%; }}
+.summary-label {{ color: #5f6368; font-size: 8.5pt; font-weight: bold; }}
+.summary-value {{ color: #202124; font-size: 10pt; margin-top: 3px; }}
+.figure {{ border: 1px solid #d0d7de; margin: 12px 0 18px 0; padding: 10px; text-align: center; }}
+.figure img {{ max-width: 100%; }}
 .caption {{ color: #5f6368; font-size: 9pt; margin-top: 4px; }}
-.notice {{ background: #f6f8fa; border-left: 4px solid #5f6368; padding: 8px 10px; margin: 10px 0; }}
-.warning {{ background: #fff4e5; border-left: 4px solid #d97706; padding: 8px 10px; margin: 10px 0; }}
+.notice {{ background: #f6f8fa; padding: 9px 11px; margin: 10px 0; }}
+.warning {{ background: #fff4e5; padding: 9px 11px; margin: 10px 0; }}
 table {{ border-collapse: collapse; width: 100%; margin-top: 6px; }}
-th {{ background: #eef2f7; text-align: left; }}
-th, td {{ border: 1px solid #c9d1d9; padding: 5px 7px; vertical-align: top; }}
+th {{ background: #eef2f7; color: #1f2933; text-align: left; }}
+th, td {{ border: 1px solid #d0d7de; padding: 5px 7px; vertical-align: top; }}
+.definition-table {{ width: auto; min-width: 42%; }}
+.definition-table td:first-child {{ background: #f6f8fa; color: #5f6368; font-weight: bold; width: 34%; }}
+.points-table {{ width: auto; }}
+.stress-table {{ width: 100%; }}
 td.num {{ text-align: right; font-family: Consolas, monospace; }}
 .small {{ color: #5f6368; font-size: 9pt; }}
 </style>
 </head>
 <body>
 <div class="cover">
-<h1>HEXA Structures</h1>
-<h2>{escape(self.tr("Note de calcul - Section Builder"))}</h2>
-<div class="subtitle">{escape(self.tr("Rapport de section utilisateur"))}</div>
-<table class="cover-table"><tbody>
+<div class="cover-brand">HEXA Structures</div>
+<div class="cover-title">{escape(self.tr("Note de calcul"))}</div>
+<div class="cover-subtitle">{escape(self.tr("Section Builder"))}</div>
+<div class="cover-rule"></div>
+<table class="cover-table" align="center"><tbody>
+<tr><td>{escape(self.tr("Projet"))}</td><td>{escape(project_name or "-")}</td></tr>
 <tr><td>{escape(self.tr("Section"))}</td><td>{escape(str(result.get("name", "")))}</td></tr>
 <tr><td>{escape(self.tr("Matériau"))}</td><td>{escape(self._combo_material.currentText() or "-")}</td></tr>
 <tr><td>{escape(self.tr("Date du rapport"))}</td><td>{escape(generated_at)}</td></tr>
 </tbody></table>
+<div class="cover-footer">{escape(self.tr("Document généré automatiquement par HEXA Structures. Les modifications manuelles de l'aperçu sont conservées à l'impression et à l'export PDF."))}</div>
 </div>
-<div class="page-break"></div>
-<h1>{escape(self.tr("Note de calcul - Section Builder HEXA"))}</h1>
-<div class="subtitle">{escape(self.tr("Rapport de section utilisateur"))}</div>
+<div class="report-header">{escape(self.tr("Note de calcul - Section Builder"))} - {escape(project_name or self.tr("Projet non renseigné"))}</div>
+<h2>{escape(self.tr("1. Synthèse"))}</h2>
+{self._summary_cards_html(summary_cards)}
 <div class="notice">{escape(intro)}</div>
-<h2>{escape(self.tr("1. Identification"))}</h2>
+<h2>{escape(self.tr("2. Identification"))}</h2>
 {self._definition_table_html(identity_rows)}
-<h2>{escape(self.tr("2. Figures"))}</h2>
+<h2>{escape(self.tr("3. Figures"))}</h2>
 {figures_section}
-<h2>{escape(self.tr("3. Propriétés géométriques"))}</h2>
+<h2>{escape(self.tr("4. Propriétés géométriques"))}</h2>
 {self._definition_table_html(geometric_rows)}
-<h2>{escape(self.tr("4. Contraintes de référence"))}</h2>
+<h2>{escape(self.tr("5. Contraintes de référence"))}</h2>
 {stress_section}
-<h2>{escape(self.tr("5. Contour"))}</h2>
+<h2>{escape(self.tr("6. Contour"))}</h2>
 <p>{escape(self.tr("Points extérieurs : {count}").format(count=len(point_rows)))}<br>
 {escape(self.tr("Trous : {count}").format(count=len(holes)))}</p>
 {self._points_table_html(point_rows)}
-<h2>{escape(self.tr("6. Limites"))}</h2>
+<h2>{escape(self.tr("7. Limites"))}</h2>
 <div class="warning">{escape(limits)}</div>
+<div class="report-footer">{escape(self.tr("Document généré par HEXA Structures"))} - {escape(generated_at)}</div>
 </body>
 </html>""", image_resources
+
+    def _report_project_name(self) -> str:
+        parent = self.parent()
+        project = getattr(parent, "project", None)
+        name = getattr(project, "name", "")
+        return str(name or "").strip()
 
     def _report_image_resources(
         self,
@@ -2289,12 +2448,16 @@ td.num {{ text-align: right; font-family: Consolas, monospace; }}
             span_y = max(max_y - min_y, 1.0e-6)
             span_z = max(max_z - min_z, 1.0e-6)
             margin = 42.0
-            scale = min((width - 2.0 * margin) / span_y, (height - 2.0 * margin) / span_z)
+            available_width = width - 2.0 * margin
+            available_height = height - 2.0 * margin
+            scale = min(available_width / span_y, available_height / span_z)
+            offset_y = (available_width - span_y * scale) / 2.0
+            offset_z = (available_height - span_z * scale) / 2.0
 
             def map_point(point: Point2D) -> QPointF:
                 return QPointF(
-                    margin + (point[0] - min_y) * scale,
-                    height - margin - (point[1] - min_z) * scale,
+                    margin + offset_y + (point[0] - min_y) * scale,
+                    height - margin - offset_z - (point[1] - min_z) * scale,
                 )
 
             painter.setPen(QPen(QColor("#6b7280"), 1, Qt.DashLine))
@@ -2540,17 +2703,45 @@ td.num {{ text-align: right; font-family: Consolas, monospace; }}
                 ),
                 rows,
                 numeric_columns={1, 3},
+                table_class="stress-table",
             )
         )
         return "\n".join(html)
 
     def _definition_table_html(self, rows: list[tuple[str, object]]) -> str:
-        return self._table_html((self.tr("Paramètre"), self.tr("Valeur")), rows)
+        return self._table_html(
+            (self.tr("Paramètre"), self.tr("Valeur")),
+            rows,
+            table_class="definition-table",
+        )
 
     def _points_table_html(self, rows: list[tuple[str, str, str]]) -> str:
         if not rows:
             return f'<p class="small">{escape(self.tr("Aucun point."))}</p>'
-        return self._table_html(("Point", "y (m)", "z (m)"), rows, numeric_columns={1, 2})
+        return self._table_html(
+            ("Point", "y (m)", "z (m)"),
+            rows,
+            numeric_columns={1, 2},
+            table_class="points-table",
+        )
+
+    def _summary_cards_html(self, cards: list[tuple[str, str]]) -> str:
+        rows: list[str] = []
+        for start in range(0, len(cards), 3):
+            cells: list[str] = []
+            for label, value in cards[start : start + 3]:
+                cells.append(
+                    "<td>"
+                    f'<div class="summary-label">{escape(label)}</div>'
+                    f'<div class="summary-value">{escape(value)}</div>'
+                    "</td>"
+                )
+            while len(cells) < 3:
+                cells.append("<td></td>")
+            rows.append("<tr>" + "".join(cells) + "</tr>")
+        return '<table class="summary-grid"><tbody>{}</tbody></table>'.format(
+            "".join(rows)
+        )
 
     def _table_html(
         self,
@@ -2558,6 +2749,7 @@ td.num {{ text-align: right; font-family: Consolas, monospace; }}
         rows: list[tuple[object, ...]],
         *,
         numeric_columns: set[int] | None = None,
+        table_class: str = "",
     ) -> str:
         numeric_columns = numeric_columns or set()
         header_html = "".join(f"<th>{escape(str(header))}</th>" for header in headers)
@@ -2568,7 +2760,9 @@ td.num {{ text-align: right; font-family: Consolas, monospace; }}
                 css_class = ' class="num"' if index in numeric_columns else ""
                 cells.append(f"<td{css_class}>{escape(str(value))}</td>")
             row_html.append("<tr>" + "".join(cells) + "</tr>")
-        return "<table><thead><tr>{}</tr></thead><tbody>{}</tbody></table>".format(
+        css_class = f' class="{escape(table_class)}"' if table_class else ""
+        return "<table{}><thead><tr>{}</tr></thead><tbody>{}</tbody></table>".format(
+            css_class,
             header_html,
             "".join(row_html),
         )
@@ -2649,6 +2843,7 @@ td.num {{ text-align: right; font-family: Consolas, monospace; }}
         self.act_save.triggered.connect(self._save_builder_file)
         self.act_save_as.triggered.connect(self._save_builder_file_as)
         self.act_calculation_note.triggered.connect(self._show_calculation_note)
+        self.act_export_pdf.triggered.connect(self._export_report_pdf)
         self.act_print_report.triggered.connect(self._print_report)
         self.act_quit.triggered.connect(self.reject)
         self.act_sp_calculate.triggered.connect(lambda: self._analyze(show_errors=True))
@@ -2732,6 +2927,7 @@ td.num {{ text-align: right; font-family: Consolas, monospace; }}
         self._sectionproperties_result = None
         self._sectionproperties_stress_result = None
         self._result = None
+        self._clear_report_override()
         self._view.set_centroid(None)
         self._view.set_mesh(None)
         ok_button = self._button_box.button(QDialogButtonBox.Ok)
@@ -2741,6 +2937,7 @@ td.num {{ text-align: right; font-family: Consolas, monospace; }}
 
     def _set_report_actions_enabled(self, enabled: bool) -> None:
         self.act_calculation_note.setEnabled(enabled)
+        self.act_export_pdf.setEnabled(enabled)
         self.act_print_report.setEnabled(enabled)
 
     def _refresh_points(self) -> None:
@@ -3161,6 +3358,7 @@ td.num {{ text-align: right; font-family: Consolas, monospace; }}
                 )
             return None
         self._sectionproperties_stress_result = result
+        self._clear_report_override()
         if result.mesh is not None:
             self._view.set_mesh(result.mesh if self._chk_show_mesh.isChecked() else None)
         return result

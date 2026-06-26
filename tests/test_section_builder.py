@@ -163,11 +163,13 @@ def test_section_builder_dialog_exposes_fused_sectionproperties_menu() -> None:
         "Enregistrer",
         "Enregistrer sous...",
         "Note de calcul...",
+        "Exporter PDF...",
         "Imprimer le rapport",
         "Quitter",
     ]
     assert file_actions.index("Note de calcul...") < file_actions.index("Imprimer le rapport")
     assert dlg.act_calculation_note.isEnabled() is False
+    assert dlg.act_export_pdf.isEnabled() is False
     assert dlg.act_print_report.isEnabled() is False
     assert "sections utilisateur" in dlg._lbl_builder_info.text()
 
@@ -209,14 +211,21 @@ def test_section_builder_dialog_generates_calculation_note() -> None:
     assert dlg.act_calculation_note.isEnabled() is False
     assert dlg._analyze(show_errors=False) is True
     assert dlg.act_calculation_note.isEnabled() is True
+    assert dlg.act_export_pdf.isEnabled() is True
     assert dlg.act_print_report.isEnabled() is True
 
     note = dlg._calculation_note_text(show_errors=False)
+    html = dlg._calculation_report_html(show_errors=False)
 
-    assert "Note de calcul - Section Builder HEXA" in note
-    assert "Rapport de section utilisateur" in note
+    assert "Note de calcul" in note
+    assert "Section Builder" in note
+    assert "1. Synthèse" in note
     assert "Aire A" in note
     assert "6.000000e-02 m2" in note
+    assert 'class="summary-grid"' in html
+    assert 'class="report-header"' in html
+    assert ".cover-table" in html
+    assert "Document généré par HEXA Structures" in html
     assert "Figure 1" in note
     if is_sectionproperties_available():
         assert "Figure 2" in note
@@ -248,6 +257,67 @@ def test_section_builder_report_preview_is_editable() -> None:
     assert preview._act_bold.isCheckable() is True
     assert preview._act_italic.isCheckable() is True
     assert preview._act_underline.isCheckable() is True
+    assert preview._btn_export_pdf.text() == "Exporter PDF"
+    assert preview._btn_regenerate.text() == "Régénérer depuis le calcul"
+
+    preview._viewer.append("Commentaire utilisateur")
+    dlg._store_report_override(preview.report_html(), preview.image_resources())
+    assert "Commentaire utilisateur" in dlg._calculation_note_text(show_errors=False)
+
+    preview._regenerate()
+    assert "Commentaire utilisateur" not in preview._viewer.toPlainText()
+    assert dlg._report_override_html is None
+
+
+def test_section_builder_report_exports_pdf(tmp_path) -> None:
+    _app()
+    dlg = SectionBuilderDialog()
+    dlg._chk_use_sectionproperties.setChecked(False)
+    dlg._view.set_points(
+        [(0.0, 0.0), (0.20, 0.0), (0.20, 0.30), (0.0, 0.30)],
+        closed=True,
+    )
+    assert dlg._analyze(show_errors=False) is True
+
+    document = dlg._current_report_document(show_errors=False)
+    assert document is not None
+    pdf_path = tmp_path / "section_builder_report.pdf"
+
+    dlg._export_report_document_pdf(document, pdf_path)
+
+    assert pdf_path.exists()
+    assert pdf_path.stat().st_size > 0
+
+
+def test_section_builder_report_outline_centers_slender_sections() -> None:
+    _app()
+    dlg = SectionBuilderDialog()
+    points = [
+        (-0.075, 0.150),
+        (0.075, 0.150),
+        (0.075, 0.135),
+        (0.006, 0.135),
+        (0.006, -0.135),
+        (0.075, -0.135),
+        (0.075, -0.150),
+        (-0.075, -0.150),
+        (-0.075, -0.135),
+        (-0.006, -0.135),
+        (-0.006, 0.135),
+        (-0.075, 0.135),
+    ]
+
+    image = dlg._section_outline_image(points, [])
+    xs: list[int] = []
+    for x in range(image.width()):
+        for y in range(image.height()):
+            color = image.pixelColor(x, y)
+            if color.blue() - color.red() > 20 and color.green() - color.red() > 10:
+                xs.append(x)
+
+    assert xs
+    section_center_x = (min(xs) + max(xs)) / 2.0
+    assert section_center_x == pytest.approx(image.width() / 2.0, abs=8.0)
 
 
 def test_standard_profile_import_dialog_filters_profiles_by_family() -> None:

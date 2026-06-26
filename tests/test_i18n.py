@@ -140,6 +140,14 @@ def test_english_catalog_translates_high_visibility_labels(tmp_path) -> None:
             == "Show stress"
         )
         assert (
+            QCoreApplication.translate("SectionBuilderDialog", "Exporter PDF...")
+            == "Export PDF..."
+        )
+        assert (
+            QCoreApplication.translate("SectionCalculationNoteDialog", "Exporter PDF")
+            == "Export PDF"
+        )
+        assert (
             QCoreApplication.translate(
                 "SectionBuilderDialog",
                 "Maillage : {nodes} nœuds, {triangles} triangles",

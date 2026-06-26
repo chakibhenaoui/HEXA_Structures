@@ -15,7 +15,7 @@
 - Socle technique `sectionproperties` expose dans le Section Builder avec statut d'import, version, fonctions detectees et capacites branchees/prevues.
 - Import de profils acier du catalogue dans le Section Builder.
 - Calcul et affichage des contraintes elastiques de section avec `sectionproperties`.
-- Enveloppes min/max de contraintes et note de calcul editable avec figures.
+- Enveloppes min/max de contraintes et note de calcul editable avec figures, regeneration depuis le calcul et export PDF direct.
 - Apercu dynamique de section dans la boite de definition des sections.
 - Extrusion 3D des nouvelles sections parametriques, avec tubes creux et couleur differente par section.
 
@@ -28,9 +28,9 @@
 
 ### Validation
 
-- `python -m pytest -q` : 423 tests passes, 14 ignores le 19 juin 2026.
-- `pyside6-lrelease i18n\hexa_en.ts -qm i18n\hexa_en.qm` : 1142 traductions terminees.
-- `pyside6-lrelease i18n\hexa_fr.ts -qm i18n\hexa_fr.qm` : 1142 traductions terminees.
+- `python -m pytest -q` : 585 tests passes le 26 juin 2026.
+- `pyside6-lrelease i18n\hexa_en.ts -qm i18n\hexa_en.qm` : 1387 traductions terminees.
+- `pyside6-lrelease i18n\hexa_fr.ts -qm i18n\hexa_fr.qm` : 1387 traductions terminees.
 
 ## 0.1.0 - Build Windows i18n post-release
 
