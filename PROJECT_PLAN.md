@@ -84,16 +84,16 @@ Priorite court terme :
 - résultats tabulaires,
 - diagrammes N/V/T/M.
 
-Non prioritaire immediat :
+Non prioritaire immédiat :
 
 - P-Delta,
 - analyse non linéaire,
 - sismique avancé,
-- coques/dalles/voiles.
+- coques générales, ouvertures et maillages surfaciques non structurés.
 
 ---
 
-## 3. Etat reel au 23 mai 2026
+## 3. État réel au 19 juin 2026
 
 Le projet est au stade base applicative fonctionnelle en consolidation.
 
@@ -127,7 +127,13 @@ Fonctions déjà utilisables :
 - decouverte de plugins par manifestes `plugin.json` et `hexa-plugin.json` ;
 - loader `ImportlibPluginLoader` optionnel pour charger explicitement un plugin externe ;
 - host applicatif `connections.design` pour les futurs plugins d'assemblages ;
-- tests d'architecture et de non-regression couvrant ces chemins.
+- tests d'architecture et de non-regression couvrant ces chemins ;
+- interface française et anglaise avec catalogues Qt ;
+- catalogue de plus de 200 profils acier et sections paramétriques ;
+- Section Builder avec contours, trous, import de profils, édition tabulaire et
+  extrusion 3D ;
+- intégration optionnelle de `sectionproperties` pour le maillage, la torsion,
+  les contraintes et la note de calcul.
 
 Problemes principaux en cours de consolidation :
 
@@ -240,6 +246,7 @@ Résultats a presenter de maniere unifiee :
 | S11 | Modèleur graphique | En cours avancé | Grille, dessin, sélection, menu contextuel 3D, double vue, caméra et lisibilité en consolidation. |
 | S12 | Productivite | À faire | Copier, deplacer, undo/redo, import DXF. |
 | S13 | Architecture plugin | En cours | Ports/adaptateurs, manifestes, loader opt-in, host `connections.design`. |
+| S14 | Section Builder | En cours avancé | Contours, trous, profils, maillage, contraintes et rapport en place ; DXF et sections composées à faire. |
 
 ---
 
@@ -406,7 +413,7 @@ Avant tag :
 5. Build Windows teste sur une installation propre.
 6. Notes de version avec limites connues et responsabilite utilisateur.
 
-### 9.7 Progress au 23 mai 2026
+### 9.7 Progression vérifiée jusqu'au 19 juin 2026
 
 Fait :
 
@@ -430,7 +437,7 @@ Fait :
 8. La version applicative est preparee en `0.1.0`.
 9. Les notes de release `RELEASE_NOTES_0.1.0.md` sont ajoutees.
 10. La détection d'OpenSeesPy externe est corrigee sans embarquer le solveur dans le bundle.
-11. Validation courante : `pytest -q` OK avec 460 tests passes.
+11. Validation courante : `python -m pytest -q` avec 423 tests réussis et 14 ignorés.
 12. Build Windows relance avec succes et executable teste au démarrage.
 13. Compatibilité Windows clarifiée après test VM : Windows 10/11 cible, Windows 7 hors support.
 14. Architecture applicative progressive ajoutee : ports, use cases, facade `ApplicationServices`.
@@ -438,6 +445,11 @@ Fait :
 16. Decouverte de plugins installes par manifeste sans execution de code externe.
 17. Loader `ImportlibPluginLoader` opt-in ajoute pour les plugins explicitement actives.
 18. Port et host `connections.design` ajoutes pour les futurs modules d'assemblages.
+19. Internationalisation française et anglaise intégrée au build Windows.
+20. Catalogue acier enrichi et nouvelles sections paramétriques extrudées en 3D.
+21. Section Builder ajouté puis fusionné avec `sectionproperties`.
+22. Trous, import de profils, maillage, calcul de contraintes et note de calcul
+    disponibles dans le Section Builder.
 
 Reste à faire avant release :
 
@@ -452,47 +464,46 @@ Reste à faire avant release :
 
 ## 10. Ordre de travail recommande
 
-### Étape 1 - Architecture plugin utilisable
+### Étape 1 - Résultats et exports utilisables
+
+- Ajouter l'onglet Synthèse et les enveloppes.
+- Ajouter l'export CSV des tableaux.
+- Préparer l'export PDF général.
+- Consolider la lecture multi-cas et multi-combinaisons.
+
+### Étape 2 - Section Builder étendu
+
+- Ajouter l'import DXF.
+- Gérer les sections composées et les matériaux multiples.
+- Préparer les vérifications EC3 sur les sections calculées.
+
+### Étape 3 - Architecture plugin utilisable
 
 - Ajouter un exemple minimal de plugin externe `connections.ec3`.
 - Documenter le format de manifeste.
 - Ajouter une petite vue/commande de diagnostic des plugins installes.
 - Garder le chargement externe opt-in.
 
-### Étape 2 - Résultats propres
-
-- Onglet Synthèse.
-- Export CSV.
-- Nettoyage tableaux.
-- Cas/combinaisons partout.
-
-### Étape 3 - Affectation par lot
+### Étape 4 - Affectation par lot
 
 - Sections sur sélection.
 - Appuis sur sélection.
 - Charges sur sélection.
 - Edition multiple.
 
-### Étape 4 - Validation calcul
+### Étape 5 - Validation calcul
 
 - Cas analytiques simples.
 - Comparaison PyNite / OpenSeesPy.
 - Comparaison avec references type OpsVis.
 - Documentation des conventions.
 
-### Étape 5 - Premiers checks métier
+### Étape 6 - Premiers checks métier
 
 - EC2 flexion simple.
 - EC2 effort normal/flexion simplifie.
 - EC3 contraintes simples.
 - Ratios d'utilisation dans l'interface.
-
-### Étape 6 - Exports
-
-- CSV résultats.
-- PDF rapport simple.
-- Images de diagrammes.
-- DXF/import plus tard.
 
 ---
 
@@ -524,7 +535,7 @@ Le jalon est atteint quand :
 - une synthèse donne les valeurs critiques,
 - un export CSV simple est disponible.
 
-Etat au 23 mai 2026 :
+État au 19 juin 2026 :
 
 - PyNite par défaut : en place,
 - poids propre automatique : en place,
@@ -537,9 +548,11 @@ Etat au 23 mai 2026 :
 - titre de fenêtre : corrigé après ouverture/enregistrement,
 - version cible : 0.1.0,
 - lint global `ruff` : vert,
-- suite de tests : `pytest -q` vert avec 460 tests passes,
+- suite de tests : `python -m pytest -q` vert avec 423 réussis et 14 ignorés,
 - architecture plugin : en place pour les solveurs internes et le point `connections.design`,
 - plugin assemblages : contrat applicatif pret, implementation externe a creer,
+- Section Builder : contours, trous, import de profils, maillage, contraintes et
+  note de calcul en place,
 - synthèse résultats : à faire,
 - export CSV simple : à faire.
 
@@ -551,4 +564,4 @@ Projet open source sous licence LGPL-3.0-only.
 
 ---
 
-*Dernière mise à jour : 23 mai 2026*
+*Dernière mise à jour : 19 juin 2026*

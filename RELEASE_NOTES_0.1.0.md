@@ -1,6 +1,6 @@
 # HEXA Structures 0.1.0 - Notes de release
 
-Date cible : 20 mai 2026
+Date du tag initial `v0.1.0` : 20 mai 2026
 
 ## Type de release
 
@@ -20,19 +20,22 @@ Cette version consolide :
 
 ## Validation
 
-Validation courante :
+Commande de validation :
 
 ```text
 pytest tests/ -q
 ```
 
-Etat actuel :
+Validation du lot Windows/i18n du 29 mai 2026 :
 
 ```text
-460 passed
+361 passed, 14 skipped
 ```
 
-## Etat courant du depot apres la release
+La validation du dépôt courant est suivie dans `PROGRESS.md` et ne doit pas être
+confondue avec la validation historique de cette version.
+
+## Évolutions engagées après la release
 
 Depuis la base 0.1.0, le depot a commence une migration progressive vers une
 architecture ports/adaptateurs/plugins :
@@ -43,8 +46,11 @@ architecture ports/adaptateurs/plugins :
 - loader externe opt-in via `ImportlibPluginLoader` ;
 - manifestes generiques avec `kind`, `extension_points`, `capabilities` et `tags` ;
 - premier point d'extension metier `connections.design` pour les futurs plugins d'assemblages.
+- internationalisation française et anglaise ;
+- catalogue de profils enrichi et sections paramétriques ;
+- Section Builder avec contours, trous, maillage, contraintes et note de calcul.
 
-Ces elements sont post-release 0.1.0 : ils documentent l'etat courant du depot,
+Ces éléments sont post-release 0.1.0 : ils documentent l'évolution du dépôt,
 mais ne changent pas le perimetre fonctionnel annonce pour la release publique
 initiale.
 

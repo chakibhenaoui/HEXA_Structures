@@ -27,6 +27,9 @@ Le projet a dépassé le stade du prototype. Aujourd'hui, la base applicative es
 - la gestion des matériaux, sections, conditions aux limites, charges et combinaisons
 - l'extraction de résultats et le rendu des diagrammes 2D pour les cas pris en charge
 - une vue 3D interactive connectée au modèle
+- un Section Builder intégré pour les contours personnalisés, les trous, le maillage,
+  les propriétés géométriques et les contraintes de section
+- une interface disponible en français et en anglais
 
 Les travaux en cours portent surtout sur :
 
@@ -34,6 +37,7 @@ Les travaux en cours portent surtout sur :
 - le post-traitement et les tableaux de résultats
 - les enveloppes de résultats et la lecture multi-cas / multi-combinaisons
 - les vérifications normatives et les exports de note de calcul
+- l'import DXF et les sections composées dans le Section Builder
 - les plugins métier installables, notamment le futur calcul des assemblages
 
 ## Fonctionnalités disponibles
@@ -42,6 +46,10 @@ Les travaux en cours portent surtout sur :
 - Bibliothèque de matériaux béton (EC2) et acier (EC3)
 - Sections rectangulaires, en T, I/H, U, L et tubes avec aperçu dynamique
 - Catalogue embarqué de plus de 200 profilés européens (`IPE`, `HEA`, `HEB`, `HEM`, `UPN`, `UPE`, `CHS`, `SHS`, `RHS`, cornières)
+- Section Builder avec dessin de contours et de trous, édition des points,
+  import de profils, maillage et note de calcul
+- Calcul optionnel des propriétés, de la torsion et des contraintes de section avec
+  `sectionproperties`
 - Vue 3D avec sélection interactive et symboles d'appui
 - Arbre hiérarchique du modèle synchronisé avec la vue
 - Panneau de propriétés éditable pour les principaux objets
@@ -65,6 +73,7 @@ Les travaux en cours portent surtout sur :
 - Analyses pushover et temporelles
 - Export PDF de note de calcul
 - Packaging Windows finalisé
+- Import DXF, sections composées et matériaux multiples dans le Section Builder
 
 ## Limites actuelles des plaques
 
@@ -98,6 +107,10 @@ Les solveurs PyNite et OpenSeesPy sont exposés comme plugins/adaptateurs intern
 Le même système prépare aussi des plugins non-solveurs : par exemple un module
 externe d'assemblages acier peut déclarer l'extension `connections.design`.
 
+Les résultats applicatifs nouveaux sont normalisés par `AnalysisRunResult`. Le
+contenu historique reste temporairement sous forme de dictionnaire afin de préserver
+la compatibilité avec la GUI et le post-traitement existants.
+
 ## Prérequis
 
 - **Windows 10 1809+ ou Windows 11** pour l'exécutable Windows publié
@@ -106,6 +119,7 @@ externe d'assemblages acier peut déclarer l'extension `connections.design`.
 - `pyvista` et `pyvistaqt` pour la visualisation 3D
 - `PyNiteFEA` pour le moteur par défaut
 - `OpenSeesPy >= 3.5` uniquement si vous souhaitez utiliser ce backend
+- `sectionproperties` uniquement pour les fonctions avancées du Section Builder
 
 ## Installation
 
@@ -120,6 +134,12 @@ py -3.12 -m venv .venv
 
 pip install -r requirements.txt
 python main.py
+```
+
+Pour activer les fonctions avancées du Section Builder :
+
+```bash
+pip install -r requirements-optional.txt
 ```
 
 ## Activer OpenSeesPy (optionnel)
@@ -213,6 +233,7 @@ pytest -q
 Notes utiles :
 
 - `requirements.txt` couvre les dépendances de base de l'application et des tests courants
+- validation locale du 19 juin 2026 : **423 tests réussis, 14 ignorés**
 - certains tests de rendu nécessitent `matplotlib`
 - les tests d'architecture couvrent les ports applicatifs, la découverte de plugins et le host `connections.design`
 - les comparaisons avancées avec `opsvis` demandent une installation complémentaire :
@@ -228,6 +249,8 @@ pip install opsvis
 - `PROJECT_PLAN.md` : plan de projet
 - `RELEASE_NOTES_0.1.0.md` : notes de release de la version 0.1.0
 - `IMPLEMENTATION_MULTI_SOLVEUR.md` : notes historiques et état actuel de l'architecture multi-solveur/plugin
+- `docs/PROFILES.md` : profils acier, sections paramétriques et Section Builder
+- `docs/I18N.md` : internationalisation française et anglaise
 
 ## Contribuer
 

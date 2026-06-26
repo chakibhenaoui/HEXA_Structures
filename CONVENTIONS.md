@@ -277,4 +277,4 @@ class MyWidget(QWidget):
 
 ---
 
-*Dernière mise à jour : 23 mai 2026*
+*Dernière mise à jour : 19 juin 2026*

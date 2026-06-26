@@ -43,9 +43,17 @@ pdflatex main.tex
 Le document est volontairement découpé en petits fichiers pour faciliter les
 améliorations progressives.
 
-Etat courant à mentionner lors de la prochaine passe de rédaction :
+État fonctionnel à refléter dans les chapitres :
 
 - architecture applicative `core/application` avec ports et cas d'usage ;
 - adaptateurs techniques dans `core/adapters` ;
 - découverte de plugins par manifestes ;
-- host applicatif pour les futurs plugins d'assemblages.
+- host applicatif pour les futurs plugins d'assemblages ;
+- interface française et anglaise ;
+- plaques macro et maillage interne OpenSeesPy ;
+- catalogue de profils, sections paramétriques et Section Builder ;
+- contraintes et note de calcul de section via `sectionproperties`.
+
+La documentation LaTeX n'est pas encore la source de vérité pour l'état
+d'avancement : consulter `PROGRESS.md` avant chaque nouvelle compilation
+destinée à la diffusion.

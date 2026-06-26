@@ -68,8 +68,8 @@ Pour les sections parametriques, les proprietes `area`, `inertia_y`, `inertia_z`
 
 ## Section Builder HEXA
 
-Le menu `Modele > Section Builder...` ouvre une premiere version fonctionnelle de
-l'atelier de sections personnalisees.
+Le menu `Modele > Section Builder...` ouvre l'atelier intégré de sections
+personnalisées.
 
 Cette version utilise uniquement PySide6 pour l'edition 2D :
 
@@ -79,12 +79,12 @@ Cette version utilise uniquement PySide6 pour l'edition 2D :
 - zoom molette ;
 - accrochage a la grille.
 
-La premiere version permet :
+La version actuelle permet :
 
 - barre de menus interne `Fichier` avec nouveau, ouvrir, importer forme,
-  enregistrer, enregistrer sous, impression de rapport preparee et quitter ;
+  enregistrer, enregistrer sous, note de calcul et quitter ;
 - menu interne `sectionproperties` avec insertion depuis la bibliotheque,
-  calcul, resultats et affichage des contraintes prepare pour une etape future ;
+  calcul, résultats et affichage des contraintes ;
 - affichage du repere local y/z ;
 - affichage d'une grille ;
 - accrochage au pas de grille ;
@@ -99,6 +99,9 @@ La premiere version permet :
 - insertion de formes parametriques depuis `sectionproperties.pre.library`
   directement dans le canevas du Section Builder ;
 - generation et affichage du maillage triangule ;
+- calcul et affichage de plusieurs composantes de contraintes élastiques ;
+- enveloppes min/max de contraintes avec localisation des extrema ;
+- génération d'une note de calcul éditable avec figures et avertissements ;
 - affichage du centre de gravite apres analyse ;
 - insertion dans la bibliotheque des sections du projet.
 
@@ -160,10 +163,9 @@ La vue 3D reutilise directement les points du contour pour l'affichage/extrusion
 Les solveurs continuent a lire les valeurs numeriques `area`, `inertia_y` et
 `inertia_z` sans connaitre PySide6.
 
-Limites volontaires de cette etape :
+Limites volontaires de cette étape :
 
 - pas de sections composees ;
-- pas de contraintes internes ;
 - pas d'import DXF ;
 - pas de verification EC3 ;
 - `sectionproperties` reste optionnel et peut etre installe via `requirements-optional.txt`.
@@ -197,13 +199,14 @@ Capacites deja branchees dans HEXA :
 - generation du maillage ;
 - analyse geometrique ;
 - analyse de torsion / gauchissement pour recuperer `J` quand possible.
+- analyse et tracé des contraintes élastiques ;
+- synthèse min/max des contraintes pour la note de calcul.
 
 Capacites preparees pour les prochaines etapes :
 
 - analyse `frame` ;
 - analyse plastique ;
-- analyse de contraintes ;
-- post-traitement ;
+- post-traitement avancé ;
 - import DXF ;
 - contours multiples plus avances ;
 - sections composees et materiaux multiples.

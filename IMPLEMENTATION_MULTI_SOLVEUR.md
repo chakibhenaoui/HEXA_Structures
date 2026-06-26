@@ -1,6 +1,6 @@
 # HEXA Structures - Architecture multi-solveur et plugins
 
-> **Document historique mis à jour** — 23 mai 2026
+> **Document historique mis à jour** — 19 juin 2026
 > Objectif : conserver les décisions multi-solveur et documenter l'évolution
 > vers une architecture ports/adaptateurs/plugins.
 
@@ -16,11 +16,14 @@ La première phase multi-solveur est en place :
 - `core/adapters/solvers/` expose PyNite et OpenSeesPy comme plugins/adaptateurs internes.
 - `core/application/ports/solver_port.py` définit le contrat applicatif utilisé par les cas d'usage.
 - `core/application/services.py` fournit la façade utilisée progressivement par la GUI.
+- `core/application/results.py` expose `AnalysisRunResult`, contrat typé qui
+  normalise les réponses historiques `(success, payload)`.
 - `core/plugins/` découvre les plugins installés par manifeste, sans exécuter de code par défaut.
 - `ImportlibPluginLoader` permet le chargement externe uniquement quand il est explicitement injecté.
 - Les plugins ne sont plus limités aux solveurs : le point `connections.design` prépare les modules d'assemblages.
 
-Validation courante : `pytest -q` passe avec 460 tests.
+Validation courante : `python -m pytest -q` passe avec 423 tests réussis et
+14 ignorés.
 
 ---
 
@@ -63,11 +66,13 @@ La solution : **PyNite bundlé par défaut** (licence MIT, zéro installation su
 
 > **Aucun module en dehors de `core/solvers/` ne doit importer `openseespy` ni `PyNite`.**
 > Tout le code applicatif (GUI, post-traitement, vérifications, export) travaille
-> exclusivement avec `StaticResult`, `ModalResult` et `SpectralResult`.
+> via les ports applicatifs et `AnalysisRunResult`.
 
 Mise à jour : la règle est désormais plus générale. Les nouveaux modules
 applicatifs ne doivent pas dépendre de PySide6, OpenSeesPy, PyNite, SQLite ou
 Matplotlib. Ils passent par `core/application/ports` et les DTOs applicatifs.
+Le payload interne reste provisoirement un dictionnaire pour ne pas casser les
+consommateurs GUI historiques.
 
 ---
 
@@ -76,6 +81,11 @@ Matplotlib. Ils passent par `core/application/ports` et les DTOs applicatifs.
 Les sous-sections suivantes conservent le plan d'implementation initial. Elles
 servent de trace de conception ; l'etat actuel est resume en section 0 et dans
 `README.md`.
+
+Les mentions de `StaticResult`, `ModalResult`, `SpectralResult`, des fichiers
+« à créer » et des estimations d'effort décrivent donc la conception initiale.
+Elles ne constituent pas l'API actuelle, centrée sur les ports de
+`core/application` et `AnalysisRunResult`.
 
 ### 2.1 Nouveaux fichiers à créer
 
@@ -799,4 +809,4 @@ Avant de considérer l'implémentation multi-solveur comme terminée, vérifier 
 
 ---
 
-*Dernière mise à jour : 23 mai 2026 - HEXA Structures v0.1*
+*Dernière mise à jour : 19 juin 2026 - HEXA Structures v0.1*

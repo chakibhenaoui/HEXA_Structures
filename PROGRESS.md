@@ -1,7 +1,6 @@
 # HEXA Structures - Suivi d'avancement
 
-> Base de suivi redemarree avec la version 0.1.0 et mise a jour apres la
-> premiere passe d'architecture ports/adaptateurs/plugins.
+> État vérifié le 19 juin 2026 sur la branche `main`.
 
 ---
 
@@ -10,15 +9,16 @@
 | Info | Valeur |
 |---|---|
 | Version applicative | 0.1.0 |
-| Date de base | 23 mai 2026 |
+| Dernière mise à jour | 19 juin 2026 |
+| Dernier développement | Section Builder amélioré, commit du 14 juin 2026 |
 | Moteur principal | PyNite |
-| Moteur avance optionnel | OpenSeesPy |
-| Etat global | Base publique propre, avec modelisation GUI, persistance SQLite, analyse statique, diagrammes, plaques macro, maillage automatique et architecture plugin progressive. |
-| Validation courante | `pytest -q` : 460 tests passes |
+| Moteur avancé optionnel | OpenSeesPy |
+| État global | Application fonctionnelle en consolidation : modélisation GUI, persistance SQLite, calcul multi-solveur, plaques macro, résultats, i18n, plugins et Section Builder avancé. |
+| Validation courante | `python -m pytest -q` : 423 réussis, 14 ignorés |
 
 ---
 
-## Termine
+## Terminé
 
 - Modele de donnees central et sauvegarde SQLite.
 - Materiaux, sections, noeuds, barres, appuis, charges et combinaisons.
@@ -40,16 +40,25 @@
 - Loader externe `ImportlibPluginLoader`, actif uniquement lorsqu'il est explicitement injecte.
 - Manifestes de plugins generiques avec `kind`, `extension_points`, `capabilities` et `tags`.
 - Point d'extension `connections.design` et host applicatif pour les futurs plugins d'assemblages.
+- Interface française et anglaise avec catalogues Qt validés.
+- Catalogue de plus de 200 profilés acier et sections paramétriques I/H, U, L et tubes.
+- Section Builder intégré avec contours extérieurs, trous, édition tabulaire et
+  import de profils.
+- Analyse polygonale de secours pour les sections pleines.
+- Intégration optionnelle de `sectionproperties` pour le maillage, les propriétés
+  géométriques, la torsion et les contraintes.
+- Affichage des contraintes de section et génération d'une note de calcul.
+- Extrusion 3D des sections paramétriques et personnalisées.
 
 ---
 
-## A faire ensuite
+## À faire ensuite
 
-1. Ajouter un exemple minimal de plugin externe `connections.ec3`.
-2. Documenter le format de manifeste plugin et les points d'extension publics.
-3. Ajouter une vue ou commande de diagnostic des plugins installes.
-4. Ajouter une convergence adaptative optionnelle pour le maillage automatique.
-5. Consolider les resultats de cisaillement plaques selon la formulation.
-6. Ameliorer les exports CSV/PDF.
-7. Poursuivre les validations analytiques et comparatives.
-8. Ajouter progressivement les verifications EC2/EC3.
+1. Consolider les tableaux, synthèses et enveloppes de résultats.
+2. Ajouter les exports CSV et PDF généraux.
+3. Stabiliser les résultats de cisaillement des plaques selon la formulation.
+4. Ajouter une convergence adaptative optionnelle pour le maillage des plaques.
+5. Étendre le Section Builder : import DXF, sections composées et matériaux multiples.
+6. Ajouter progressivement les vérifications EC2/EC3.
+7. Fournir un exemple de plugin externe `connections.ec3` et un diagnostic des plugins.
+8. Poursuivre les validations analytiques et comparatives des deux solveurs.

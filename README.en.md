@@ -27,6 +27,9 @@ The project has moved beyond the prototype stage. The current codebase already i
 - management of materials, sections, boundary conditions, loads, and combinations
 - result extraction and 2D diagram rendering for supported workflows
 - an interactive 3D view connected to the model
+- an integrated Section Builder for custom contours, holes, meshing, geometric
+  properties, and section stresses
+- a French and English user interface
 
 Current work mainly focuses on:
 
@@ -34,6 +37,7 @@ Current work mainly focuses on:
 - result post-processing and result tables
 - result envelopes and multi-case / multi-combination workflows
 - code checks and calculation note exports
+- DXF import and composite sections in the Section Builder
 - installable domain plugins, including future connection-design modules
 
 ## Available Features
@@ -42,6 +46,10 @@ Current work mainly focuses on:
 - Concrete (EC2) and steel (EC3) material libraries
 - Rectangular, T-shaped, I/H, channel, angle, and tube sections with live preview
 - Built-in catalog of more than 200 European steel profiles (`IPE`, `HEA`, `HEB`, `HEM`, `UPN`, `UPE`, `CHS`, `SHS`, `RHS`, angles)
+- Section Builder with contour and hole drawing, point editing, profile import,
+  meshing, and calculation reports
+- Optional section property, torsion, and stress calculations through
+  `sectionproperties`
 - PyVista 3D view with interactive selection and support symbols
 - Hierarchical model tree synchronized with the 3D view
 - Editable property panel for main model objects
@@ -65,6 +73,15 @@ Current work mainly focuses on:
 - Pushover and time-history analysis
 - PDF calculation report export
 - Finalized Windows packaging
+- DXF import, composite sections, and multiple materials in the Section Builder
+
+## Current Plate Limitations
+
+Planar rectangular or quadrilateral plates are supported experimentally through
+a regular quadrilateral mesh. Users manipulate a four-node macro plate; before
+an OpenSeesPy analysis, HEXA generates an internal mesh that remains hidden from
+the main model tree. Automatic and user-defined mesh divisions are available.
+Openings, arbitrary contours, and triangular meshes are not supported yet.
 
 ## Architecture
 
@@ -85,6 +102,10 @@ PyNite and OpenSeesPy are exposed as internal solver plugins/adapters. The same
 runtime also prepares non-solver plugins: for example, a future external steel
 connection-design module can declare the `connections.design` extension point.
 
+New application results are normalized through `AnalysisRunResult`. The legacy
+payload remains dictionary-based for now to preserve compatibility with the
+existing GUI and post-processing code.
+
 ## Requirements
 
 - **Windows 10 1809+ or Windows 11** for the published Windows executable
@@ -93,6 +114,7 @@ connection-design module can declare the `connections.design` extension point.
 - `pyvista` and `pyvistaqt` for 3D visualization
 - `PyNiteFEA` for the default solver
 - `OpenSeesPy >= 3.5` only if you want to use that backend
+- `sectionproperties` only for advanced Section Builder features
 
 ## Installation
 
@@ -107,6 +129,12 @@ py -3.12 -m venv .venv
 
 pip install -r requirements.txt
 python main.py
+```
+
+To enable the advanced Section Builder features:
+
+```bash
+pip install -r requirements-optional.txt
 ```
 
 ## Enable OpenSeesPy (Optional)
@@ -200,6 +228,7 @@ pytest -q
 Useful notes:
 
 - `requirements.txt` covers the base application dependencies and the most common test dependencies
+- local validation on June 19, 2026: **423 passed, 14 skipped**
 - some rendering-related tests require `matplotlib`
 - architecture tests cover application ports, plugin discovery, and the `connections.design` host
 - advanced comparison tests against `opsvis` require an additional install:
@@ -215,6 +244,8 @@ pip install opsvis
 - `PROJECT_PLAN.md`: project plan
 - `RELEASE_NOTES_0.1.0.md`: release notes for version 0.1.0
 - `IMPLEMENTATION_MULTI_SOLVEUR.md`: historical notes and current multi-solver/plugin architecture status
+- `docs/PROFILES.md`: steel profiles, parametric sections, and the Section Builder
+- `docs/I18N.md`: French and English internationalization
 
 ## Contributing
 
@@ -223,6 +254,13 @@ Contributions are welcome. Before opening a change, read `CONVENTIONS.md` to fol
 ## License
 
 This project is distributed under the **LGPL-3.0-only** license. See [LICENSE](LICENSE) for the LGPL text and [COPYING](COPYING) for the GNU GPL v3 text referenced by that license.
+
+## Usage Warning
+
+HEXA Structures is under active development. Its results do not constitute a
+certified calculation report or regulatory approval. Any use on a real
+structure must be independently checked, validated, and signed by a qualified
+structural engineer.
 
 ---
 
