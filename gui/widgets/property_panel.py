@@ -44,6 +44,19 @@ from core.loads import ComboType
 from gui.i18n.display_labels import combo_type_label, load_name_label, load_type_label
 
 # Load types with French labels (consistent with load_dlg.py)
+
+
+def _is_section_builder_section(section) -> bool:
+    """Return whether a section must be edited in Section Builder."""
+    properties = getattr(section, "properties", {})
+    if not isinstance(properties, dict):
+        properties = {}
+    return (
+        getattr(section, "section_type", "") == "sectionproperties"
+        or properties.get("source") == "section_builder"
+        or properties.get("source_tool") == "section_builder"
+        or properties.get("editable_with") == "section_builder"
+    )
 _LOAD_TYPES = {
     "permanent": "Permanente (G)",
     "variable": "Exploitation (Q)",
@@ -478,6 +491,7 @@ class PropertyPanel(QScrollArea):
         self._current_kind = "section"
         self._current_tag = tag
         sec = self._project.sections[tag]
+        is_section_builder_section = _is_section_builder_section(sec)
         self._clear_form()
 
         group = QGroupBox(self.tr("Section — {name}").format(name=sec.name))
@@ -553,6 +567,23 @@ class PropertyPanel(QScrollArea):
 
         self._combo_sec_type.currentIndexChanged.connect(self._on_section_type_changed)
         self._on_section_type_changed()
+        if is_section_builder_section:
+            info = QLabel(
+                self.tr(
+                    "Cette section utilisateur se modifie uniquement avec le Section Builder."
+                )
+            )
+            info.setWordWrap(True)
+            info.setStyleSheet("color: #5f6368; font-size: 11px;")
+            form.addRow(self.tr("Info :"), info)
+            self._edit_sec_name.setEnabled(False)
+            self._combo_sec_type.setEnabled(False)
+            self._combo_sec_material.setEnabled(False)
+            self._spin_sec_thickness.setEnabled(False)
+            self._combo_sec_surface_formulation.setEnabled(False)
+            self._spin_area.setEnabled(False)
+            self._spin_iy.setEnabled(False)
+            self._spin_iz.setEnabled(False)
         if sec.is_surface and not self._plate_editing_enabled:
             info = QLabel(self._plate_editing_reason or self.tr("Édition plaque indisponible."))
             info.setWordWrap(True)
@@ -566,7 +597,10 @@ class PropertyPanel(QScrollArea):
         form.addRow(
             self._make_buttons(
                 self._apply_section,
-                enabled=not (sec.is_surface and not self._plate_editing_enabled),
+                enabled=not (
+                    is_section_builder_section
+                    or (sec.is_surface and not self._plate_editing_enabled)
+                ),
             )
         )
 
@@ -779,6 +813,8 @@ class PropertyPanel(QScrollArea):
         if self._project is None or self._current_tag not in self._project.sections:
             return
         sec = self._project.sections[self._current_tag]
+        if _is_section_builder_section(sec):
+            return
         section_type = self._combo_sec_type.currentData()
         if sec.is_surface and section_type != "surface":
             used_by_surfaces = [

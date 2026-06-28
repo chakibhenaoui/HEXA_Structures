@@ -76,3 +76,35 @@ def test_property_panel_element_fields_stay_compact() -> None:
     assert panel._combo_elem_type.maximumWidth() <= 170
     assert panel._combo_section.maximumWidth() <= 170
     assert panel._spin_roll_angle.maximumWidth() <= 120
+
+
+def test_property_panel_keeps_section_builder_sections_read_only() -> None:
+    _app()
+    project = _project_with_element()
+    section = project.add_section(
+        "Section Builder 1",
+        "custom_polygon",
+        material_tag=1,
+        area=0.04,
+        inertia_y=2.0e-4,
+        inertia_z=1.0e-4,
+        properties={
+            "source_tool": "section_builder",
+            "editable_with": "section_builder",
+            "points": [(0.0, 0.0), (0.2, 0.0), (0.2, 0.2), (0.0, 0.2)],
+        },
+    )
+    panel = PropertyPanel()
+    panel.set_project(project)
+
+    panel.show_section(section.tag)
+
+    assert panel._edit_sec_name.isEnabled() is False
+    assert panel._combo_sec_type.isEnabled() is False
+    assert panel._combo_sec_material.isEnabled() is False
+    assert panel._spin_area.isEnabled() is False
+    panel._spin_area.setValue(999.0)
+    panel._apply_section()
+
+    assert project.sections[section.tag].area == 0.04
+    assert project.sections[section.tag].properties["editable_with"] == "section_builder"

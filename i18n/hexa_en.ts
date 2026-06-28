@@ -5158,6 +5158,11 @@ to see its properties.</translation>
         <translation>Info:</translation>
     </message>
     <message>
+        <location filename="../gui/widgets/property_panel.py" line="573"/>
+        <source>Cette section utilisateur se modifie uniquement avec le Section Builder.</source>
+        <translation>This user section can only be edited with Section Builder.</translation>
+    </message>
+    <message>
         <location filename="../gui/widgets/property_panel.py" line="336"/>
         <source>Plaque P{tag}</source>
         <translation>Plate P{tag}</translation>

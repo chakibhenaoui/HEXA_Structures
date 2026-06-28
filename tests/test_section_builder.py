@@ -5,12 +5,14 @@ import os
 os.environ.setdefault("QT_QPA_PLATFORM", "offscreen")
 
 import pytest
-from PySide6.QtWidgets import QApplication, QGraphicsItem
+from PySide6.QtWidgets import QApplication, QDialog, QGraphicsItem
 
 from core.model_data import ProjectModel, SectionData
 from core.section_builder import SectionBuilderGeometryError, polygon_section_properties
 from core.sections import get_profile, list_profile_families, list_profiles
 from core.sectionproperties_adapter import is_sectionproperties_available
+from core.self_weight import element_self_weight_kn_m
+from core.solvers.pynite_backend import PyNiteBackend
 from gui.dialogs.section_builder_dlg import (
     SectionCalculationNoteDialog,
     SectionBuilderDialog,
@@ -137,6 +139,37 @@ def test_section_builder_dialog_returns_custom_polygon_section() -> None:
     assert data["properties"]["perimeter"] == pytest.approx(1.0)
     assert data["properties"]["points"][0] == (0.0, 0.0)
     assert dlg._view._centroid == pytest.approx((0.10, 0.15))
+
+
+def test_section_builder_result_adds_project_section_usable_by_bar() -> None:
+    _app()
+    project = ProjectModel()
+    project.add_node(0.0, 0.0, 0.0)
+    project.add_node(4.0, 0.0, 0.0)
+    material = project.add_material("Acier S355", "steel", "S355")
+    dlg = SectionBuilderDialog(materials=project.materials)
+    dlg._select_material_tag(material.tag)
+    dlg._view.set_points(
+        [(-0.10, -0.15), (0.10, -0.15), (0.10, 0.15), (-0.10, 0.15)],
+        closed=True,
+    )
+
+    assert dlg._analyze(show_errors=False) is True
+    data = dlg.result()
+    section = project.add_section(
+        name=data["name"],
+        section_type=data["section_type"],
+        material_tag=data["material_tag"],
+        properties=data["properties"],
+        area=data["area"],
+        inertia_y=data["inertia_y"],
+        inertia_z=data["inertia_z"],
+    )
+    element = project.add_element(1, 2, section_tag=section.tag)
+
+    assert project.sections[section.tag].properties["editable_with"] == "section_builder"
+    assert element.section_tag == section.tag
+    assert element_self_weight_kn_m(project, element) > 0.0
 
 
 def test_section_builder_dialog_exposes_fused_sectionproperties_menu() -> None:
@@ -490,6 +523,104 @@ def test_section_manager_detects_builder_sections() -> None:
 
     assert _is_section_builder_section(builder_section) is True
     assert _is_section_builder_section(regular_section) is False
+
+
+def test_section_manager_edits_builder_sections_with_section_builder(monkeypatch) -> None:
+    _app()
+    from gui.dialogs.library_manager_dlg import SectionManagerDialog
+    import gui.dialogs.section_builder_dlg as section_builder_module
+
+    section = SectionData(
+        tag=1,
+        name="Section utilisateur",
+        section_type="custom_polygon",
+        material_tag=1,
+        properties={
+            "source_tool": "section_builder",
+            "editable_with": "section_builder",
+            "points": [(0.0, 0.0), (0.2, 0.0), (0.2, 0.3), (0.0, 0.3)],
+        },
+        area=0.06,
+        inertia_y=4.5e-4,
+        inertia_z=2.0e-4,
+    )
+    project = ProjectModel()
+    project.add_material("Acier S355", "steel", "S355")
+    calls: list[dict] = []
+
+    class FakeSectionBuilderDialog:
+        Accepted = QDialog.Accepted
+
+        def __init__(self, parent=None, **kwargs):
+            calls.append(kwargs)
+
+        def exec(self):
+            return QDialog.Accepted
+
+        def result(self):
+            return {
+                "name": "Section utilisateur modifiee",
+                "section_type": "custom_polygon",
+                "material_tag": 1,
+                "properties": {
+                    "source_tool": "section_builder",
+                    "editable_with": "section_builder",
+                    "points": [(0.0, 0.0), (0.3, 0.0), (0.3, 0.3), (0.0, 0.3)],
+                },
+                "area": 0.09,
+                "inertia_y": 6.75e-4,
+                "inertia_z": 6.75e-4,
+            }
+
+    monkeypatch.setattr(
+        section_builder_module,
+        "SectionBuilderDialog",
+        FakeSectionBuilderDialog,
+    )
+    manager = SectionManagerDialog(
+        sections={1: section},
+        materials=project.materials,
+    )
+
+    manager._modify_section()
+    result = manager.result_sections()[1]
+
+    assert calls and calls[0]["properties"]["editable_with"] == "section_builder"
+    assert result.name == "Section utilisateur modifiee"
+    assert result.area == pytest.approx(0.09)
+    assert result.properties["editable_with"] == "section_builder"
+
+
+def test_pynite_backend_uses_user_section_torsion_constant() -> None:
+    class FakePyNiteModel:
+        def __init__(self):
+            self.sections: list[tuple] = []
+
+        def add_section(self, *args):
+            self.sections.append(args)
+
+    project = ProjectModel()
+    project.add_material("Acier S355", "steel", "S355")
+    project.add_section(
+        "Section utilisateur",
+        "custom_polygon",
+        material_tag=1,
+        area=0.02,
+        inertia_y=1.0e-4,
+        inertia_z=2.0e-4,
+        properties={"editable_with": "section_builder", "torsion_j": 7.5e-5},
+    )
+    backend = PyNiteBackend(project)
+    backend.model = FakePyNiteModel()
+
+    backend._build_sections()
+
+    name, area, iy, iz, torsion = backend.model.sections[0]
+    assert name == "SEC1"
+    assert area == pytest.approx(0.02)
+    assert iy == pytest.approx(1.0e-4)
+    assert iz == pytest.approx(2.0e-4)
+    assert torsion == pytest.approx(7.5e-5)
 
 
 def test_section_builder_dialog_inserts_hollow_library_shape_with_hole() -> None:

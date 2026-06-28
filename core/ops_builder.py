@@ -11,6 +11,7 @@ from core.material_properties import (
     material_mass_density_kg_m3,
     material_poisson_ratio,
 )
+from core.sections import section_torsion_constant
 from core.self_weight import (
     element_load_local_components,
     element_self_weight_local_components,
@@ -160,17 +161,7 @@ class OpsBuilder:
     @staticmethod
     def _torsion_constant(sec, iz: float) -> float:
         """Handle torsion constant."""
-        for key in ("torsion_constant", "J"):
-            try:
-                value = float(sec.properties.get(key, 0.0))
-            except (TypeError, ValueError):
-                value = 0.0
-            if value > 0.0:
-                return value
-
-        # Temporary approximation when the section library does not provide
-        # pas encore de constante de torsion dediee.
-        return sec.inertia_y + iz
+        return section_torsion_constant(sec, fallback_iz=iz)
 
     def _build_transforms(self) -> None:
         """Build transforms."""

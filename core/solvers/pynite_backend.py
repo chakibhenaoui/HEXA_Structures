@@ -10,6 +10,7 @@ from config.eurocodes import CONCRETE_GRADES, REBAR_GRADES, STEEL_GRADES
 from core.local_axes import local_axes_from_nodes
 from core.materials import DENSITIES
 from core.results import ElementResult, NodalResult
+from core.sections import section_torsion_constant
 from core.self_weight import (
     element_self_weight_kn_m,
     is_self_weight_load,
@@ -232,7 +233,7 @@ class PyNiteBackend:
             area = section.area
             iy = section.inertia_y
             iz = section.inertia_z if section.inertia_z > 0 else iy
-            j = iy + iz if (iy > 0 or iz > 0) else 1e-9
+            j = section_torsion_constant(section, fallback_iz=iz)
             self.model.add_section(name, area, iy, iz, j)
 
     def _build_members(self) -> None:

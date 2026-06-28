@@ -21,6 +21,29 @@ PROFILE_DATABASE_PATH = (
 PROFILE_DATABASE_LOAD_ERROR: str | None = None
 
 
+def section_torsion_constant(section, fallback_iz: float | None = None) -> float:
+    """Return a usable torsion constant for a section-like object."""
+    properties = getattr(section, "properties", {})
+    if not isinstance(properties, dict):
+        properties = {}
+    for key in ("torsion_constant", "J", "torsion_j"):
+        try:
+            value = float(properties.get(key, 0.0))
+        except (TypeError, ValueError):
+            value = 0.0
+        if value > 0.0:
+            return value
+
+    iy = float(getattr(section, "inertia_y", 0.0) or 0.0)
+    if fallback_iz is None:
+        iz = float(getattr(section, "inertia_z", 0.0) or 0.0)
+    else:
+        iz = float(fallback_iz or 0.0)
+    if iz <= 0.0:
+        iz = iy
+    return iy + iz if (iy > 0.0 or iz > 0.0) else 1.0e-9
+
+
 # ═══════════════════════════════════════════════════════════════════════════
 #  Rectangular section
 # ═══════════════════════════════════════════════════════════════════════════
