@@ -18,6 +18,7 @@
 - Enveloppes min/max de contraintes et note de calcul editable avec figures, regeneration depuis le calcul et export PDF direct.
 - Apercu dynamique de section dans la boite de definition des sections.
 - Extrusion 3D des nouvelles sections parametriques, avec tubes creux et couleur differente par section.
+- Capture de l'interface 3D ajoutee aux README pour illustrer l'etat actuel du logiciel.
 
 ### Modifie
 
@@ -25,12 +26,14 @@
 - Limites geometriques pendant la saisie : epaisseurs et ames bridees pour conserver des formes valides.
 - Packaging PyInstaller inclut `sectionproperties` si la bibliotheque est installee, tout en gardant un demarrage possible sans elle.
 - Catalogues i18n francais et anglais regeneres pour les nouveaux libelles de sections, de repere local et de validation.
+- Documentation de suivi actualisee au 28 juin 2026.
 
 ### Validation
 
 - `python -m pytest -q` : 585 tests passes le 26 juin 2026.
-- `pyside6-lrelease i18n\hexa_en.ts -qm i18n\hexa_en.qm` : 1387 traductions terminees.
-- `pyside6-lrelease i18n\hexa_fr.ts -qm i18n\hexa_fr.qm` : 1387 traductions terminees.
+- `python -m pytest tests/test_i18n.py tests/test_section_builder.py tests/test_property_panel.py ...` : 42 tests cibles passes le 28 juin 2026.
+- `pyside6-lrelease i18n\hexa_en.ts -qm i18n\hexa_en.qm` : 1388 traductions terminees.
+- `pyside6-lrelease i18n\hexa_fr.ts -qm i18n\hexa_fr.qm` : 1388 traductions terminees.
 
 ## 0.1.0 - Build Windows i18n post-release
 

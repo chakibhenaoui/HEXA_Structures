@@ -15,6 +15,14 @@ HEXA Structures is a desktop modeling and analysis tool aimed at structural engi
 - native integration of **Eurocodes (EC0 to EC8)** with the **French National Annexes**
 - a progressive ports/adapters application architecture with installable plugin support
 
+## Interface
+
+![HEXA Structures 3D interface](docs/assets/hexa_3d.png)
+
+The main workspace combines the model tree, interactive 3D visualization,
+color-coded extruded sections, support symbols, and the property panel. This
+layout is the basis for modeling, analysis, and result review workflows.
+
 ## Project Status
 
 The project has moved beyond the prototype stage. The current codebase already includes:

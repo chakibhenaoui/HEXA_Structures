@@ -1,6 +1,6 @@
 # HEXA Structures - Suivi d'avancement
 
-> État vérifié le 19 juin 2026 sur la branche `main`.
+> État vérifié le 28 juin 2026 sur la branche `main`.
 
 ---
 
@@ -9,12 +9,12 @@
 | Info | Valeur |
 |---|---|
 | Version applicative | 0.1.0 |
-| Dernière mise à jour | 19 juin 2026 |
-| Dernier développement | Section Builder amélioré, commit du 14 juin 2026 |
+| Dernière mise à jour | 28 juin 2026 |
+| Dernier développement | Documentation illustrée de l'interface 3D et intégration consolidée des sections utilisateur Section Builder |
 | Moteur principal | PyNite |
 | Moteur avancé optionnel | OpenSeesPy |
 | État global | Application fonctionnelle en consolidation : modélisation GUI, persistance SQLite, calcul multi-solveur, plaques macro, résultats, i18n, plugins et Section Builder avancé. |
-| Validation courante | `python -m pytest -q` : 423 réussis, 14 ignorés |
+| Validation récente | `python -m pytest tests/test_i18n.py tests/test_section_builder.py tests/test_property_panel.py ...` : 42 réussis |
 
 ---
 
@@ -49,6 +49,7 @@
   géométriques, la torsion et les contraintes.
 - Affichage des contraintes de section et génération d'une note de calcul.
 - Extrusion 3D des sections paramétriques et personnalisées.
+- Documentation README illustrée avec une capture de l'interface 3D.
 
 ---
 
