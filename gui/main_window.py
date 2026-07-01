@@ -208,6 +208,7 @@ class MainWindow(QMainWindow):
         self.act_diagram_T = self.ui.findChild(QAction, "act_diagram_T")
         self.act_hide_diagrams = self.ui.findChild(QAction, "act_hide_diagrams")
         self.act_envelopes = self.ui.findChild(QAction, "act_envelopes")
+        self.act_res_summary = QAction(self.tr("Synthèse"), self)
         self.act_res_surfaces = QAction(self.tr("Résultats plaques"), self)
         self.act_surface_map = QAction(self.tr("Cartes plaques..."), self)
 
@@ -587,6 +588,9 @@ class MainWindow(QMainWindow):
         self.act_res_forces.triggered.connect(
             lambda: self._show_result_table("element_forces")
         )
+        self.act_res_summary.triggered.connect(
+            lambda: self._show_result_table("summary")
+        )
         self.act_res_surfaces.triggered.connect(
             lambda: self._show_result_table("surface_results")
         )
@@ -767,7 +771,12 @@ class MainWindow(QMainWindow):
 
         self._clear_menu_structure(self.menu_results)
 
-        menu_tables = self.menu_results.addMenu(self.tr("Tableaux"))
+        menu_tables = QMenu(self.tr("Tableaux"), self.menu_results)
+        self.menu_results.addMenu(menu_tables)
+        self._menu_results_tables = menu_tables
+        if getattr(self, "act_res_summary", None) is not None:
+            menu_tables.addAction(self.act_res_summary)
+            menu_tables.addSeparator()
         menu_tables.addAction(self.act_res_displacements)
         menu_tables.addAction(self.act_res_reactions)
         menu_tables.addAction(self.act_res_forces)
@@ -776,7 +785,9 @@ class MainWindow(QMainWindow):
         menu_tables.addSeparator()
         menu_tables.addAction(self.act_envelopes)
 
-        menu_diagrams = self.menu_results.addMenu(self.tr("Diagrammes"))
+        menu_diagrams = QMenu(self.tr("Diagrammes"), self.menu_results)
+        self.menu_results.addMenu(menu_diagrams)
+        self._menu_results_diagrams = menu_diagrams
         menu_diagrams.addAction(self.act_diagram_N)
         menu_diagrams.addAction(self.act_diagram_Vy)
         menu_diagrams.addAction(self.act_diagram_Vz)
@@ -787,7 +798,9 @@ class MainWindow(QMainWindow):
         menu_diagrams.addAction(self.act_hide_diagrams)
 
         if getattr(self, "act_surface_map", None) is not None:
-            menu_surfaces = self.menu_results.addMenu(self.tr("Plaques"))
+            menu_surfaces = QMenu(self.tr("Plaques"), self.menu_results)
+            self.menu_results.addMenu(menu_surfaces)
+            self._menu_results_surfaces = menu_surfaces
             menu_surfaces.addAction(self.act_surface_map)
 
         self.menu_results.addSeparator()
@@ -1077,6 +1090,7 @@ class MainWindow(QMainWindow):
                 self.act_res_displacements,
                 self.act_res_reactions,
                 self.act_res_forces,
+                getattr(self, "act_res_summary", None),
                 self.act_res_deformed,
                 self.act_envelopes,
             )
@@ -1447,6 +1461,7 @@ class MainWindow(QMainWindow):
             ),
             (getattr(self, "act_res_reactions", None), self.tr("Réactions d'appui")),
             (getattr(self, "act_res_forces", None), self.tr("Efforts internes")),
+            (getattr(self, "act_res_summary", None), self.tr("Synthèse")),
             (getattr(self, "act_res_deformed", None), self.tr("Déformée")),
             (
                 getattr(self, "act_diagram_N", None),

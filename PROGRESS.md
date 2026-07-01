@@ -1,6 +1,6 @@
 # HEXA Structures - Suivi d'avancement
 
-> État vérifié le 28 juin 2026 sur la branche `main`.
+> État vérifié le 1er juillet 2026 sur la branche `main`.
 
 ---
 
@@ -9,12 +9,12 @@
 | Info | Valeur |
 |---|---|
 | Version applicative | 0.1.0 |
-| Dernière mise à jour | 28 juin 2026 |
-| Dernier développement | Documentation illustrée de l'interface 3D et intégration consolidée des sections utilisateur Section Builder |
+| Dernière mise à jour | 1er juillet 2026 |
+| Dernier développement | Priorité Résultats V1 : onglet Synthèse, valeurs critiques multi-cas, enveloppes complètes et export CSV des tableaux |
 | Moteur principal | PyNite |
 | Moteur avancé optionnel | OpenSeesPy |
 | État global | Application fonctionnelle en consolidation : modélisation GUI, persistance SQLite, calcul multi-solveur, plaques macro, résultats, i18n, plugins et Section Builder avancé. |
-| Validation récente | `python -m pytest tests/test_i18n.py tests/test_section_builder.py tests/test_property_panel.py ...` : 42 réussis |
+| Validation récente | `python -m pytest -q` : 594 réussis ; lint ciblé des fichiers modifiés vert |
 
 ---
 
@@ -50,13 +50,16 @@
 - Affichage des contraintes de section et génération d'une note de calcul.
 - Extrusion 3D des sections paramétriques et personnalisées.
 - Documentation README illustrée avec une capture de l'interface 3D.
+- Onglet Synthèse des résultats avec maxima/minima critiques et cas/combinaisons associés.
+- Enveloppes de barres affichées pour `N`, `Vy`, `Vz`, `T`, `My` et `Mz`.
+- Export CSV de l'onglet actif des tableaux de résultats.
 
 ---
 
 ## À faire ensuite
 
-1. Consolider les tableaux, synthèses et enveloppes de résultats.
-2. Ajouter les exports CSV et PDF généraux.
+1. Finaliser l'export PDF général des résultats et notes de calcul.
+2. Poursuivre la validation ergonomique des tableaux, synthèses et enveloppes.
 3. Stabiliser les résultats de cisaillement des plaques selon la formulation.
 4. Ajouter une convergence adaptative optionnelle pour le maillage des plaques.
 5. Étendre le Section Builder : import DXF, sections composées et matériaux multiples.

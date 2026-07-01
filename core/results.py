@@ -124,6 +124,230 @@ class SurfaceResult:
     gauss_resultants: tuple[tuple[float, ...], ...] = field(default_factory=tuple)
 
 
+@dataclass
+class ResultSummaryRow:
+    """Valeur critique extraite des resultats multi-cas."""
+
+    category: str
+    target: str
+    component: str
+    extremum: str
+    value: float
+    unit: str
+    case_name: str
+
+
+def compute_result_summary(all_results: dict[str, dict]) -> list[ResultSummaryRow]:
+    """Compute critical values across all successful cases and combinations."""
+    records: dict[tuple[str, str, str], ResultSummaryRow] = {}
+    order: list[tuple[str, str, str]] = []
+
+    def _is_number(value: float) -> bool:
+        try:
+            return math.isfinite(float(value))
+        except (TypeError, ValueError):
+            return False
+
+    def _store(key: tuple[str, str, str], row: ResultSummaryRow) -> None:
+        if key not in records:
+            order.append(key)
+        records[key] = row
+
+    def _record_abs(
+        category: str,
+        target: str,
+        component: str,
+        value: float,
+        unit: str,
+        case_name: str,
+    ) -> None:
+        if not _is_number(value):
+            return
+        key = (category, component, "Max abs")
+        current = records.get(key)
+        if current is None or abs(float(value)) > abs(current.value):
+            _store(
+                key,
+                ResultSummaryRow(
+                    category=category,
+                    target=target,
+                    component=component,
+                    extremum="Max abs",
+                    value=float(value),
+                    unit=unit,
+                    case_name=case_name,
+                ),
+            )
+
+    def _record_minmax(
+        category: str,
+        target: str,
+        component: str,
+        value: float,
+        unit: str,
+        case_name: str,
+    ) -> None:
+        if not _is_number(value):
+            return
+
+        min_key = (category, component, "Min")
+        current_min = records.get(min_key)
+        if current_min is None or float(value) < current_min.value:
+            _store(
+                min_key,
+                ResultSummaryRow(
+                    category=category,
+                    target=target,
+                    component=component,
+                    extremum="Min",
+                    value=float(value),
+                    unit=unit,
+                    case_name=case_name,
+                ),
+            )
+
+        max_key = (category, component, "Max")
+        current_max = records.get(max_key)
+        if current_max is None or float(value) > current_max.value:
+            _store(
+                max_key,
+                ResultSummaryRow(
+                    category=category,
+                    target=target,
+                    component=component,
+                    extremum="Max",
+                    value=float(value),
+                    unit=unit,
+                    case_name=case_name,
+                ),
+            )
+
+    displacement_components = (
+        ("Ux", "ux", "m"),
+        ("Uy", "uy", "m"),
+        ("Uz", "uz", "m"),
+        ("Rx", "rx", "rad"),
+        ("Ry", "ry", "rad"),
+        ("Rz", "rz", "rad"),
+    )
+    reaction_components = (
+        ("Fx", "fx_reaction", "kN"),
+        ("Fy", "fy_reaction", "kN"),
+        ("Fz", "fz_reaction", "kN"),
+        ("Mx", "mx_reaction", "kN.m"),
+        ("My", "my_reaction", "kN.m"),
+        ("Mz", "mz_reaction", "kN.m"),
+    )
+    force_components = (
+        ("N", "n_i", "n_j", "kN"),
+        ("Vy", "vy_i", "vy_j", "kN"),
+        ("Vz", "vz_i", "vz_j", "kN"),
+        ("T", "t_i", "t_j", "kN.m"),
+        ("My", "my_i", "my_j", "kN.m"),
+        ("Mz", "mz_i", "mz_j", "kN.m"),
+    )
+    surface_components = (
+        ("Nxx", "nxx", "kN/m"),
+        ("Nyy", "nyy", "kN/m"),
+        ("Nxy", "nxy", "kN/m"),
+        ("Mxx", "mxx", "kN.m/m"),
+        ("Myy", "myy", "kN.m/m"),
+        ("Mxy", "mxy", "kN.m/m"),
+        ("Qx", "qx", "kN/m"),
+        ("Qy", "qy", "kN/m"),
+    )
+    plate_components = (
+        ("Uz", "uz_min", "uz_max", "m"),
+        ("Mxx", "mxx_min", "mxx_max", "kN.m/m"),
+        ("Myy", "myy_min", "myy_max", "kN.m/m"),
+        ("Mxy", "mxy_min", "mxy_max", "kN.m/m"),
+        ("Qx", "qx_min", "qx_max", "kN/m"),
+        ("Qy", "qy_min", "qy_max", "kN/m"),
+    )
+
+    for case_name, results in all_results.items():
+        for tag, nodal in results.get("displacements", {}).items():
+            for component, attr, unit in displacement_components:
+                _record_abs(
+                    "Déplacement",
+                    f"N{tag}",
+                    component,
+                    getattr(nodal, attr, 0.0),
+                    unit,
+                    case_name,
+                )
+
+        for tag, reaction in results.get("reactions", {}).items():
+            for component, attr, unit in reaction_components:
+                _record_abs(
+                    "Réaction d'appui",
+                    f"N{tag}",
+                    component,
+                    getattr(reaction, attr, 0.0),
+                    unit,
+                    case_name,
+                )
+
+        for tag, force in results.get("element_forces", {}).items():
+            for component, attr_i, attr_j, unit in force_components:
+                _record_minmax(
+                    "Effort interne",
+                    f"E{tag} i",
+                    component,
+                    getattr(force, attr_i, 0.0),
+                    unit,
+                    case_name,
+                )
+                _record_minmax(
+                    "Effort interne",
+                    f"E{tag} j",
+                    component,
+                    getattr(force, attr_j, 0.0),
+                    unit,
+                    case_name,
+                )
+
+        for tag, surface in results.get("surface_results", {}).items():
+            for component, attr, unit in surface_components:
+                _record_minmax(
+                    "Plaque",
+                    f"S{tag}",
+                    component,
+                    getattr(surface, attr, 0.0),
+                    unit,
+                    case_name,
+                )
+
+        for tag, plate in results.get("plate_results", {}).items():
+            for component, attr_min, attr_max, unit in plate_components:
+                _record_minmax(
+                    "Plaque",
+                    f"P{tag}",
+                    component,
+                    getattr(plate, attr_min, 0.0),
+                    unit,
+                    case_name,
+                )
+                _record_minmax(
+                    "Plaque",
+                    f"P{tag}",
+                    component,
+                    getattr(plate, attr_max, 0.0),
+                    unit,
+                    case_name,
+                )
+            _record_abs(
+                "Plaque",
+                f"P{tag}",
+                "Fz appuis",
+                getattr(plate, "fz_reaction_total", 0.0),
+                "kN",
+                case_name,
+            )
+
+    return [records[key] for key in order]
+
+
 class ResultsExtractor:
     """Results extractor."""
 
@@ -376,7 +600,6 @@ def compute_envelopes(
         ("mz", "mz_i", "mz_j"),
     ]
 
-    first = True
     for case_name, results in all_results.items():
         forces = results.get("element_forces", {})
         for tag in element_tags:
@@ -390,13 +613,16 @@ def compute_envelopes(
                 v_min = min(val_i, val_j)
                 v_max = max(val_i, val_j)
 
-                if first or v_min < getattr(env, f"{prefix}_min"):
+                if not getattr(env, f"{prefix}_min_case") or v_min < getattr(
+                    env, f"{prefix}_min"
+                ):
                     setattr(env, f"{prefix}_min", v_min)
                     setattr(env, f"{prefix}_min_case", case_name)
-                if first or v_max > getattr(env, f"{prefix}_max"):
+                if not getattr(env, f"{prefix}_max_case") or v_max > getattr(
+                    env, f"{prefix}_max"
+                ):
                     setattr(env, f"{prefix}_max", v_max)
                     setattr(env, f"{prefix}_max_case", case_name)
-        first = False
 
     return envs
 

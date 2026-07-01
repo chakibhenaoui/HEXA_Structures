@@ -216,8 +216,16 @@ class MyWidget(QWidget):
 - DOF 6 = Rz (rotation autour de Z)
 
 ### 6.4 Convention de signe
-- Efforts positifs : traction (N), cisaillement montant (V), moment horaire (M)
-- Cohérent avec la convention OpenSees `eleForce()`
+- Les tableaux de résultats affichent les efforts de barres dans le repère local
+  de l'élément.
+- L'axe local `x` va du nœud i vers le nœud j.
+- `N` positif correspond à la traction.
+- `Vy` et `Vz` sont les efforts tranchants suivant les axes locaux `y` et `z`.
+- `T`, `My` et `Mz` suivent la règle de la main droite autour des axes locaux.
+- Les valeurs issues de PyNite et OpenSeesPy sont normalisées dans ce format
+  commun avant affichage.
+- Les diagrammes utilisent en plus `core.section_force_convention` pour stabiliser
+  le sens d'affichage quand le sens de dessin ou le plan de vue change.
 
 ### 6.5 Orientation locale des barres 3D
 - Axe local `x` : du nœud i vers le nœud j

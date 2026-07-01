@@ -221,6 +221,16 @@ L'exécutable produit n'embarque pas OpenSeesPy. Si l'utilisateur final souhaite
 
 Le système interne utilise **kN, m, kPa**. Les conversions depuis et vers d'autres unités (`mm`, `MPa`, `cm2`, etc.) sont gérées dans `utils/units.py`.
 
+## Conventions de signe des résultats
+
+- Le repère global utilise **Z vertical** ; la gravité est appliquée suivant `-Z`.
+- Les efforts de barres sont affichés dans le repère local de l'élément : `x`
+  va du nœud i vers le nœud j.
+- `N` positif correspond à la traction ; `Vy`, `Vz`, `T`, `My` et `Mz` suivent
+  les axes locaux et la règle de la main droite.
+- Les diagrammes appliquent la convention d'affichage stabilisée du projet pour
+  garder une lecture cohérente quand le sens de dessin des barres change.
+
 ## Normes intégrées
 
 | Norme | Contenu | Statut |

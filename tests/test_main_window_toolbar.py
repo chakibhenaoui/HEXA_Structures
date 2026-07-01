@@ -448,6 +448,7 @@ def test_results_menu_contains_plate_entries() -> None:
         "act_res_displacements": "Déplacements",
         "act_res_reactions": "Réactions",
         "act_res_forces": "Efforts internes",
+        "act_res_summary": "Synthèse",
         "act_res_surfaces": "Résultats plaques",
         "act_envelopes": "Enveloppes",
         "act_diagram_N": "Diagramme N",
@@ -472,6 +473,13 @@ def test_results_menu_contains_plate_entries() -> None:
     assert "tableaux" in submenu_titles
     assert "diagrammes" in submenu_titles
     assert "plaques" in submenu_titles
+
+    table_actions = [
+        _normalize_label(action.text())
+        for action in window._menu_results_tables.actions()
+        if not action.isSeparator()
+    ]
+    assert "synthese" in table_actions
 
     submenus = { _normalize_label(menu.title()): menu for menu in window.menu_results.findChildren(QMenu) }
     table_menu = submenus["tableaux"]

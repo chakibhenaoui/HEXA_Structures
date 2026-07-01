@@ -6,16 +6,22 @@ Used both inside the bottom dock and inside the detached results window.
 
 from __future__ import annotations
 
+import csv
+from pathlib import Path
 from typing import TYPE_CHECKING
 
 from PySide6.QtCore import QFile, QIODevice, Qt, Signal
 from PySide6.QtUiTools import QUiLoader
 from PySide6.QtWidgets import (
     QAbstractItemView,
+    QFileDialog,
     QHBoxLayout,
     QHeaderView,
     QLabel,
     QLineEdit,
+    QMessageBox,
+    QPushButton,
+    QStyle,
     QTabWidget,
     QTableWidget,
     QTableWidgetItem,
@@ -23,10 +29,11 @@ from PySide6.QtWidgets import (
     QWidget,
 )
 
+from core.results import compute_result_summary
 from gui.resources import app_resource_path
 
 if TYPE_CHECKING:
-    from core.results import ElementEnvelope, SurfaceResult
+    from core.results import ElementEnvelope, ResultSummaryRow, SurfaceResult
     from core.result_mapping import PlateRegionResult
 
 
@@ -58,6 +65,7 @@ class ResultsPanel(QWidget):
         super().__init__(parent)
         self._all_results: dict[str, dict] = {}
         self._envelopes: dict[int, ElementEnvelope] = {}
+        self._summary_rows: list[ResultSummaryRow] = []
 
         ui_path = app_resource_path("gui", "ui", "results_panel.ui")
         loader = QUiLoader()
@@ -73,7 +81,9 @@ class ResultsPanel(QWidget):
 
         self._case_label = self.ui.findChild(QLabel, "lbl_case")
         self._tabs = self.ui.findChild(QTabWidget, "tabs")
+        self._summary_tab, self._summary_table = self._create_summary_tab()
         self._table_by_result_type = {
+            "summary": self._summary_table,
             "displacements": self.ui.tbl_displacements,
             "reactions": self.ui.tbl_reactions,
             "element_forces": self.ui.tbl_forces,
@@ -81,6 +91,7 @@ class ResultsPanel(QWidget):
             "envelopes": self.ui.tbl_envelopes,
         }
         self._tab_by_result_type = {
+            "summary": self._summary_tab,
             "displacements": self.ui.tab_displacements,
             "reactions": self.ui.tab_reactions,
             "element_forces": self.ui.tab_forces,
@@ -103,15 +114,19 @@ class ResultsPanel(QWidget):
         """Clear all results and empty all tables."""
         self._all_results.clear()
         self._envelopes.clear()
+        self._summary_rows.clear()
         self.ui.case_combo.blockSignals(True)
         self.ui.case_combo.clear()
         self.ui.case_combo.blockSignals(False)
+        self._fill_summary([])
         self._fill_tables({})
         self._fill_envelopes({})
 
     def set_all_results(self, all_results: dict[str, dict]) -> None:
         """Load all per-case results and populate the combo box."""
         self._all_results = all_results
+        self._summary_rows = compute_result_summary(all_results)
+        self._fill_summary(self._summary_rows)
 
         self.ui.case_combo.blockSignals(True)
         self.ui.case_combo.clear()
@@ -164,6 +179,24 @@ class ResultsPanel(QWidget):
             self._tabs.setCurrentIndex(idx)
         self._apply_current_filter()
 
+    def export_current_table_csv(
+        self,
+        path: str | Path,
+        *,
+        visible_only: bool = True,
+        delimiter: str = ";",
+    ) -> int:
+        """Export the active results table to CSV and return the exported row count."""
+        table = self._current_table()
+        if table is None:
+            return 0
+        return self._export_table_csv(
+            table,
+            Path(path),
+            visible_only=visible_only,
+            delimiter=delimiter,
+        )
+
     def retranslate_ui(self) -> None:
         """Refresh persistent labels after a language change."""
         if self._case_label is not None:
@@ -176,6 +209,7 @@ class ResultsPanel(QWidget):
             )
         if self._tabs is not None:
             tab_titles = {
+                "summary": self.tr("Synthèse"),
                 "displacements": self.tr("Déplacements"),
                 "reactions": self.tr("Réactions"),
                 "element_forces": self.tr("Efforts internes"),
@@ -191,8 +225,25 @@ class ResultsPanel(QWidget):
             self._fill_tables(self._all_results[current_case])
         if self._envelopes:
             self._fill_envelopes(self._envelopes)
+        self._fill_summary(self._summary_rows)
+        if hasattr(self, "_btn_export_csv"):
+            self._btn_export_csv.setText(self.tr("Exporter CSV..."))
 
     # -- Internal UI setup ----------------------------------------------------
+
+    def _create_summary_tab(self) -> tuple[QWidget, QTableWidget]:
+        """Create the summary tab injected before detailed result tables."""
+        tab = QWidget(self)
+        layout = QVBoxLayout(tab)
+        layout.setContentsMargins(0, 0, 0, 0)
+        table = QTableWidget(tab)
+        table.setObjectName("tbl_summary")
+        table.setEditTriggers(QAbstractItemView.NoEditTriggers)
+        layout.addWidget(table)
+        if self._tabs is not None:
+            self._tabs.insertTab(0, tab, self.tr("Synthèse"))
+            self._tabs.setCurrentWidget(tab)
+        return tab, table
 
     def _inject_filter_bar(self) -> None:
         """Add a lightweight filter row next to the case selector."""
@@ -214,6 +265,13 @@ class ResultsPanel(QWidget):
 
         top_bar.addWidget(self._filter_label)
         top_bar.addWidget(self._filter_edit, 1)
+
+        self._btn_export_csv = QPushButton(self.tr("Exporter CSV..."), self)
+        self._btn_export_csv.setIcon(
+            self.style().standardIcon(QStyle.SP_DialogSaveButton)
+        )
+        self._btn_export_csv.clicked.connect(self._export_current_table_csv_interactive)
+        top_bar.addWidget(self._btn_export_csv)
 
     def _inject_info_bar(self) -> None:
         """Add a contextual information label above the results tabs."""
@@ -256,6 +314,32 @@ class ResultsPanel(QWidget):
             self._fill_surface_results(results.get("surface_results", {}))
         self._update_context_message(results)
         self._apply_current_filter()
+
+    def _fill_summary(self, rows: list["ResultSummaryRow"]) -> None:
+        table = self._summary_table
+        headers = [
+            self.tr("Famille"),
+            self.tr("Objet"),
+            self.tr("Composante"),
+            self.tr("Extrême"),
+            self.tr("Valeur"),
+            self.tr("Unité"),
+            self.tr("Cas / Combinaison"),
+        ]
+        self._prepare_table(table, headers, len(rows))
+        for row_index, row in enumerate(rows):
+            table.setItem(row_index, 0, QTableWidgetItem(row.category))
+            table.setItem(row_index, 1, QTableWidgetItem(row.target))
+            table.setItem(row_index, 2, QTableWidgetItem(row.component))
+            table.setItem(row_index, 3, QTableWidgetItem(row.extremum))
+            table.setItem(
+                row_index,
+                4,
+                NumericTableWidgetItem(f"{row.value:.6g}", row.value),
+            )
+            table.setItem(row_index, 5, QTableWidgetItem(row.unit))
+            table.setItem(row_index, 6, QTableWidgetItem(row.case_name))
+        self._finish_table(table)
 
     def _fill_displacements(self, disps: dict) -> None:
         table = self.ui.tbl_displacements
@@ -399,18 +483,30 @@ class ResultsPanel(QWidget):
 
     def _fill_envelopes(self, envelopes: dict[int, ElementEnvelope]) -> None:
         table = self.ui.tbl_envelopes
-        headers = [
-            self.tr("Élément"),
-            "N min (kN)", self.tr("Cas"), "N max (kN)", self.tr("Cas"),
-            "Vz min (kN)", self.tr("Cas"), "Vz max (kN)", self.tr("Cas"),
-            "My min (kN.m)", self.tr("Cas"), "My max (kN.m)", self.tr("Cas"),
+        components = [
+            ("n", "N", "kN"),
+            ("vy", "Vy", "kN"),
+            ("vz", "Vz", "kN"),
+            ("t", "T", "kN.m"),
+            ("my", "My", "kN.m"),
+            ("mz", "Mz", "kN.m"),
         ]
+        headers = [self.tr("Élément")]
+        for _prefix, label, unit in components:
+            headers.extend(
+                [
+                    f"{label} min ({unit})",
+                    self.tr("Cas"),
+                    f"{label} max ({unit})",
+                    self.tr("Cas"),
+                ]
+            )
         self._prepare_table(table, headers, len(envelopes))
         for row, (tag, env) in enumerate(sorted(envelopes.items())):
             col = 0
             table.setItem(row, col, QTableWidgetItem(f"E{tag}"))
             col += 1
-            for prefix in ("n", "vz", "my"):
+            for prefix, _label, _unit in components:
                 v_min = getattr(env, f"{prefix}_min")
                 c_min = getattr(env, f"{prefix}_min_case")
                 v_max = getattr(env, f"{prefix}_max")
@@ -443,6 +539,97 @@ class ResultsPanel(QWidget):
                 if item is not None:
                     texts.append(item.text().casefold())
             table.setRowHidden(row, pattern not in " ".join(texts))
+
+    def _export_current_table_csv_interactive(self) -> None:
+        """Ask for a CSV path and export the currently visible table."""
+        table = self._current_table()
+        if table is None:
+            QMessageBox.information(
+                self,
+                self.tr("Export CSV"),
+                self.tr("Aucun tableau n'est disponible pour l'export."),
+            )
+            return
+
+        path, _selected_filter = QFileDialog.getSaveFileName(
+            self,
+            self.tr("Exporter le tableau en CSV"),
+            self._default_csv_name(),
+            self.tr("Fichiers CSV (*.csv)"),
+        )
+        if not path:
+            return
+
+        try:
+            count = self.export_current_table_csv(path)
+        except OSError as exc:
+            QMessageBox.critical(
+                self,
+                self.tr("Export CSV"),
+                self.tr("L'export CSV a échoué :\n{error}").format(error=exc),
+            )
+            return
+
+        QMessageBox.information(
+            self,
+            self.tr("Export CSV"),
+            self.tr("{count} ligne(s) exportée(s) :\n{path}").format(
+                count=count,
+                path=path,
+            ),
+        )
+
+    def _default_csv_name(self) -> str:
+        """Return a stable default file name for the active table."""
+        result_type = "resultats"
+        if self._tabs is not None:
+            current = self._tabs.currentWidget()
+            for candidate, tab in self._tab_by_result_type.items():
+                if tab is current:
+                    result_type = candidate
+                    break
+        case_name = self.current_case() or "multi_cas"
+        raw_name = f"hexa_{result_type}_{case_name}.csv"
+        safe = "".join(
+            char if char.isalnum() or char in {"-", "_", "."} else "_"
+            for char in raw_name
+        )
+        return safe.strip("_") or "hexa_resultats.csv"
+
+    @staticmethod
+    def _export_table_csv(
+        table: QTableWidget,
+        path: Path,
+        *,
+        visible_only: bool = True,
+        delimiter: str = ";",
+    ) -> int:
+        """Write table headers and rows to a CSV file."""
+        path.parent.mkdir(parents=True, exist_ok=True)
+        headers = [
+            table.horizontalHeaderItem(col).text()
+            if table.horizontalHeaderItem(col) is not None
+            else ""
+            for col in range(table.columnCount())
+        ]
+
+        exported_rows = 0
+        with path.open("w", encoding="utf-8-sig", newline="") as handle:
+            writer = csv.writer(handle, delimiter=delimiter)
+            writer.writerow(headers)
+            for row in range(table.rowCount()):
+                if visible_only and table.isRowHidden(row):
+                    continue
+                writer.writerow(
+                    [
+                        table.item(row, col).text()
+                        if table.item(row, col) is not None
+                        else ""
+                        for col in range(table.columnCount())
+                    ]
+                )
+                exported_rows += 1
+        return exported_rows
 
     def _current_table(self) -> QTableWidget | None:
         """Return the table belonging to the active tab."""

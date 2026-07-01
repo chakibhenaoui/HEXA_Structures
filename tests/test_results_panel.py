@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import csv
 import os
 
 os.environ.setdefault("QT_QPA_PLATFORM", "offscreen")
@@ -12,6 +13,7 @@ from core.results import (
     ElementResult,
     NodalResult,
     SurfaceResult,
+    compute_envelopes,
 )
 from core.result_mapping import PlateRegionResult
 from gui.widgets.results_panel import ResultsPanel
@@ -98,6 +100,28 @@ def test_results_panel_populates_surface_results_table() -> None:
     assert float(table.item(0, 4).data(Qt.UserRole)) == 4.5
 
 
+def test_results_panel_populates_summary_table() -> None:
+    _app()
+    panel = ResultsPanel()
+    panel.set_all_results(_sample_results())
+    panel.show_result_type("summary")
+
+    table = panel._summary_table
+    rows = [
+        [table.item(row, col).text() for col in range(table.columnCount())]
+        for row in range(table.rowCount())
+    ]
+
+    assert any(
+        row[:7] == ["Déplacement", "N2", "Uz", "Max abs", "1.5", "m", "ELU"]
+        for row in rows
+    )
+    assert any(
+        row[:7] == ["Effort interne", "E2 i", "N", "Max", "30", "kN", "ELU"]
+        for row in rows
+    )
+
+
 def test_results_panel_populates_plate_region_results_table() -> None:
     _app()
     panel = ResultsPanel()
@@ -135,6 +159,71 @@ def test_results_panel_populates_plate_region_results_table() -> None:
         for index in range(table.columnCount())
     ]
     assert float(table.item(0, 8).data(Qt.UserRole)) == 12.5
+
+
+def test_results_panel_populates_complete_envelope_columns() -> None:
+    _app()
+    panel = ResultsPanel()
+    panel.set_envelopes(
+        {
+            1: ElementEnvelope(
+                tag=1,
+                vy_min=-7.0,
+                vy_min_case="G",
+                vy_max=8.0,
+                vy_max_case="Q",
+                mz_min=-4.0,
+                mz_min_case="G",
+                mz_max=9.0,
+                mz_max_case="ELU",
+            )
+        }
+    )
+    panel.show_result_type("envelopes")
+
+    table = panel.ui.tbl_envelopes
+    headers = [
+        table.horizontalHeaderItem(index).text()
+        for index in range(table.columnCount())
+    ]
+
+    assert "Vy min (kN)" in headers
+    assert "Mz max (kN.m)" in headers
+    assert table.item(0, headers.index("Vy min (kN)")).text() == "-7.00"
+    assert table.item(0, headers.index("Mz max (kN.m)")).text() == "9.00"
+
+
+def test_results_panel_exports_filtered_current_table_to_csv(tmp_path) -> None:
+    _app()
+    panel = ResultsPanel()
+    panel.set_all_results(_sample_results())
+    panel.show_result_type("displacements")
+    panel._filter_edit.setText("N2")
+
+    path = tmp_path / "deplacements.csv"
+    exported = panel.export_current_table_csv(path)
+
+    with path.open("r", encoding="utf-8-sig", newline="") as handle:
+        rows = list(csv.reader(handle, delimiter=";"))
+
+    assert exported == 1
+    assert rows[0][0] == "Nœud"
+    assert rows[1][0] == "N2"
+
+
+def test_compute_envelopes_handles_missing_first_case() -> None:
+    envelopes = compute_envelopes(
+        {
+            "Sans barres": {"element_forces": {}},
+            "ELU": {"element_forces": {1: ElementResult(tag=1, n_i=5.0, n_j=6.0)}},
+        },
+        [1],
+    )
+
+    assert envelopes[1].n_min == 5.0
+    assert envelopes[1].n_min_case == "ELU"
+    assert envelopes[1].n_max == 6.0
+    assert envelopes[1].n_max_case == "ELU"
 
 
 def test_results_tables_do_not_stretch_last_column() -> None:

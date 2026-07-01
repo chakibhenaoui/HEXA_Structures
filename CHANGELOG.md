@@ -19,9 +19,17 @@
 - Apercu dynamique de section dans la boite de definition des sections.
 - Extrusion 3D des nouvelles sections parametriques, avec tubes creux et couleur differente par section.
 - Capture de l'interface 3D ajoutee aux README pour illustrer l'etat actuel du logiciel.
+- Onglet Synthese des resultats avec valeurs critiques multi-cas : deplacements,
+  reactions, efforts internes, plaques et cas/combinaisons associes.
+- Export CSV de l'onglet actif des tableaux de resultats, avec prise en compte
+  du filtre courant.
 
 ### Modifie
 
+- Table des enveloppes etendue a toutes les composantes principales `N`, `Vy`,
+  `Vz`, `T`, `My` et `Mz`.
+- Calcul des enveloppes rendu robuste lorsque le premier cas analyse ne contient
+  pas de resultats pour un element donne.
 - Selection automatique du materiau coherent dans la boite de section : beton pour les sections rectangulaires, acier pour les profiles acier.
 - Limites geometriques pendant la saisie : epaisseurs et ames bridees pour conserver des formes valides.
 - Packaging PyInstaller inclut `sectionproperties` si la bibliotheque est installee, tout en gardant un demarrage possible sans elle.
@@ -30,6 +38,8 @@
 
 ### Validation
 
+- `python -m pytest -q` : 594 tests passes le 1er juillet 2026.
+- `python -m ruff check core/results.py gui/widgets/results_panel.py gui/main_window.py tests/test_results_panel.py tests/test_main_window_toolbar.py` : OK.
 - `python -m pytest -q` : 585 tests passes le 26 juin 2026.
 - `python -m pytest tests/test_i18n.py tests/test_section_builder.py tests/test_property_panel.py ...` : 42 tests cibles passes le 28 juin 2026.
 - `pyside6-lrelease i18n\hexa_en.ts -qm i18n\hexa_en.qm` : 1388 traductions terminees.
