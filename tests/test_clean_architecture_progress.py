@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import ast
 import json
 import os
 from pathlib import Path
@@ -1065,3 +1066,24 @@ def test_application_and_plugins_layers_do_not_import_technical_frameworks() -> 
                     offenders.append((str(path), token))
 
     assert offenders == []
+
+
+def test_main_window_does_not_define_duplicate_methods() -> None:
+    tree = ast.parse(Path("gui/main_window.py").read_text(encoding="utf-8"))
+    main_window = next(
+        node
+        for node in tree.body
+        if isinstance(node, ast.ClassDef) and node.name == "MainWindow"
+    )
+
+    method_lines: dict[str, list[int]] = {}
+    for node in main_window.body:
+        if isinstance(node, ast.FunctionDef):
+            method_lines.setdefault(node.name, []).append(node.lineno)
+
+    duplicates = {
+        name: lines
+        for name, lines in method_lines.items()
+        if len(lines) > 1
+    }
+    assert duplicates == {}

@@ -1927,59 +1927,6 @@ class MainWindow(QMainWindow):
                 painter.drawLine(p(x, 13.5), p(x - 1.3, 11.7))
                 painter.drawLine(p(x, 13.5), p(x + 1.3, 11.7))
 
-    def _setup_parallel_view_controls(self) -> None:
-        """Set up parallel view controls."""
-        if self.toolbar_main is None or self.model_view is None:
-            return
-
-        self.lbl_draw_section = QLabel(self.tr("Section :"), self)
-        self.combo_draw_section = QComboBox(self)
-        self.combo_draw_section.setMinimumWidth(180)
-        self.lbl_draw_section.hide()
-        self.combo_draw_section.hide()
-
-        self.lbl_plane = QLabel(self.tr("Vue A :"), self)
-        self.combo_plane = QComboBox(self)
-        self.combo_plane.addItems(["3D", "XY", "XZ", "YZ"])
-        self.combo_plane.currentTextChanged.connect(self._on_parallel_plane_changed)
-        self.lbl_plane.hide()
-        self.combo_plane.hide()
-
-        self.lbl_file = QLabel("Z =", self)
-        self.combo_parallel_value = QComboBox(self)
-        self.combo_parallel_value.setMinimumWidth(140)
-        self.combo_parallel_value.currentIndexChanged.connect(
-            self._on_parallel_value_changed
-        )
-        self.lbl_file.hide()
-        self.combo_parallel_value.hide()
-        self.act_prev_parallel = QAction(self.tr("File précédente"), self)
-        self.act_prev_parallel.triggered.connect(lambda: self._step_parallel_value(-1))
-        self.act_next_parallel = QAction(self.tr("File suivante"), self)
-        self.act_next_parallel.triggered.connect(lambda: self._step_parallel_value(1))
-
-        self.lbl_secondary_plane = QLabel(self.tr("Vue B :"), self)
-        self.combo_secondary_plane = QComboBox(self)
-        self.combo_secondary_plane.addItems(["3D", "XY", "XZ", "YZ"])
-        self.combo_secondary_plane.setCurrentText("3D")
-        self.combo_secondary_plane.currentTextChanged.connect(
-            self._on_secondary_parallel_plane_changed
-        )
-        self.lbl_secondary_plane.hide()
-        self.combo_secondary_plane.hide()
-
-        self.lbl_secondary_file = QLabel("Z =", self)
-        self.combo_secondary_value = QComboBox(self)
-        self.combo_secondary_value.setMinimumWidth(140)
-        self.combo_secondary_value.currentIndexChanged.connect(
-            self._on_secondary_parallel_value_changed
-        )
-        self.lbl_secondary_file.hide()
-        self.combo_secondary_value.hide()
-
-        self._refresh_draw_section_controls()
-        self._refresh_parallel_view_controls(apply_view=False)
-        self._retranslate_view_controls()
 
     def _refresh_model_management_menus(self) -> None:
         """Refresh model management menus."""
@@ -2096,66 +2043,6 @@ class MainWindow(QMainWindow):
             if hasattr(self, "btn_copy_selection"):
                 self.btn_copy_selection.setEnabled(can_copy)
 
-    def _refresh_parallel_view_controls(self, apply_view: bool = True) -> None:
-        """Refresh parallel view controls."""
-        if self.model_view is None or not hasattr(self, "combo_plane"):
-            return
-
-        plane = self.combo_plane.currentText() or "3D"
-        if plane == "3D":
-            self.lbl_file.setText(self.tr("File ="))
-            self.combo_parallel_value.blockSignals(True)
-            self.combo_parallel_value.clear()
-            self.combo_parallel_value.blockSignals(False)
-            self.combo_parallel_value.setEnabled(False)
-            if hasattr(self, "act_prev_parallel"):
-                self.act_prev_parallel.setEnabled(False)
-            if hasattr(self, "act_next_parallel"):
-                self.act_next_parallel.setEnabled(False)
-            self._active_parallel_plane = "3D"
-            self._active_parallel_value = None
-            if apply_view:
-                self._apply_parallel_view()
-            self._refresh_secondary_parallel_controls(apply_view=apply_view)
-            return
-
-        axis_label = self.model_view.plane_axis_label(plane)
-        self.lbl_file.setText(f"{axis_label} =")
-
-        values = self.model_view.plane_values(self.project.grid, plane)
-        self.combo_parallel_value.blockSignals(True)
-        self.combo_parallel_value.clear()
-        for value in values:
-            self.combo_parallel_value.addItem(f"{value:.3f} m", value)
-        self.combo_parallel_value.blockSignals(False)
-        self.combo_parallel_value.setEnabled(bool(values))
-
-        if not values:
-            self._active_parallel_value = None
-            if hasattr(self, "act_prev_parallel"):
-                self.act_prev_parallel.setEnabled(False)
-            if hasattr(self, "act_next_parallel"):
-                self.act_next_parallel.setEnabled(False)
-            self._refresh_secondary_parallel_controls(apply_view=apply_view)
-            return
-
-        target_idx = 0
-        if self._active_parallel_plane == plane and self._active_parallel_value is not None:
-            for idx, value in enumerate(values):
-                if abs(value - self._active_parallel_value) <= 1e-9:
-                    target_idx = idx
-                    break
-
-        self.combo_parallel_value.setCurrentIndex(target_idx)
-        self._active_parallel_plane = plane
-        self._active_parallel_value = float(values[target_idx])
-        if hasattr(self, "act_prev_parallel"):
-            self.act_prev_parallel.setEnabled(target_idx > 0)
-        if hasattr(self, "act_next_parallel"):
-            self.act_next_parallel.setEnabled(target_idx < len(values) - 1)
-        if apply_view:
-            self._apply_parallel_view()
-        self._refresh_secondary_parallel_controls(apply_view=apply_view)
 
     def _refresh_draw_section_controls(self) -> None:
         """Refresh draw section controls."""
@@ -2189,125 +2076,12 @@ class MainWindow(QMainWindow):
                     refresh_scene=refresh_scene,
                 )
 
-    def _on_parallel_plane_changed(self, plane: str) -> None:
-        """Handle parallel plane changed."""
-        self._active_parallel_plane = plane
-        self._active_parallel_value = None
-        if self._draw_start_point is not None:
-            self._cancel_bar_drawing()
-        self._refresh_parallel_view_controls(apply_view=True)
 
-    def _on_parallel_value_changed(self, idx: int) -> None:
-        """Handle parallel value changed."""
-        if idx < 0 or not hasattr(self, "combo_parallel_value"):
-            return
-        value = self.combo_parallel_value.itemData(idx)
-        if value is None:
-            return
-        if self._draw_start_point is not None:
-            self._cancel_bar_drawing()
-        self._active_parallel_value = float(value)
-        if hasattr(self, "act_prev_parallel"):
-            self.act_prev_parallel.setEnabled(idx > 0)
-        if hasattr(self, "act_next_parallel"):
-            self.act_next_parallel.setEnabled(idx < self.combo_parallel_value.count() - 1)
-        self._apply_parallel_view()
 
-    def _step_parallel_value(self, delta: int) -> None:
-        """Handle step parallel value."""
-        if not hasattr(self, "combo_parallel_value"):
-            return
-        count = self.combo_parallel_value.count()
-        if count <= 0:
-            return
-        current = self.combo_parallel_value.currentIndex()
-        if current < 0:
-            current = 0
-        new_index = max(0, min(count - 1, current + delta))
-        if new_index != current:
-            self.combo_parallel_value.setCurrentIndex(new_index)
 
-    def _refresh_secondary_parallel_controls(self, apply_view: bool = True) -> None:
-        """Refresh secondary parallel controls."""
-        if self.model_view is None or not hasattr(self, "combo_secondary_plane"):
-            return
 
-        plane = self.combo_secondary_plane.currentText() or "3D"
-        if plane == "3D":
-            self.lbl_secondary_file.setText(self.tr("File ="))
-            self.combo_secondary_value.blockSignals(True)
-            self.combo_secondary_value.clear()
-            self.combo_secondary_value.blockSignals(False)
-            self.combo_secondary_value.setEnabled(False)
-            self._secondary_parallel_plane = "3D"
-            self._secondary_parallel_value = None
-            if apply_view:
-                self._apply_secondary_parallel_view()
-            return
 
-        axis_label = self.model_view.plane_axis_label(plane)
-        self.lbl_secondary_file.setText(f"{axis_label} =")
 
-        values = self.model_view.plane_values(self.project.grid, plane)
-        self.combo_secondary_value.blockSignals(True)
-        self.combo_secondary_value.clear()
-        for value in values:
-            self.combo_secondary_value.addItem(f"{value:.3f} m", value)
-        self.combo_secondary_value.blockSignals(False)
-        self.combo_secondary_value.setEnabled(bool(values))
-
-        if not values:
-            self._secondary_parallel_plane = plane
-            self._secondary_parallel_value = None
-            if apply_view:
-                self._apply_secondary_parallel_view()
-            return
-
-        target_idx = 0
-        if self._secondary_parallel_plane == plane and self._secondary_parallel_value is not None:
-            for idx, value in enumerate(values):
-                if abs(value - self._secondary_parallel_value) <= 1e-9:
-                    target_idx = idx
-                    break
-
-        self.combo_secondary_value.setCurrentIndex(target_idx)
-        self._secondary_parallel_plane = plane
-        self._secondary_parallel_value = float(values[target_idx])
-        if apply_view:
-            self._apply_secondary_parallel_view()
-
-    def _apply_secondary_parallel_view(self, refresh_scene: bool = True) -> None:
-        """Apply secondary parallel view."""
-        if getattr(self, "secondary_view", None) is None or not hasattr(self.secondary_view, "set_parallel_plane"):
-            return
-        if self._secondary_parallel_plane == "3D" or self._secondary_parallel_value is None:
-            self.secondary_view.set_parallel_plane(None, None, refresh_scene=refresh_scene)
-            return
-        self.secondary_view.set_parallel_plane(
-            self._secondary_parallel_plane,
-            self._secondary_parallel_value,
-            refresh_scene=refresh_scene,
-        )
-
-    def _on_secondary_parallel_plane_changed(self, plane: str) -> None:
-        """Handle secondary parallel plane changed."""
-        self._secondary_parallel_plane = plane
-        self._secondary_parallel_value = None
-        if self._draw_start_point is not None:
-            self._cancel_bar_drawing()
-        self._refresh_secondary_parallel_controls()
-
-    def _on_secondary_parallel_value_changed(self, idx: int) -> None:
-        """Handle secondary parallel value changed."""
-        if idx < 0 or not hasattr(self, "combo_secondary_value"):
-            return
-        value = self.combo_secondary_value.itemData(idx)
-        if value is None:
-            return
-        if self._draw_start_point is not None:
-            self._cancel_bar_drawing()
-        self._secondary_parallel_value = float(value)
-        self._apply_secondary_parallel_view()
 
     def _define_grid(self) -> None:
         """Handle define grid."""
@@ -2339,26 +2113,6 @@ class MainWindow(QMainWindow):
             f"{axis_summary}"
         )
 
-    def _toggle_split_view(self, enabled: bool) -> None:
-        """Toggle split view."""
-        if getattr(self, "secondary_view", None) is not None:
-            self.secondary_view.setVisible(enabled)
-        if getattr(self, "_view_splitter", None) is not None:
-            self._view_splitter.handle(1).setEnabled(enabled)
-            if enabled:
-                self._view_splitter.setSizes([1, 1])
-            else:
-                self._view_splitter.setSizes([0, 1])
-
-        for name in (
-            "lbl_secondary_plane",
-            "combo_secondary_plane",
-            "lbl_secondary_file",
-            "combo_secondary_value",
-        ):
-            widget = getattr(self, name, None)
-            if widget is not None:
-                widget.setVisible(enabled)
 
     def _set_interactive_drawing_enabled(self, enabled: bool) -> None:
         """Set interactive drawing enabled."""
@@ -5979,48 +5733,11 @@ class MainWindow(QMainWindow):
 
     # -- View actions ---------------------------------------------------------
 
-    def _on_view_xy(self) -> None:
-        if self.model_view:
-            if hasattr(self, "combo_plane"):
-                self.combo_plane.setCurrentText("XY")
-            self.model_view.set_view_xy()
 
-    def _on_view_xz(self) -> None:
-        if self.model_view:
-            if hasattr(self, "combo_plane"):
-                self.combo_plane.setCurrentText("XZ")
-            self.model_view.set_view_xz()
 
-    def _on_view_yz(self) -> None:
-        if self.model_view:
-            if hasattr(self, "combo_plane"):
-                self.combo_plane.setCurrentText("YZ")
-            self.model_view.set_view_yz()
 
-    def _on_view_iso(self) -> None:
-        if self.model_view:
-            if hasattr(self, "combo_plane"):
-                self.combo_plane.setCurrentText("3D")
 
-    def _on_toggle_node_tags(self, checked: bool) -> None:
-        """Handle toggle node tags."""
-        self.settings.gui.show_node_tags = checked
-        preserve_view = True
-        if self._deformed_visible and self._current_case:
-            self._show_deformed(self._current_case, preserve_view=preserve_view, log_message=False)
-        else:
-            self._display_primary_model_view(preserve_view=preserve_view)
-        self._display_secondary_model_view(preserve_view=preserve_view)
 
-    def _on_toggle_section_names(self, checked: bool) -> None:
-        """Handle toggle section names."""
-        self.settings.gui.show_section_names = checked
-        preserve_view = True
-        if self._deformed_visible and self._current_case:
-            self._show_deformed(self._current_case, preserve_view=preserve_view, log_message=False)
-        else:
-            self._display_primary_model_view(preserve_view=preserve_view)
-        self._display_secondary_model_view(preserve_view=preserve_view)
 
     def _on_about(self) -> None:
         """Handle about."""
@@ -6038,47 +5755,6 @@ class MainWindow(QMainWindow):
 
     # -- Boundary conditions --------------------------------------------------
 
-    def _edit_boundary(self) -> None:
-        """Edit boundary."""
-        from gui.dialogs.boundary_dlg import BoundaryDialog
-        from core.boundary_conditions import BoundaryCondition, detect_boundary_type
-
-        if not self.project.nodes:
-            QMessageBox.warning(self, self.tr("Attention"), self.tr("Aucun nœud dans le modèle."))
-            return
-
-        # Select the node
-        node_tags = sorted(self.project.nodes.keys())
-        items = [f"N{t}" for t in node_tags]
-        sel, ok = QInputDialog.getItem(
-            self, self.tr("Conditions aux limites"), self.tr("Nœud :"), items, 0, False,
-        )
-        if not ok:
-            return
-        tag = int(sel[1:])
-        node = self.project.nodes[tag]
-
-        # Charger la BC existante
-        current = None
-        if node.boundary_data:
-            current = BoundaryCondition.from_dict(node.boundary_data)
-        elif any(node.fixities):
-            current = BoundaryCondition(
-                bc_type=detect_boundary_type(node.fixities),
-                fixities=tuple(node.fixities[:6]),
-            )
-
-        dlg = BoundaryDialog(self, current=current)
-        if dlg.exec() != BoundaryDialog.Accepted:
-            return
-
-        bc = dlg.result()
-        node.fixities = bc.fixities
-        node.boundary_data = bc.to_dict()
-
-        self._mark_project_modified()
-        self._refresh()
-        self._log(f"Appui N{tag} : {bc.summary()}")
 
     # -- Loads and combinations -----------------------------------------------
 
@@ -8435,9 +8111,6 @@ class MainWindow(QMainWindow):
             self.secondary_view.clear_drawing_state()
         self._clear_results_state()
 
-    def _sync_modified_with_saved_state(self) -> None:
-        """Synchronize modified with saved state."""
-        self._modified = self.project != self._saved_project_snapshot
 
     def _mark_project_modified(self) -> None:
         """Handle mark project modified."""
@@ -8462,26 +8135,7 @@ class MainWindow(QMainWindow):
         if hasattr(self, "btn_redo_history"):
             self.btn_redo_history.setEnabled(can_redo)
 
-    def _reset_project_history(self, *, mark_saved: bool = False) -> None:
-        """Reset project history."""
-        self._undo_history.clear()
-        self._redo_history.clear()
-        self._last_history_project = deepcopy(self.project)
-        if mark_saved:
-            self._saved_project_snapshot = deepcopy(self.project)
-        self._sync_modified_with_saved_state()
-        self._update_history_actions()
 
-    def _record_history_snapshot_if_needed(self) -> None:
-        """Handle record history snapshot if needed."""
-        if self._history_restoring or self.project == self._last_history_project:
-            return
-
-        self._undo_history.append(deepcopy(self._last_history_project))
-        if len(self._undo_history) > self._MAX_HISTORY_ACTIONS:
-            self._undo_history = self._undo_history[-self._MAX_HISTORY_ACTIONS :]
-        self._redo_history.clear()
-        self._last_history_project = deepcopy(self.project)
 
     def _propagate_project_path_to_history(self, path: str) -> None:
         """Handle propagate project path to history."""
@@ -8494,21 +8148,6 @@ class MainWindow(QMainWindow):
         for snapshot in self._redo_history:
             snapshot.file_path = normalized_path
 
-    def _restore_project_history_state(self, snapshot: ProjectModel, *, preserve_view: bool = True) -> None:
-        """Restore project history state."""
-        self._history_restoring = True
-        try:
-            self.project = deepcopy(snapshot)
-            self.project.ensure_self_weight_load_case()
-            self.properties.set_project(self.project)
-            self._clear_project_runtime_state()
-            self._last_history_project = deepcopy(self.project)
-            self._refresh(preserve_view=preserve_view)
-        finally:
-            self._history_restoring = False
-
-        self._sync_modified_with_saved_state()
-        self._update_history_actions()
 
     def _undo_last_action(self) -> None:
         """Handle undo last action."""
