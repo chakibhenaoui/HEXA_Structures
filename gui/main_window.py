@@ -5663,6 +5663,8 @@ class MainWindow(QMainWindow):
 
     def _on_open_project(self) -> None:
         """Handle open project."""
+        if self._modified and not self._confirm_discard():
+            return
         path, _ = QFileDialog.getOpenFileName(
             self,
             self.tr("Ouvrir un projet"),
@@ -8191,7 +8193,9 @@ class MainWindow(QMainWindow):
 
         if self._history_restoring:
             return
-        if not pending_change and self.project == self._last_history_project:
+        if self.project == self._last_history_project:
+            if pending_change:
+                self._sync_modified_with_saved_state(force_compare=True)
             return
 
         self._undo_history.append(deepcopy(self._last_history_project))
