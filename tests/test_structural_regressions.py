@@ -8,7 +8,14 @@ import pytest
 
 from core.analysis import AnalysisRunner
 from core.local_axes import local_axes_from_nodes, opensees_vecxz_from_axes
-from core.model_data import ElementLoad, LoadData, NodalLoad, ProjectModel, SurfaceLoad
+from core.model_data import (
+    ElementLoad,
+    LoadData,
+    NodalLoad,
+    PlateSurfaceLoadData,
+    ProjectModel,
+    SurfaceLoad,
+)
 from core.results import ResultsExtractor
 from core.self_weight import element_local_axes
 
@@ -146,6 +153,57 @@ def test_opensees_shellmitc4_quad_plate_reaction_balance_if_available() -> None:
     assert success is True, results
     total_fz = sum(result.fz_reaction for result in results["reactions"].values())
     assert math.isclose(total_fz, 10.0, rel_tol=1e-3, abs_tol=1e-3)
+
+
+def test_opensees_mixed_beam_macro_plate_release_scenario_if_available() -> None:
+    pytest.importorskip("openseespy.opensees")
+
+    project = ProjectModel(name="Release mixed beam and macro plate")
+    fixed = (1, 1, 1, 1, 1, 1)
+    project.add_node(0.0, 0.0, 0.0, fixities=fixed)
+    project.add_node(4.0, 0.0, 0.0, fixities=fixed)
+    project.add_node(4.0, 4.0, 0.0, fixities=fixed)
+    project.add_node(0.0, 4.0, 0.0, fixities=fixed)
+    project.add_node(6.0, 0.0, 0.0)
+
+    material = project.add_material("Beton C30", "concrete", "C30/37")
+    plate_section = project.add_section(
+        "Dalle 20 cm",
+        "surface",
+        material_tag=material.tag,
+        properties={"thickness": 0.20, "element_formulation": "ShellMITC4"},
+    )
+    beam_section = project.add_section(
+        "Poutre 30x50",
+        "rectangular",
+        material_tag=material.tag,
+        properties={"b": 0.30, "h": 0.50},
+        area=0.15,
+        inertia_y=0.003125,
+        inertia_z=0.001125,
+    )
+    project.add_plate_region(
+        (1, 2, 3, 4),
+        section_tag=plate_section.tag,
+        mesh_nx=2,
+        mesh_ny=2,
+    )
+    project.add_element(2, 5, section_tag=beam_section.tag)
+    project.loads[1] = LoadData(tag=1, name="Release loads", load_type="live")
+    project.plate_surface_loads.append(
+        PlateSurfaceLoadData(load_tag=1, plate_tag=1, qz=-2.0)
+    )
+    project.nodal_loads.append(NodalLoad(load_tag=1, node_tag=5, fz=-3.0))
+
+    success, results = AnalysisRunner(project, engine="opensees").run_static(load_tag=1)
+
+    assert success is True, results
+    total_fz = sum(result.fz_reaction for result in results["reactions"].values())
+    assert math.isclose(total_fz, 35.0, rel_tol=1e-3, abs_tol=1e-3)
+    assert set(results["element_forces"]) == {1}
+    assert set(results["plate_results"]) == {1}
+    assert results["result_context"]["generated_plate_count"] == 1
+    assert results["result_context"]["generated_plate_mesh_sizes"] == {1: (2, 2)}
 
 
 def test_project_model_rejects_new_triangular_surface_with_quad_formulation() -> None:
