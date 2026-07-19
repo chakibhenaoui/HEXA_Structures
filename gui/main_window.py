@@ -11,6 +11,7 @@ from PySide6.QtCore import QPoint, QPointF, QRectF, Qt, QFile, QIODevice, QEvent
 from PySide6.QtGui import QAction, QActionGroup, QColor, QIcon, QPainter, QPen, QPixmap, QPolygonF
 from PySide6.QtUiTools import QUiLoader
 from PySide6.QtWidgets import (
+    QApplication,
     QComboBox,
     QDialog,
     QDockWidget,
@@ -22,6 +23,7 @@ from PySide6.QtWidgets import (
     QMessageBox,
     QMenu,
     QPlainTextEdit,
+    QProgressBar,
     QPushButton,
     QSizePolicy,
     QSplitter,
@@ -74,6 +76,7 @@ class MainWindow(QMainWindow):
     _DIAGRAM_COMPONENTS = ["N", "Vy", "Vz", "My", "Mz", "T"]
     _SURFACE_RESULT_COMPONENTS = ["Mxx", "Myy", "Mxy", "Qx", "Qy", "Nxx", "Nyy", "Nxy"]
     _MAX_HISTORY_ACTIONS = 10
+    _section_builder_first_launch_done = False
 
     def __init__(
         self,
@@ -4947,10 +4950,106 @@ class MainWindow(QMainWindow):
         self._refresh(preserve_view=True, refresh_scene=False)
         self._log(f"Section « {sec.name} » ajoutée (A={sec.area:.4e} m²).")
 
-    def _add_section_builder(self) -> None:
-        """Add a custom polygon section from the Section Builder."""
+    def _create_section_builder_loading_dialog(self) -> tuple[QDialog, QLabel]:
+        """Create and show the first-use loading page for Section Builder."""
+        dialog = QDialog(self)
+        dialog.setObjectName("section_builder_loading_dialog")
+        dialog.setWindowTitle(self.tr("Chargement du Section Builder"))
+        dialog.setWindowModality(Qt.ApplicationModal)
+        dialog.setWindowFlag(Qt.WindowCloseButtonHint, False)
+        dialog.setMinimumWidth(460)
+
+        layout = QVBoxLayout(dialog)
+        layout.setContentsMargins(24, 22, 24, 22)
+        layout.setSpacing(12)
+
+        title = QLabel(self.tr("Préparation du Section Builder"), dialog)
+        font = title.font()
+        font.setPointSize(font.pointSize() + 2)
+        font.setBold(True)
+        title.setFont(font)
+        layout.addWidget(title)
+
+        detail = QLabel(
+            self.tr(
+                "Le premier lancement charge les outils de section, les profils "
+                "et les modules optionnels."
+            ),
+            dialog,
+        )
+        detail.setWordWrap(True)
+        layout.addWidget(detail)
+
+        status = QLabel(self.tr("Chargement..."), dialog)
+        status.setObjectName("section_builder_loading_status")
+        layout.addWidget(status)
+
+        progress = QProgressBar(dialog)
+        progress.setRange(0, 0)
+        progress.setTextVisible(False)
+        layout.addWidget(progress)
+
+        dialog.show()
+        dialog.raise_()
+        dialog.activateWindow()
+        QApplication.processEvents(QEventLoop.AllEvents, 100)
+        return dialog, status
+
+    @staticmethod
+    def _close_section_builder_loading_dialog(
+        loading: tuple[QDialog, QLabel] | None,
+    ) -> None:
+        """Close the temporary Section Builder loading page."""
+        if loading is None:
+            return
+        dialog, _status = loading
+        dialog.close()
+        dialog.deleteLater()
+        QApplication.processEvents(QEventLoop.AllEvents, 50)
+
+    @staticmethod
+    def _update_section_builder_loading_dialog(
+        loading: tuple[QDialog, QLabel] | None,
+        message: str,
+    ) -> None:
+        """Update the first-use loading page status."""
+        if loading is None:
+            return
+        _dialog, status = loading
+        status.setText(message)
+        QApplication.processEvents(QEventLoop.AllEvents, 100)
+
+    def _load_section_builder_dialog_class(self):
+        """Load the heavy Section Builder dialog class on demand."""
         from gui.dialogs.section_builder_dlg import SectionBuilderDialog
 
+        return SectionBuilderDialog
+
+    def _prepare_section_builder_dialog(self):
+        """Create the Section Builder dialog, showing a first-use loading page."""
+        loading = (
+            self._create_section_builder_loading_dialog()
+            if not MainWindow._section_builder_first_launch_done
+            else None
+        )
+        try:
+            self._update_section_builder_loading_dialog(
+                loading,
+                self.tr("Chargement des bibliothèques..."),
+            )
+            SectionBuilderDialog = self._load_section_builder_dialog_class()
+            self._update_section_builder_loading_dialog(
+                loading,
+                self.tr("Initialisation de l'atelier..."),
+            )
+            dialog = SectionBuilderDialog(self, materials=self.project.materials)
+            MainWindow._section_builder_first_launch_done = True
+            return SectionBuilderDialog, dialog
+        finally:
+            self._close_section_builder_loading_dialog(loading)
+
+    def _add_section_builder(self) -> None:
+        """Add a custom polygon section from the Section Builder."""
         if not self.project.materials:
             QMessageBox.warning(
                 self,
@@ -4959,7 +5058,17 @@ class MainWindow(QMainWindow):
             )
             return
 
-        dlg = SectionBuilderDialog(self, materials=self.project.materials)
+        try:
+            SectionBuilderDialog, dlg = self._prepare_section_builder_dialog()
+        except Exception as exc:
+            QMessageBox.critical(
+                self,
+                self.tr("Section Builder"),
+                self.tr("Le chargement du Section Builder a échoué :\n{error}").format(
+                    error=exc
+                ),
+            )
+            return
         if dlg.exec() != SectionBuilderDialog.Accepted:
             return
 
@@ -4986,8 +5095,6 @@ class MainWindow(QMainWindow):
 
     def _add_sectionproperties_section(self) -> None:
         """Add a user section calculated with sectionproperties."""
-        from gui.dialogs.section_builder_dlg import SectionBuilderDialog
-
         if not self.project.materials:
             QMessageBox.warning(
                 self,
@@ -4996,7 +5103,17 @@ class MainWindow(QMainWindow):
             )
             return
 
-        dlg = SectionBuilderDialog(self, materials=self.project.materials)
+        try:
+            SectionBuilderDialog, dlg = self._prepare_section_builder_dialog()
+        except Exception as exc:
+            QMessageBox.critical(
+                self,
+                self.tr("Section Builder"),
+                self.tr("Le chargement du Section Builder a échoué :\n{error}").format(
+                    error=exc
+                ),
+            )
+            return
         if dlg.exec() != SectionBuilderDialog.Accepted:
             return
 

@@ -19,6 +19,8 @@
 - Apercu dynamique de section dans la boite de definition des sections.
 - Extrusion 3D des nouvelles sections parametriques, avec tubes creux et couleur differente par section.
 - Capture de l'interface 3D ajoutee aux README pour illustrer l'etat actuel du logiciel.
+- Page de chargement au premier lancement du Section Builder pour rendre visible
+  l'initialisation des profils et modules optionnels.
 - Onglet Synthese des resultats avec valeurs critiques multi-cas : deplacements,
   reactions, efforts internes, plaques et cas/combinaisons associes.
 - Export CSV de l'onglet actif des tableaux de resultats, avec prise en compte
@@ -38,6 +40,11 @@
 
 ### Validation
 
+- `python -m pytest -q` : 602 tests passes le 19 juillet 2026.
+- `python -m pytest -q` : 595 tests passes le 11 juillet 2026.
+- `python -m pytest tests/test_section_builder_loading.py tests/test_main_window_toolbar.py -q` : 12 tests passes le 19 juillet 2026.
+- `python -m pytest tests/test_section_builder.py tests/test_surface_sections_ui.py -q` : 50 tests passes le 19 juillet 2026.
+- `python -m ruff check gui/main_window.py tests/test_section_builder_loading.py` : OK.
 - `python -m pytest -q` : 594 tests passes le 1er juillet 2026.
 - `python -m ruff check core/results.py gui/widgets/results_panel.py gui/main_window.py tests/test_results_panel.py tests/test_main_window_toolbar.py` : OK.
 - `python -m pytest -q` : 585 tests passes le 26 juin 2026.
