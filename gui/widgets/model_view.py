@@ -8,9 +8,10 @@ from typing import TYPE_CHECKING
 import numpy as np
 import pyvista as pv
 from PySide6.QtCore import QEvent, QLineF, QPoint, QPointF, QRect, QRectF, Qt, Signal
-from PySide6.QtGui import QColor, QFont, QFontMetricsF, QPainter, QPainterPath, QPen
+from PySide6.QtGui import QCursor, QColor, QPainter, QPen, QPixmap, QPolygonF
 from PySide6.QtWidgets import QRubberBand, QVBoxLayout, QWidget
 from pyvistaqt import QtInteractor
+from vtkmodules.vtkRenderingCore import vtkTextActor
 
 from core.local_axes import local_axes_from_nodes
 from core.sections import TSection, get_profile
@@ -75,11 +76,28 @@ class _NodeScreenHit:
     depth: float
 
 
+@dataclass(frozen=True)
+class _SectionLabelDisplay:
+    tag: int
+    text: str
+    x: float
+    y: float
+    angle: float
+    font_size: int
+
+
 class ModelView(QWidget):
     """3D structural model view."""
 
     _NODE_GLYPH_LIMIT = 1200
     _CAMERA_PADDING = 1.18
+    _SECTION_LABEL_MIN_FONT_SIZE = 5
+    _SECTION_LABEL_MAX_FONT_SIZE = 16
+    _SECTION_LABEL_FONT_SCALE = 0.12
+    _SECTION_LABEL_WIDTH_FACTOR = 0.6
+    _SECTION_LABEL_COLLISION_MARGIN = 2.0
+    _ORBIT_DEGREES_PER_PIXEL = 0.3
+    _ORBIT_MAX_ELEVATION_DEGREES = 85.0
 
     node_picked = Signal(int)
     element_picked = Signal(int)
@@ -104,6 +122,8 @@ class ModelView(QWidget):
         self._grid_points = np.empty((0, 3))
         self._draw_mode_enabled = False
         self._selection_mode_enabled = True
+        self._rotation_mode_enabled = False
+        self._rotation_cursor: QCursor | None = None
         self._cursor_pick_enabled = False
         self._cursor_pick_snap_to_grid = False
         self._draw_start_point: tuple[float, float, float] | None = None
@@ -113,11 +133,14 @@ class ModelView(QWidget):
         self._selected_surfaces: set[int] = set()
         self._drag_origin: QPoint | None = None
         self._camera_drag_mode: str | None = None
+        self._rotation_last_position: QPointF | None = None
+        self._rotation_pivot: np.ndarray | None = None
         self._active_plane: str | None = None
         self._active_plane_value: float | None = None
         self._extruded_mesh_cache: dict[tuple, tuple[pv.PolyData | None, list[int]]] = {}
         self._extruded_guides_cache: dict[tuple, pv.PolyData | None] = {}
         self._extruded_cache_max_entries = 8
+        self._section_label_actors: list[tuple[int, vtkTextActor]] = []
         self.show_node_tags: bool = True
         self.show_section_names: bool = False
         self.show_extruded_sections: bool = False
@@ -140,6 +163,10 @@ class ModelView(QWidget):
 
         self._apply_background()
         self.plotter.add_axes()
+        self._section_label_render_observer = self.plotter.renderer.AddObserver(
+            "StartEvent",
+            self._on_section_label_render,
+        )
         self.plotter.enable_point_picking(
             callback=self._on_point_picked,
             show_message=False,
@@ -151,6 +178,7 @@ class ModelView(QWidget):
 
     def _clear_scene(self) -> None:
         """Clear scene."""
+        self._section_label_actors.clear()
         try:
             self.plotter.clear(render=False)
         except TypeError:
@@ -285,10 +313,8 @@ class ModelView(QWidget):
                             name="elements",
                             render=False,
                         )
-                    if self.show_section_names:
-                        self._draw_section_labels(project, points)
-
         self._finalize_scene_view(preserve_camera=preserve_camera, render=False)
+        self._sync_section_label_actors()
         self._update_selection_actors(render=False)
         if self._draw_mode_enabled and self._draw_start_point is not None:
             self.set_preview_start(self._draw_start_point)
@@ -308,7 +334,6 @@ class ModelView(QWidget):
             self._reset_clipping_range()
             if render:
                 self.plotter.render()
-                self._refresh_section_label_overlay()
             return
         self._apply_active_view_camera(render=render)
 
@@ -367,7 +392,6 @@ class ModelView(QWidget):
         self._reset_clipping_range()
         if render:
             self.plotter.render()
-            self._refresh_section_label_overlay()
 
     def _visible_scene_points(self) -> np.ndarray:
         """Handle visible scene points."""
@@ -428,6 +452,24 @@ class ModelView(QWidget):
         radius = max(float(np.linalg.norm(spans) * 0.5), 1.0)
         return center, spans, radius
 
+    def _model_orbit_pivot(self) -> np.ndarray:
+        """Return the structural model center, falling back to the visible scene."""
+        project = getattr(self, "_project", None)
+        if project is not None:
+            model_points = np.array(
+                [
+                    [node.x, node.y, node.z]
+                    for node in project.nodes.values()
+                    if self._node_on_active_plane(node.x, node.y, node.z)
+                ],
+                dtype=float,
+            )
+            if model_points.size:
+                center, _spans, _radius = self._scene_bounds(model_points)
+                return center
+        center, _spans, _radius = self._scene_bounds(self._visible_scene_points())
+        return center
+
     def _isometric_camera_state(self) -> _CameraState:
         """Handle isometric camera state."""
         center, _spans, radius = self._scene_bounds(self._visible_scene_points())
@@ -458,38 +500,6 @@ class ModelView(QWidget):
         bbox = points.max(axis=0) - points.min(axis=0)
         return max(bbox.max() * 0.03, 0.1)
 
-    def _draw_section_labels(self, project: ProjectModel, points: np.ndarray) -> None:
-        """Draw section labels."""
-        sec_midpoints: list[list[float]] = []
-        sec_labels: list[str] = []
-
-        for elem in project.elements.values():
-            sec = project.sections.get(elem.section_tag)
-            if sec is None:
-                continue
-            idx_i = self._tag_to_idx.get(elem.node_i)
-            idx_j = self._tag_to_idx.get(elem.node_j)
-            if idx_i is None or idx_j is None:
-                continue
-
-            mid = (points[idx_i] + points[idx_j]) / 2.0
-            sec_midpoints.append(mid.tolist())
-            sec_labels.append(sec.name)
-
-        if sec_midpoints:
-            self.plotter.add_point_labels(
-                np.array(sec_midpoints),
-                sec_labels,
-                font_size=10,
-                bold=False,
-                italic=True,
-                text_color="#2e8b57",
-                shape=None,
-                always_visible=True,
-                name="section_labels",
-                render=False,
-            )
-
     def _draw_surface_elements(self, project: ProjectModel, points: np.ndarray) -> None:
         """Draw surface elements."""
         surface_mesh = self._build_surface_elements_mesh(project)
@@ -511,38 +521,17 @@ class ModelView(QWidget):
                 render=False,
             )
 
-    def _refresh_section_label_overlay(self) -> None:
-        """Refresh section label overlay."""
-        overlay = getattr(self, "_section_label_overlay", None)
-        if overlay is None:
-            return
-        overlay.setGeometry(self.plotter.interactor.rect())
-        visible = (
-            self._project is not None
-            and self.show_section_names
-            and not self.show_extruded_sections
-        )
-        overlay.setVisible(visible)
-        if visible:
-            overlay.raise_()
-            overlay.update()
-
-    @staticmethod
-    def _section_label_font() -> QFont:
-        """Handle section label font."""
-        font = QFont()
-        font.setPointSize(8)
-        font.setBold(True)
-        return font
-
-    def _iter_section_label_screen_data(self) -> list[tuple[str, QPointF, float]]:
-        """Handle iter section label screen data."""
-        if self._project is None or not self.show_section_names or self.show_extruded_sections:
+    def _iter_section_label_display_data(
+        self,
+    ) -> list[_SectionLabelDisplay]:
+        """Return section labels positioned in the VTK display coordinate system."""
+        if self._project is None or not self.show_section_names:
             return []
 
-        metrics = QFontMetricsF(self._section_label_font())
-        labels: list[tuple[str, QPointF, float]] = []
-        for elem in self._project.elements.values():
+        candidates: list[
+            tuple[float, _SectionLabelDisplay, tuple[float, float, float, float]]
+        ] = []
+        for elem_tag, elem in self._project.elements.items():
             ni = self._project.nodes.get(elem.node_i)
             nj = self._project.nodes.get(elem.node_j)
             sec = self._project.sections.get(elem.section_tag)
@@ -553,16 +542,16 @@ class ModelView(QWidget):
             if not self._node_on_active_plane(nj.x, nj.y, nj.z):
                 continue
 
-            p1 = self._project_world_to_screen((ni.x, ni.y, ni.z))
-            p2 = self._project_world_to_screen((nj.x, nj.y, nj.z))
+            p1 = self._project_world_to_display((ni.x, ni.y, ni.z))
+            p2 = self._project_world_to_display((nj.x, nj.y, nj.z))
             if p1 is None or p2 is None:
                 continue
 
-            dx = p2.x() - p1.x()
-            dy = p2.y() - p1.y()
+            dx = p2[0] - p1[0]
+            dy = p2[1] - p1[1]
             length = float((dx * dx + dy * dy) ** 0.5)
-            text_width = metrics.horizontalAdvance(sec.name)
-            if length < max(36.0, text_width + 14.0):
+            font_size = self._section_label_font_size(length, sec.name)
+            if font_size is None:
                 continue
 
             angle = float(np.degrees(np.arctan2(dy, dx)))
@@ -573,52 +562,192 @@ class ModelView(QWidget):
 
             normal_x = -dy / length
             normal_y = dx / length
-            midpoint = QPointF(
-                (p1.x() + p2.x()) * 0.5 + normal_x * 8.0,
-                (p1.y() + p2.y()) * 0.5 + normal_y * 8.0,
-            )
-            labels.append((sec.name, midpoint, angle))
+            if normal_y < 0.0 or (abs(normal_y) <= 1e-9 and normal_x < 0.0):
+                normal_x = -normal_x
+                normal_y = -normal_y
 
+            midpoint_x = (p1[0] + p2[0]) * 0.5
+            midpoint_y = (p1[1] + p2[1]) * 0.5
+            profile_extent = self._section_label_profile_extent(
+                elem,
+                sec,
+                ni,
+                nj,
+                (midpoint_x, midpoint_y),
+                (normal_x, normal_y),
+            )
+            offset = profile_extent + font_size * 0.7 + 3.0
+            x = midpoint_x + normal_x * offset
+            y = midpoint_y + normal_y * offset
+            label = _SectionLabelDisplay(
+                tag=elem_tag,
+                text=sec.name,
+                x=x,
+                y=y,
+                angle=angle,
+                font_size=font_size,
+            )
+            bounds = self._section_label_bounds(label)
+            candidates.append((length, label, bounds))
+
+        labels: list[_SectionLabelDisplay] = []
+        occupied: list[tuple[float, float, float, float]] = []
+        for _length, label, bounds in sorted(
+            candidates,
+            key=lambda item: (-item[0], item[1].tag),
+        ):
+            if any(self._section_label_bounds_overlap(bounds, other) for other in occupied):
+                continue
+            labels.append(label)
+            occupied.append(bounds)
         return labels
 
-    def _paint_section_label_overlay(self, event) -> None:
-        """Handle paint section label overlay."""
-        _ = event
-        overlay = getattr(self, "_section_label_overlay", None)
-        if overlay is None:
-            return
+    @classmethod
+    def _section_label_font_size(cls, projected_length: float, text: str) -> int | None:
+        """Scale label text with its member while keeping it readable."""
+        text_length = max(len(text), 1)
+        size_for_length = projected_length * cls._SECTION_LABEL_FONT_SCALE
+        size_to_fit = (
+            projected_length * 0.78 / (text_length * cls._SECTION_LABEL_WIDTH_FACTOR)
+        )
+        font_size = int(
+            np.floor(min(cls._SECTION_LABEL_MAX_FONT_SIZE, size_for_length, size_to_fit))
+        )
+        if font_size < cls._SECTION_LABEL_MIN_FONT_SIZE:
+            return None
+        return font_size
 
-        labels = self._iter_section_label_screen_data()
-        if not labels:
-            return
+    @classmethod
+    def _section_label_bounds(
+        cls,
+        label: _SectionLabelDisplay,
+    ) -> tuple[float, float, float, float]:
+        """Return an axis-aligned display rectangle for a rotated label."""
+        width = len(label.text) * label.font_size * cls._SECTION_LABEL_WIDTH_FACTOR
+        height = label.font_size * 1.2
+        angle = np.radians(label.angle)
+        half_width = abs(np.cos(angle)) * width * 0.5 + abs(np.sin(angle)) * height * 0.5
+        half_height = abs(np.sin(angle)) * width * 0.5 + abs(np.cos(angle)) * height * 0.5
+        margin = cls._SECTION_LABEL_COLLISION_MARGIN
+        return (
+            label.x - half_width - margin,
+            label.y - half_height - margin,
+            label.x + half_width + margin,
+            label.y + half_height + margin,
+        )
 
-        painter = QPainter(overlay)
-        painter.setRenderHint(QPainter.Antialiasing, True)
-        painter.setRenderHint(QPainter.TextAntialiasing, True)
+    @staticmethod
+    def _section_label_bounds_overlap(
+        first: tuple[float, float, float, float],
+        second: tuple[float, float, float, float],
+    ) -> bool:
+        return not (
+            first[2] <= second[0]
+            or second[2] <= first[0]
+            or first[3] <= second[1]
+            or second[3] <= first[1]
+        )
 
-        font = self._section_label_font()
-        metrics = QFontMetricsF(font)
-        outline_pen = QPen(QColor(255, 255, 255, 210), 1.8)
-        outline_pen.setJoinStyle(Qt.RoundJoin)
-        fill_color = QColor(_COLORS["section_label"])
+    def _section_label_profile_extent(
+        self,
+        element,
+        section,
+        node_i,
+        node_j,
+        midpoint_display: tuple[float, float],
+        screen_normal: tuple[float, float],
+    ) -> float:
+        """Return the projected half-thickness of an extruded member."""
+        if not self._use_extruded_sections():
+            return 0.0
+        frame = self._local_frame_from_element(element, node_i, node_j)
+        polygon = self._section_polygon_points(section.section_type, section.properties)
+        if frame is None or polygon is None or len(polygon) < 3:
+            return 0.0
 
-        for text, position, angle in labels:
-            text_rect = metrics.tightBoundingRect(text)
-            baseline = QPointF(
-                -text_rect.width() * 0.5 - text_rect.left(),
-                text_rect.height() * 0.5,
+        _x_axis, y_axis, z_axis, _length = frame
+        midpoint_world = np.array(
+            [
+                (node_i.x + node_j.x) * 0.5,
+                (node_i.y + node_j.y) * 0.5,
+                (node_i.z + node_j.z) * 0.5,
+            ],
+            dtype=float,
+        )
+        y_min, z_min = np.min(polygon, axis=0)
+        y_max, z_max = np.max(polygon, axis=0)
+        extent = 0.0
+        for local_y, local_z in (
+            (y_min, z_min),
+            (y_min, z_max),
+            (y_max, z_min),
+            (y_max, z_max),
+        ):
+            world = midpoint_world + y_axis * local_y + z_axis * local_z
+            display = self._project_world_to_display(tuple(float(value) for value in world))
+            if display is None:
+                continue
+            delta_x = display[0] - midpoint_display[0]
+            delta_y = display[1] - midpoint_display[1]
+            extent = max(
+                extent,
+                abs(delta_x * screen_normal[0] + delta_y * screen_normal[1]),
             )
-            path = QPainterPath()
-            path.addText(baseline, font, text)
+        return extent
 
-            painter.save()
-            painter.translate(position)
-            painter.rotate(angle)
-            painter.strokePath(path, outline_pen)
-            painter.fillPath(path, fill_color)
-            painter.restore()
+    def _sync_section_label_actors(self) -> None:
+        """Create native VTK text actors for the currently visible members."""
+        renderer = self.plotter.renderer
+        for _elem_tag, actor in self._section_label_actors:
+            renderer.RemoveActor2D(actor)
+        self._section_label_actors.clear()
 
-        painter.end()
+        if self._project is None or not self.show_section_names:
+            return
+
+        color = pv.Color(_COLORS["section_label"]).float_rgb
+        for elem_tag, elem in self._project.elements.items():
+            ni = self._project.nodes.get(elem.node_i)
+            nj = self._project.nodes.get(elem.node_j)
+            sec = self._project.sections.get(elem.section_tag)
+            if ni is None or nj is None or sec is None:
+                continue
+            if not self._node_on_active_plane(ni.x, ni.y, ni.z):
+                continue
+            if not self._node_on_active_plane(nj.x, nj.y, nj.z):
+                continue
+
+            actor = vtkTextActor()
+            actor.SetInput(sec.name)
+            actor.SetTextScaleModeToNone()
+            actor.PickableOff()
+            actor.GetPositionCoordinate().SetCoordinateSystemToDisplay()
+            text_property = actor.GetTextProperty()
+            text_property.SetFontSize(self._SECTION_LABEL_MAX_FONT_SIZE)
+            text_property.SetBold(True)
+            text_property.SetColor(*color)
+            text_property.SetJustificationToCentered()
+            text_property.SetVerticalJustificationToCentered()
+            renderer.AddActor2D(actor)
+            self._section_label_actors.append((elem_tag, actor))
+
+    def _on_section_label_render(self, _renderer, _event) -> None:
+        """Update section labels immediately before VTK renders the scene."""
+        try:
+            labels = {label.tag: label for label in self._iter_section_label_display_data()}
+            for elem_tag, actor in self._section_label_actors:
+                data = labels.get(elem_tag)
+                if data is None:
+                    actor.VisibilityOff()
+                    continue
+                actor.SetInput(data.text)
+                actor.SetPosition(data.x, data.y)
+                actor.SetOrientation(data.angle)
+                actor.GetTextProperty().SetFontSize(data.font_size)
+                actor.VisibilityOn()
+        except Exception:
+            for _elem_tag, actor in self._section_label_actors:
+                actor.VisibilityOff()
 
     @staticmethod
     def _build_node_spheres(
@@ -762,9 +891,11 @@ class ModelView(QWidget):
             return
 
         try:
+            render_mesh = self._prepare_extruded_render_mesh(mesh)
             self.plotter.add_mesh(
-                mesh,
+                render_mesh,
                 scalars="section_rgb",
+                preference="point",
                 rgb=True,
                 smooth_shading=True,
                 show_scalar_bar=False,
@@ -985,6 +1116,16 @@ class ModelView(QWidget):
         if colors.shape != (mesh.n_cells, 3):
             colors = np.resize(colors, (mesh.n_cells, 3)).astype(np.uint8)
         mesh.cell_data["section_rgb"] = colors
+
+    @staticmethod
+    def _prepare_extruded_render_mesh(mesh: pv.PolyData) -> pv.PolyData:
+        """Move section colors to points before PyVista computes smooth normals."""
+        render_mesh = mesh.cell_data_to_point_data(pass_cell_data=False)
+        colors = np.asarray(render_mesh.point_data["section_rgb"])
+        if colors.shape != (render_mesh.n_points, 3):
+            raise ValueError("Invalid extruded section point colors")
+        render_mesh.point_data["section_rgb"] = np.rint(colors).astype(np.uint8)
+        return render_mesh
 
     def _build_line_elements_mesh(
         self,
@@ -2285,7 +2426,13 @@ class ModelView(QWidget):
                     self._update_cursor_pick_preview()
                 if (
                     self._camera_drag_mode is not None
-                    and bool(event.buttons() & Qt.MiddleButton)
+                    and (
+                        bool(event.buttons() & Qt.MiddleButton)
+                        or (
+                            self._rotation_mode_enabled
+                            and bool(event.buttons() & Qt.LeftButton)
+                        )
+                    )
                 ):
                     self._forward_camera_drag(event)
                     return True
@@ -2321,6 +2468,9 @@ class ModelView(QWidget):
                 and event.button() == Qt.LeftButton
             ):
                 self.plotter.interactor.setFocus()
+                if self._rotation_mode_enabled:
+                    self._start_rotation_drag(event)
+                    return True
                 if self._cursor_pick_enabled:
                     return self._handle_cursor_pick_click(event)
                 if self._draw_mode_enabled:
@@ -2348,6 +2498,14 @@ class ModelView(QWidget):
             ):
                 self.plotter.interactor.setFocus()
                 self._start_camera_drag(event)
+                return True
+            elif (
+                event.type() == QEvent.MouseButtonRelease
+                and event.button() == Qt.LeftButton
+                and self._rotation_mode_enabled
+                and self._camera_drag_mode is not None
+            ):
+                self._stop_camera_drag(event)
                 return True
             elif (
                 event.type() == QEvent.MouseButtonRelease
@@ -2400,19 +2558,115 @@ class ModelView(QWidget):
         else:
             self.plotter.interactor.MiddleButtonPressEvent()
 
+    def _start_rotation_drag(self, event) -> None:
+        """Start a stable orbit around the center of the visible model."""
+        camera = self.plotter.camera
+        pivot = self._model_orbit_pivot()
+        position = np.asarray(camera.position, dtype=float)
+        focal_point = np.asarray(camera.focal_point, dtype=float)
+        offset = position - focal_point
+        if float(np.linalg.norm(offset)) <= 1e-9:
+            offset = np.array([1.0, -1.0, 1.0], dtype=float)
+
+        self._rotation_pivot = pivot
+        self._rotation_last_position = event.position()
+        self._camera_drag_mode = "orbit"
+        camera.position = tuple(float(value) for value in pivot + offset)
+        camera.focal_point = tuple(float(value) for value in pivot)
+        camera.up = (0.0, 0.0, 1.0)
+        self._orthogonalize_camera_up(camera)
+        self._reset_clipping_range()
+        self.plotter.render()
+
     def _forward_camera_drag(self, event) -> None:
         """Handle forward camera drag."""
+        if self._camera_drag_mode == "orbit":
+            self._orbit_camera(event)
+            return
         self._set_vtk_mouse_event(event)
         self.plotter.interactor.MouseMoveEvent()
 
     def _stop_camera_drag(self, event) -> None:
         """Finish middle-button 3D navigation."""
+        if self._camera_drag_mode == "orbit":
+            self._rotation_last_position = None
+            self._rotation_pivot = None
+            self._camera_drag_mode = None
+            return
         self._set_vtk_mouse_event(event)
         if self._camera_drag_mode == "rotate":
             self.plotter.interactor.LeftButtonReleaseEvent()
         else:
             self.plotter.interactor.MiddleButtonReleaseEvent()
         self._camera_drag_mode = None
+
+    def _orbit_camera(self, event) -> None:
+        """Orbit the camera without roll while keeping the model centered."""
+        current_position = event.position()
+        if self._rotation_last_position is None or self._rotation_pivot is None:
+            self._rotation_last_position = current_position
+            return
+
+        delta_x = float(current_position.x() - self._rotation_last_position.x())
+        delta_y = float(current_position.y() - self._rotation_last_position.y())
+        self._rotation_last_position = current_position
+        if abs(delta_x) <= 1e-9 and abs(delta_y) <= 1e-9:
+            return
+
+        camera = self.plotter.camera
+        new_position = self._constrained_orbit_position(
+            np.asarray(camera.position, dtype=float),
+            self._rotation_pivot,
+            delta_x,
+            delta_y,
+        )
+        camera.position = tuple(float(value) for value in new_position)
+        camera.focal_point = tuple(float(value) for value in self._rotation_pivot)
+        camera.up = (0.0, 0.0, 1.0)
+        self._orthogonalize_camera_up(camera)
+        self._reset_clipping_range()
+        self.plotter.render()
+
+    @classmethod
+    def _constrained_orbit_position(
+        cls,
+        position: np.ndarray,
+        pivot: np.ndarray,
+        delta_x: float,
+        delta_y: float,
+    ) -> np.ndarray:
+        """Return a turntable-style camera position around a fixed pivot."""
+        offset = np.asarray(position, dtype=float) - np.asarray(pivot, dtype=float)
+        distance = float(np.linalg.norm(offset))
+        if distance <= 1e-9:
+            return np.asarray(position, dtype=float)
+
+        horizontal_distance = float(np.hypot(offset[0], offset[1]))
+        azimuth = float(np.arctan2(offset[1], offset[0]))
+        elevation = float(np.arctan2(offset[2], horizontal_distance))
+        radians_per_pixel = np.radians(cls._ORBIT_DEGREES_PER_PIXEL)
+        azimuth -= delta_x * radians_per_pixel
+        elevation += delta_y * radians_per_pixel
+        elevation_limit = np.radians(cls._ORBIT_MAX_ELEVATION_DEGREES)
+        elevation = float(np.clip(elevation, -elevation_limit, elevation_limit))
+
+        horizontal_radius = distance * np.cos(elevation)
+        return np.asarray(pivot, dtype=float) + np.array(
+            [
+                horizontal_radius * np.cos(azimuth),
+                horizontal_radius * np.sin(azimuth),
+                distance * np.sin(elevation),
+            ],
+            dtype=float,
+        )
+
+    @staticmethod
+    def _orthogonalize_camera_up(camera) -> None:
+        """Keep the global vertical stable after an orbit update."""
+        try:
+            camera.OrthogonalizeViewUp()
+        except AttributeError:
+            pass
 
     def _handle_selection_release(self, event) -> bool:
         """Handle selection release."""
@@ -2610,6 +2864,39 @@ class ModelView(QWidget):
         if not enabled and self._drag_origin is not None:
             self._drag_origin = None
             self._rubber_band.hide()
+
+    def set_rotation_mode(self, enabled: bool) -> None:
+        """Enable left-button 3D rotation and update the interaction cursor."""
+        self._rotation_mode_enabled = enabled
+        if enabled:
+            if self._rotation_cursor is None:
+                self._rotation_cursor = self._build_rotation_cursor()
+            self.plotter.interactor.setCursor(self._rotation_cursor)
+        else:
+            self.plotter.interactor.setCursor(QCursor(Qt.ArrowCursor))
+
+    @staticmethod
+    def _build_rotation_cursor() -> QCursor:
+        """Build a compact circular-arrow cursor for 3D rotation mode."""
+        pixmap = QPixmap(32, 32)
+        pixmap.fill(Qt.transparent)
+        painter = QPainter(pixmap)
+        painter.setRenderHint(QPainter.Antialiasing, True)
+        painter.setPen(QPen(QColor("#173f59"), 2.4, Qt.SolidLine, Qt.RoundCap))
+        painter.drawArc(QRectF(5.0, 5.0, 22.0, 22.0), 35 * 16, 280 * 16)
+        painter.setPen(QPen(QColor("#d97828"), 1.5))
+        painter.setBrush(QColor("#d97828"))
+        painter.drawPolygon(
+            QPolygonF(
+                [
+                    QPointF(25.5, 5.5),
+                    QPointF(25.0, 13.0),
+                    QPointF(19.0, 8.5),
+                ]
+            )
+        )
+        painter.end()
+        return QCursor(pixmap, 16, 16)
 
     def _node_on_active_plane(self, x: float, y: float, z: float, tol: float = 1e-9) -> bool:
         """Handle node on active plane."""
@@ -2818,7 +3105,6 @@ class ModelView(QWidget):
             if camera.parallel_projection:
                 camera.parallel_scale = float(state.get("parallel_scale", camera.parallel_scale))
             self.plotter.render()
-            self._refresh_section_label_overlay()
         except Exception:
             pass
 

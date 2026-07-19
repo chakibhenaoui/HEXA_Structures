@@ -8,6 +8,8 @@ os.environ.setdefault("QT_QPA_PLATFORM", "offscreen")
 
 import numpy as np
 import pytest
+from PySide6.QtCore import QPointF, Qt
+from PySide6.QtWidgets import QApplication
 
 from core.model_data import ProjectModel
 from core.sections import TSection, get_profile
@@ -15,7 +17,7 @@ from core.sections import TSection, get_profile
 pytest.importorskip("pyvista")
 pytest.importorskip("pyvistaqt")
 
-from gui.widgets.model_view import ModelView
+from gui.widgets.model_view import ModelView, _SectionLabelDisplay
 
 
 def test_rectangular_section_polygon_uses_real_dimensions() -> None:
@@ -387,3 +389,259 @@ def test_extruded_elements_are_colored_by_section() -> None:
     assert mesh is not None
     colors = np.unique(mesh.cell_data["section_rgb"], axis=0)
     assert colors.shape == (2, 3)
+
+
+def test_extruded_render_mesh_keeps_rgb_colors_with_smooth_shading() -> None:
+    pv = pytest.importorskip("pyvista")
+    project = _line_project_with_two_sections()
+    view = ModelView.__new__(ModelView)
+    view._active_plane = None
+    view._active_plane_value = None
+    view._extruded_mesh_cache = {}
+    view._extruded_cache_max_entries = 4
+    view._elem_tags = []
+
+    mesh = view._build_extruded_elements_mesh(project)
+
+    assert mesh is not None
+    render_mesh = view._prepare_extruded_render_mesh(mesh)
+    assert "section_rgb" not in render_mesh.cell_data
+    assert render_mesh.point_data["section_rgb"].dtype == np.uint8
+    assert np.unique(render_mesh.point_data["section_rgb"], axis=0).shape == (2, 3)
+
+    plotter = pv.Plotter(off_screen=True)
+    try:
+        actor = plotter.add_mesh(
+            render_mesh,
+            scalars="section_rgb",
+            preference="point",
+            rgb=True,
+            smooth_shading=True,
+            show_scalar_bar=False,
+        )
+        assert actor.mapper.scalar_visibility is True
+        assert actor.mapper.scalar_map_mode == "point"
+    finally:
+        plotter.close()
+
+
+def test_section_labels_follow_bar_vtk_display_angle() -> None:
+    project = _line_project_with_two_sections()
+    view = ModelView.__new__(ModelView)
+    view._project = project
+    view.show_section_names = True
+    view.show_extruded_sections = False
+    view._active_plane = None
+    view._active_plane_value = None
+    view._project_world_to_display = lambda point: (
+        point[0] * 120.0,
+        point[0] * 120.0,
+        0.0,
+    )
+
+    labels = view._iter_section_label_display_data()
+
+    assert len(labels) == 2
+    assert all(label.angle == pytest.approx(45.0) for label in labels)
+
+
+def test_section_label_font_scales_with_projected_member_length() -> None:
+    large = ModelView._section_label_font_size(120.0, "IPE 300")
+    small = ModelView._section_label_font_size(60.0, "IPE 300")
+
+    assert large is not None
+    assert small is not None
+    assert large > small
+    assert ModelView._section_label_font_size(20.0, "IPE 300") is None
+
+
+def test_section_labels_remain_available_with_extruded_sections() -> None:
+    project = _line_project_with_two_sections()
+    view = ModelView.__new__(ModelView)
+    view._project = project
+    view.show_section_names = True
+    view.show_extruded_sections = True
+    view._active_plane = None
+    view._active_plane_value = None
+    view._project_world_to_display = lambda point: (
+        point[0] * 120.0,
+        point[0] * 120.0,
+        0.0,
+    )
+    view._section_label_profile_extent = lambda *_args: 12.0
+
+    labels = view._iter_section_label_display_data()
+
+    assert len(labels) == 2
+
+
+def test_overlapping_section_labels_are_culled() -> None:
+    project = _line_project_with_two_sections()
+    view = ModelView.__new__(ModelView)
+    view._project = project
+    view.show_section_names = True
+    view.show_extruded_sections = False
+    view._active_plane = None
+    view._active_plane_value = None
+    x_positions = {0.0: 0.0, 1.0: 100.0, 2.0: 0.0}
+    view._project_world_to_display = lambda point: (
+        x_positions[point[0]],
+        50.0,
+        0.0,
+    )
+
+    labels = view._iter_section_label_display_data()
+
+    assert [label.tag for label in labels] == [1]
+
+
+def test_section_label_render_updates_native_actor() -> None:
+    class ActorStub:
+        def __init__(self) -> None:
+            self.input = ""
+            self.position = (0.0, 0.0)
+            self.orientation = 0.0
+            self.visible = False
+
+        def SetInput(self, value: str) -> None:
+            self.input = value
+
+        def SetPosition(self, x: float, y: float) -> None:
+            self.position = (x, y)
+
+        def SetOrientation(self, value: float) -> None:
+            self.orientation = value
+
+        def VisibilityOn(self) -> None:
+            self.visible = True
+
+        def VisibilityOff(self) -> None:
+            self.visible = False
+
+        def GetTextProperty(self):
+            return self
+
+        def SetFontSize(self, value: int) -> None:
+            self.font_size = value
+
+    view = ModelView.__new__(ModelView)
+    actor = ActorStub()
+    hidden_actor = ActorStub()
+    hidden_actor.visible = True
+    view._section_label_actors = [(1, actor), (2, hidden_actor)]
+    view._iter_section_label_display_data = lambda: [
+        _SectionLabelDisplay(1, "IPE 300", 120.0, 80.0, 30.0, 12),
+    ]
+
+    view._on_section_label_render(None, None)
+
+    assert actor.input == "IPE 300"
+    assert actor.position == pytest.approx((120.0, 80.0))
+    assert actor.orientation == pytest.approx(30.0)
+    assert actor.font_size == 12
+    assert actor.visible is True
+    assert hidden_actor.visible is False
+
+
+def test_rotation_mode_switches_between_rotation_and_arrow_cursors() -> None:
+    app = QApplication.instance() or QApplication([])
+    _ = app
+
+    class InteractorStub:
+        def __init__(self) -> None:
+            self.cursors = []
+
+        def setCursor(self, cursor) -> None:
+            self.cursors.append(cursor)
+
+    interactor = InteractorStub()
+    view = ModelView.__new__(ModelView)
+    view.plotter = SimpleNamespace(interactor=interactor)
+    view._rotation_cursor = None
+    view._rotation_mode_enabled = False
+
+    view.set_rotation_mode(True)
+    view.set_rotation_mode(False)
+
+    assert view._rotation_mode_enabled is False
+    assert interactor.cursors[0].pixmap().isNull() is False
+    assert interactor.cursors[-1].shape() == Qt.ArrowCursor
+
+
+def test_rotation_drag_orbits_around_visible_model_center() -> None:
+    class CameraStub:
+        position = (12.0, -4.0, 8.0)
+        focal_point = (2.0, 1.0, 3.0)
+        up = (0.0, 0.0, 1.0)
+
+        def OrthogonalizeViewUp(self) -> None:
+            pass
+
+    class EventStub:
+        @staticmethod
+        def position() -> QPointF:
+            return QPointF(120.0, 80.0)
+
+    camera = CameraStub()
+    renders = []
+    view = ModelView.__new__(ModelView)
+    view.plotter = SimpleNamespace(camera=camera, render=lambda: renders.append(True))
+    view._camera_drag_mode = None
+    view._rotation_last_position = None
+    view._rotation_pivot = None
+    view._model_orbit_pivot = lambda: np.array([5.0, 10.0, 3.0], dtype=float)
+    view._reset_clipping_range = lambda: None
+
+    view._start_rotation_drag(EventStub())
+
+    assert view._camera_drag_mode == "orbit"
+    assert view._rotation_pivot == pytest.approx((5.0, 10.0, 3.0))
+    assert camera.focal_point == pytest.approx((5.0, 10.0, 3.0))
+    assert camera.position == pytest.approx((15.0, 5.0, 8.0))
+    assert renders == [True]
+
+
+def test_orbit_pivot_uses_model_nodes_instead_of_grid_extents() -> None:
+    project = ProjectModel()
+    project.add_node(0.0, 0.0, 0.0)
+    project.add_node(10.0, 20.0, 6.0)
+    view = ModelView.__new__(ModelView)
+    view._project = project
+    view._active_plane = None
+    view._active_plane_value = None
+    view._grid_points = np.array(
+        [[-100.0, -100.0, 0.0], [100.0, 100.0, 0.0]],
+        dtype=float,
+    )
+
+    assert view._model_orbit_pivot() == pytest.approx((5.0, 10.0, 3.0))
+
+
+def test_constrained_orbit_preserves_distance_and_does_not_cross_poles() -> None:
+    pivot = np.array([5.0, 10.0, 3.0], dtype=float)
+    position = np.array([15.0, 5.0, 8.0], dtype=float)
+    initial_distance = float(np.linalg.norm(position - pivot))
+
+    horizontal_orbit = ModelView._constrained_orbit_position(
+        position,
+        pivot,
+        delta_x=120.0,
+        delta_y=0.0,
+    )
+    high_orbit = ModelView._constrained_orbit_position(
+        horizontal_orbit,
+        pivot,
+        delta_x=0.0,
+        delta_y=10_000.0,
+    )
+
+    assert np.linalg.norm(horizontal_orbit - pivot) == pytest.approx(initial_distance)
+    assert horizontal_orbit[2] == pytest.approx(position[2])
+    assert np.linalg.norm(high_orbit - pivot) == pytest.approx(initial_distance)
+    elevation = np.degrees(
+        np.arctan2(
+            high_orbit[2] - pivot[2],
+            np.hypot(high_orbit[0] - pivot[0], high_orbit[1] - pivot[1]),
+        )
+    )
+    assert elevation == pytest.approx(ModelView._ORBIT_MAX_ELEVATION_DEGREES)

@@ -132,6 +132,7 @@ class MainWindow(QMainWindow):
         self._surface_draw_saved_orthogonal_state: bool | None = None
         self._draw_mode_kind: str | None = None
         self._selection_mode_active: bool = True
+        self._rotation_mode_active: bool = False
         self._selected_node_tags: list[int] = []
         self._selected_element_tags: list[int] = []
         self._selected_surface_tags: list[int] = []
@@ -681,6 +682,10 @@ class MainWindow(QMainWindow):
         self.act_select_tool.setCheckable(True)
         self.act_select_tool.setChecked(True)
         self.act_select_tool.toggled.connect(self._toggle_selection_tool)
+        self.act_rotate_3d = QAction(self.tr("Rotation 3D"), self)
+        self.act_rotate_3d.setCheckable(True)
+        self.act_rotate_3d.setChecked(False)
+        self.act_rotate_3d.toggled.connect(self._toggle_rotation_tool)
         self.act_draw_node = QAction(self.tr("Dessiner un nœud"), self)
         self.act_draw_node.setCheckable(True)
         self.act_draw_node.toggled.connect(self._toggle_draw_nodes)
@@ -746,6 +751,7 @@ class MainWindow(QMainWindow):
             self.menu_model.addAction(self.act_boundary)
             self.menu_model.addSeparator()
             self.menu_model.addAction(self.act_select_tool)
+            self.menu_model.addAction(self.act_rotate_3d)
             self.menu_model.addAction(self.act_draw_node)
             self.menu_model.addAction(self.act_draw_bars)
             self.menu_model.addAction(self.act_draw_surface)
@@ -1510,6 +1516,7 @@ class MainWindow(QMainWindow):
             (getattr(self, "act_toggle_split_view", None), self.tr("Afficher 2 fenêtres")),
             (getattr(self, "act_define_grid", None), self.tr("Définir la grille 3D...")),
             (getattr(self, "act_select_tool", None), self.tr("Sélection")),
+            (getattr(self, "act_rotate_3d", None), self.tr("Rotation 3D")),
             (getattr(self, "act_draw_node", None), self.tr("Dessiner un nœud")),
             (getattr(self, "act_draw_bars", None), self.tr("Dessiner des barres")),
             (getattr(self, "act_draw_surface", None), self.tr("Dessiner une surface")),
@@ -1624,6 +1631,7 @@ class MainWindow(QMainWindow):
         toolbar.addSeparator()
         toolbar.addAction(self.act_define_grid)
         toolbar.addAction(self.act_select_tool)
+        toolbar.addAction(self.act_rotate_3d)
         toolbar.addAction(self.act_draw_node)
         toolbar.addAction(self.act_draw_bars)
         toolbar.addAction(self.act_draw_surface)
@@ -1661,6 +1669,7 @@ class MainWindow(QMainWindow):
             self.act_copy_selection: "copy",
             self.act_define_grid: "grid",
             self.act_select_tool: "select",
+            self.act_rotate_3d: "rotate_3d",
             self.act_draw_node: "draw_node",
             self.act_draw_bars: "draw_bars",
             self.act_draw_surface: "draw_surface",
@@ -1848,6 +1857,19 @@ class MainWindow(QMainWindow):
             painter.setPen(self._toolbar_pen(outline, 1.2))
             painter.setBrush(accent)
             painter.drawPolygon(pointer)
+            painter.setBrush(Qt.BrushStyle.NoBrush)
+        elif glyph_name == "rotate_3d":
+            draw_cube()
+            painter.setPen(self._toolbar_pen(accent, 2.0))
+            painter.drawArc(
+                QRectF(p(3.5, 3.5).x(), p(3.5, 3.5).y(), s(17), s(17)),
+                35 * 16,
+                275 * 16,
+            )
+            painter.setBrush(accent)
+            painter.drawPolygon(
+                QPolygonF([p(20.2, 4.0), p(19.6, 10.0), p(15.2, 6.5)])
+            )
             painter.setBrush(Qt.BrushStyle.NoBrush)
         elif glyph_name == "draw_node":
             painter.setPen(self._toolbar_pen(outline, 1.4))
@@ -2132,6 +2154,17 @@ class MainWindow(QMainWindow):
         if getattr(self, "secondary_view", None) is not None and hasattr(self.secondary_view, "set_selection_mode"):
             self.secondary_view.set_selection_mode(enabled)
 
+    def _set_rotation_mode_enabled(self, enabled: bool) -> None:
+        """Apply the dedicated 3D rotation mode to every model view."""
+        self._rotation_mode_active = enabled
+        if self.model_view is not None and hasattr(self.model_view, "set_rotation_mode"):
+            self.model_view.set_rotation_mode(enabled)
+        if getattr(self, "secondary_view", None) is not None and hasattr(
+            self.secondary_view,
+            "set_rotation_mode",
+        ):
+            self.secondary_view.set_rotation_mode(enabled)
+
     def _toggle_selection_tool(self, enabled: bool) -> None:
         """Toggle selection tool."""
         draw_tool_active = (
@@ -2139,10 +2172,21 @@ class MainWindow(QMainWindow):
             or (getattr(self, "act_draw_bars", None) is not None and self.act_draw_bars.isChecked())
             or (getattr(self, "act_draw_surface", None) is not None and self.act_draw_surface.isChecked())
         )
-        if not enabled and self._draw_mode_kind is None and not draw_tool_active:
+        rotation_tool_active = (
+            getattr(self, "act_rotate_3d", None) is not None
+            and self.act_rotate_3d.isChecked()
+        )
+        if (
+            not enabled
+            and self._draw_mode_kind is None
+            and not draw_tool_active
+            and not rotation_tool_active
+        ):
             self.act_select_tool.setChecked(True)
             return
         if enabled:
+            if rotation_tool_active:
+                self.act_rotate_3d.setChecked(False)
             if getattr(self, "act_draw_node", None) is not None and self.act_draw_node.isChecked():
                 self.act_draw_node.setChecked(False)
             if getattr(self, "act_draw_bars", None) is not None and self.act_draw_bars.isChecked():
@@ -2152,6 +2196,29 @@ class MainWindow(QMainWindow):
             self._draw_mode_kind = None
             self._set_interactive_drawing_enabled(False)
         self._set_selection_mode_enabled(enabled)
+
+    def _toggle_rotation_tool(self, enabled: bool) -> None:
+        """Toggle left-button rotation and keep navigation tools exclusive."""
+        if enabled:
+            for action_name in ("act_draw_node", "act_draw_bars", "act_draw_surface"):
+                action = getattr(self, action_name, None)
+                if action is not None and action.isChecked():
+                    action.setChecked(False)
+            if getattr(self, "act_select_tool", None) is not None and self.act_select_tool.isChecked():
+                self.act_select_tool.setChecked(False)
+            self._draw_mode_kind = None
+            self._set_interactive_drawing_enabled(False)
+            self._set_selection_mode_enabled(False)
+
+        self._set_rotation_mode_enabled(enabled)
+        if not enabled:
+            draw_tool_active = self._interactive_drawing_enabled()
+            if (
+                not draw_tool_active
+                and getattr(self, "act_select_tool", None) is not None
+                and not self.act_select_tool.isChecked()
+            ):
+                self.act_select_tool.setChecked(True)
 
     def _activate_selection_tool(self) -> None:
         """Handle activate selection tool."""
@@ -2187,6 +2254,8 @@ class MainWindow(QMainWindow):
             self.act_draw_surface.setChecked(False)
         if enabled and getattr(self, "act_select_tool", None) is not None and self.act_select_tool.isChecked():
             self.act_select_tool.setChecked(False)
+        if enabled and getattr(self, "act_rotate_3d", None) is not None and self.act_rotate_3d.isChecked():
+            self.act_rotate_3d.setChecked(False)
         if enabled:
             self._ensure_work_plane_for_drawing()
 
@@ -2253,6 +2322,8 @@ class MainWindow(QMainWindow):
             self.act_draw_surface.setChecked(False)
         if enabled and getattr(self, "act_select_tool", None) is not None and self.act_select_tool.isChecked():
             self.act_select_tool.setChecked(False)
+        if enabled and getattr(self, "act_rotate_3d", None) is not None and self.act_rotate_3d.isChecked():
+            self.act_rotate_3d.setChecked(False)
         if enabled:
             self._ensure_work_plane_for_drawing()
 
@@ -2314,6 +2385,8 @@ class MainWindow(QMainWindow):
             self.act_draw_bars.setChecked(False)
         if enabled and getattr(self, "act_select_tool", None) is not None and self.act_select_tool.isChecked():
             self.act_select_tool.setChecked(False)
+        if enabled and getattr(self, "act_rotate_3d", None) is not None and self.act_rotate_3d.isChecked():
+            self.act_rotate_3d.setChecked(False)
         self._cancel_bar_drawing()
         self._draw_surface_section_tag = section_tag
         self._draw_mode_kind = "surface" if enabled else None
@@ -8124,16 +8197,6 @@ class MainWindow(QMainWindow):
 
     def _on_toggle_section_names(self, checked: bool) -> None:
         """Handle toggle section names."""
-        if checked and self.act_show_extruded_sections.isChecked():
-            self.act_show_extruded_sections.blockSignals(True)
-            self.act_show_extruded_sections.setChecked(False)
-            self.act_show_extruded_sections.blockSignals(False)
-            self.settings.gui.show_extruded_sections = False
-            if self.model_view is not None:
-                self.model_view.show_extruded_sections = False
-            if getattr(self, "secondary_view", None) is not None and hasattr(self.secondary_view, "show_extruded_sections"):
-                self.secondary_view.show_extruded_sections = False
-
         self.settings.gui.show_section_names = checked
         if self.model_view is not None:
             self.model_view.show_section_names = checked
@@ -8143,16 +8206,6 @@ class MainWindow(QMainWindow):
 
     def _on_toggle_extruded_sections(self, checked: bool) -> None:
         """Handle toggle extruded sections."""
-        if checked and self.act_show_section_names.isChecked():
-            self.act_show_section_names.blockSignals(True)
-            self.act_show_section_names.setChecked(False)
-            self.act_show_section_names.blockSignals(False)
-            self.settings.gui.show_section_names = False
-            if self.model_view is not None:
-                self.model_view.show_section_names = False
-            if getattr(self, "secondary_view", None) is not None and hasattr(self.secondary_view, "show_section_names"):
-                self.secondary_view.show_section_names = False
-
         self.settings.gui.show_extruded_sections = checked
         if self.model_view is not None:
             self.model_view.show_extruded_sections = checked
