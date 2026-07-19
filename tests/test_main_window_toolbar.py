@@ -114,6 +114,30 @@ def test_create_view_widget_exists_and_configures_model_view(monkeypatch) -> Non
     assert widget.show_local_axes is True
 
 
+def test_section_names_and_extruded_sections_can_be_enabled_together() -> None:
+    window = MainWindow.__new__(MainWindow)
+    window.settings = Settings()
+    window.model_view = types.SimpleNamespace(
+        show_section_names=False,
+        show_extruded_sections=True,
+    )
+    window.secondary_view = types.SimpleNamespace(
+        show_section_names=False,
+        show_extruded_sections=True,
+    )
+    window._refresh = lambda **_kwargs: None
+
+    window._on_toggle_section_names(True)
+    window._on_toggle_extruded_sections(True)
+
+    assert window.settings.gui.show_section_names is True
+    assert window.settings.gui.show_extruded_sections is True
+    assert window.model_view.show_section_names is True
+    assert window.model_view.show_extruded_sections is True
+    assert window.secondary_view.show_section_names is True
+    assert window.secondary_view.show_extruded_sections is True
+
+
 def test_window_title_uses_file_stem_when_project_name_is_default(tmp_path) -> None:
     _app()
     window = MainWindow.__new__(MainWindow)

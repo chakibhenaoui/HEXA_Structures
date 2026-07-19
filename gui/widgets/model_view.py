@@ -75,12 +75,26 @@ class _NodeScreenHit:
     depth: float
 
 
+@dataclass(frozen=True)
+class _SectionLabelDisplay:
+    tag: int
+    text: str
+    x: float
+    y: float
+    angle: float
+    font_size: int
+
+
 class ModelView(QWidget):
     """3D structural model view."""
 
     _NODE_GLYPH_LIMIT = 1200
     _CAMERA_PADDING = 1.18
-    _SECTION_LABEL_FONT_SIZE = 14
+    _SECTION_LABEL_MIN_FONT_SIZE = 5
+    _SECTION_LABEL_MAX_FONT_SIZE = 16
+    _SECTION_LABEL_FONT_SCALE = 0.12
+    _SECTION_LABEL_WIDTH_FACTOR = 0.6
+    _SECTION_LABEL_COLLISION_MARGIN = 2.0
 
     node_picked = Signal(int)
     element_picked = Signal(int)
@@ -484,12 +498,14 @@ class ModelView(QWidget):
 
     def _iter_section_label_display_data(
         self,
-    ) -> list[tuple[int, str, float, float, float]]:
+    ) -> list[_SectionLabelDisplay]:
         """Return section labels positioned in the VTK display coordinate system."""
-        if self._project is None or not self.show_section_names or self.show_extruded_sections:
+        if self._project is None or not self.show_section_names:
             return []
 
-        labels: list[tuple[int, str, float, float, float]] = []
+        candidates: list[
+            tuple[float, _SectionLabelDisplay, tuple[float, float, float, float]]
+        ] = []
         for elem_tag, elem in self._project.elements.items():
             ni = self._project.nodes.get(elem.node_i)
             nj = self._project.nodes.get(elem.node_j)
@@ -509,8 +525,8 @@ class ModelView(QWidget):
             dx = p2[0] - p1[0]
             dy = p2[1] - p1[1]
             length = float((dx * dx + dy * dy) ** 0.5)
-            text_width = len(sec.name) * self._SECTION_LABEL_FONT_SIZE * 0.6
-            if length < max(36.0, text_width + 14.0):
+            font_size = self._section_label_font_size(length, sec.name)
+            if font_size is None:
                 continue
 
             angle = float(np.degrees(np.arctan2(dy, dx)))
@@ -521,17 +537,138 @@ class ModelView(QWidget):
 
             normal_x = -dy / length
             normal_y = dx / length
-            labels.append(
-                (
-                    elem_tag,
-                    sec.name,
-                    (p1[0] + p2[0]) * 0.5 + normal_x * 8.0,
-                    (p1[1] + p2[1]) * 0.5 + normal_y * 8.0,
-                    angle,
-                )
-            )
+            if normal_y < 0.0 or (abs(normal_y) <= 1e-9 and normal_x < 0.0):
+                normal_x = -normal_x
+                normal_y = -normal_y
 
+            midpoint_x = (p1[0] + p2[0]) * 0.5
+            midpoint_y = (p1[1] + p2[1]) * 0.5
+            profile_extent = self._section_label_profile_extent(
+                elem,
+                sec,
+                ni,
+                nj,
+                (midpoint_x, midpoint_y),
+                (normal_x, normal_y),
+            )
+            offset = profile_extent + font_size * 0.7 + 3.0
+            x = midpoint_x + normal_x * offset
+            y = midpoint_y + normal_y * offset
+            label = _SectionLabelDisplay(
+                tag=elem_tag,
+                text=sec.name,
+                x=x,
+                y=y,
+                angle=angle,
+                font_size=font_size,
+            )
+            bounds = self._section_label_bounds(label)
+            candidates.append((length, label, bounds))
+
+        labels: list[_SectionLabelDisplay] = []
+        occupied: list[tuple[float, float, float, float]] = []
+        for _length, label, bounds in sorted(
+            candidates,
+            key=lambda item: (-item[0], item[1].tag),
+        ):
+            if any(self._section_label_bounds_overlap(bounds, other) for other in occupied):
+                continue
+            labels.append(label)
+            occupied.append(bounds)
         return labels
+
+    @classmethod
+    def _section_label_font_size(cls, projected_length: float, text: str) -> int | None:
+        """Scale label text with its member while keeping it readable."""
+        text_length = max(len(text), 1)
+        size_for_length = projected_length * cls._SECTION_LABEL_FONT_SCALE
+        size_to_fit = (
+            projected_length * 0.78 / (text_length * cls._SECTION_LABEL_WIDTH_FACTOR)
+        )
+        font_size = int(
+            np.floor(min(cls._SECTION_LABEL_MAX_FONT_SIZE, size_for_length, size_to_fit))
+        )
+        if font_size < cls._SECTION_LABEL_MIN_FONT_SIZE:
+            return None
+        return font_size
+
+    @classmethod
+    def _section_label_bounds(
+        cls,
+        label: _SectionLabelDisplay,
+    ) -> tuple[float, float, float, float]:
+        """Return an axis-aligned display rectangle for a rotated label."""
+        width = len(label.text) * label.font_size * cls._SECTION_LABEL_WIDTH_FACTOR
+        height = label.font_size * 1.2
+        angle = np.radians(label.angle)
+        half_width = abs(np.cos(angle)) * width * 0.5 + abs(np.sin(angle)) * height * 0.5
+        half_height = abs(np.sin(angle)) * width * 0.5 + abs(np.cos(angle)) * height * 0.5
+        margin = cls._SECTION_LABEL_COLLISION_MARGIN
+        return (
+            label.x - half_width - margin,
+            label.y - half_height - margin,
+            label.x + half_width + margin,
+            label.y + half_height + margin,
+        )
+
+    @staticmethod
+    def _section_label_bounds_overlap(
+        first: tuple[float, float, float, float],
+        second: tuple[float, float, float, float],
+    ) -> bool:
+        return not (
+            first[2] <= second[0]
+            or second[2] <= first[0]
+            or first[3] <= second[1]
+            or second[3] <= first[1]
+        )
+
+    def _section_label_profile_extent(
+        self,
+        element,
+        section,
+        node_i,
+        node_j,
+        midpoint_display: tuple[float, float],
+        screen_normal: tuple[float, float],
+    ) -> float:
+        """Return the projected half-thickness of an extruded member."""
+        if not self._use_extruded_sections():
+            return 0.0
+        frame = self._local_frame_from_element(element, node_i, node_j)
+        polygon = self._section_polygon_points(section.section_type, section.properties)
+        if frame is None or polygon is None or len(polygon) < 3:
+            return 0.0
+
+        _x_axis, y_axis, z_axis, _length = frame
+        midpoint_world = np.array(
+            [
+                (node_i.x + node_j.x) * 0.5,
+                (node_i.y + node_j.y) * 0.5,
+                (node_i.z + node_j.z) * 0.5,
+            ],
+            dtype=float,
+        )
+        y_min, z_min = np.min(polygon, axis=0)
+        y_max, z_max = np.max(polygon, axis=0)
+        extent = 0.0
+        for local_y, local_z in (
+            (y_min, z_min),
+            (y_min, z_max),
+            (y_max, z_min),
+            (y_max, z_max),
+        ):
+            world = midpoint_world + y_axis * local_y + z_axis * local_z
+            display = self._project_world_to_display(tuple(float(value) for value in world))
+            if display is None:
+                continue
+            delta_x = display[0] - midpoint_display[0]
+            delta_y = display[1] - midpoint_display[1]
+            extent = max(
+                extent,
+                abs(delta_x * screen_normal[0] + delta_y * screen_normal[1]),
+            )
+        return extent
 
     def _sync_section_label_actors(self) -> None:
         """Create native VTK text actors for the currently visible members."""
@@ -540,7 +677,7 @@ class ModelView(QWidget):
             renderer.RemoveActor2D(actor)
         self._section_label_actors.clear()
 
-        if self._project is None or not self.show_section_names or self.show_extruded_sections:
+        if self._project is None or not self.show_section_names:
             return
 
         color = pv.Color(_COLORS["section_label"]).float_rgb
@@ -561,7 +698,7 @@ class ModelView(QWidget):
             actor.PickableOff()
             actor.GetPositionCoordinate().SetCoordinateSystemToDisplay()
             text_property = actor.GetTextProperty()
-            text_property.SetFontSize(self._SECTION_LABEL_FONT_SIZE)
+            text_property.SetFontSize(self._SECTION_LABEL_MAX_FONT_SIZE)
             text_property.SetBold(True)
             text_property.SetColor(*color)
             text_property.SetJustificationToCentered()
@@ -572,19 +709,16 @@ class ModelView(QWidget):
     def _on_section_label_render(self, _renderer, _event) -> None:
         """Update section labels immediately before VTK renders the scene."""
         try:
-            labels = {
-                elem_tag: (text, x, y, angle)
-                for elem_tag, text, x, y, angle in self._iter_section_label_display_data()
-            }
+            labels = {label.tag: label for label in self._iter_section_label_display_data()}
             for elem_tag, actor in self._section_label_actors:
                 data = labels.get(elem_tag)
                 if data is None:
                     actor.VisibilityOff()
                     continue
-                text, x, y, angle = data
-                actor.SetInput(text)
-                actor.SetPosition(x, y)
-                actor.SetOrientation(angle)
+                actor.SetInput(data.text)
+                actor.SetPosition(data.x, data.y)
+                actor.SetOrientation(data.angle)
+                actor.GetTextProperty().SetFontSize(data.font_size)
                 actor.VisibilityOn()
         except Exception:
             for _elem_tag, actor in self._section_label_actors:

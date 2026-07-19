@@ -8124,16 +8124,6 @@ class MainWindow(QMainWindow):
 
     def _on_toggle_section_names(self, checked: bool) -> None:
         """Handle toggle section names."""
-        if checked and self.act_show_extruded_sections.isChecked():
-            self.act_show_extruded_sections.blockSignals(True)
-            self.act_show_extruded_sections.setChecked(False)
-            self.act_show_extruded_sections.blockSignals(False)
-            self.settings.gui.show_extruded_sections = False
-            if self.model_view is not None:
-                self.model_view.show_extruded_sections = False
-            if getattr(self, "secondary_view", None) is not None and hasattr(self.secondary_view, "show_extruded_sections"):
-                self.secondary_view.show_extruded_sections = False
-
         self.settings.gui.show_section_names = checked
         if self.model_view is not None:
             self.model_view.show_section_names = checked
@@ -8143,16 +8133,6 @@ class MainWindow(QMainWindow):
 
     def _on_toggle_extruded_sections(self, checked: bool) -> None:
         """Handle toggle extruded sections."""
-        if checked and self.act_show_section_names.isChecked():
-            self.act_show_section_names.blockSignals(True)
-            self.act_show_section_names.setChecked(False)
-            self.act_show_section_names.blockSignals(False)
-            self.settings.gui.show_section_names = False
-            if self.model_view is not None:
-                self.model_view.show_section_names = False
-            if getattr(self, "secondary_view", None) is not None and hasattr(self.secondary_view, "show_section_names"):
-                self.secondary_view.show_section_names = False
-
         self.settings.gui.show_extruded_sections = checked
         if self.model_view is not None:
             self.model_view.show_extruded_sections = checked

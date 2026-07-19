@@ -15,7 +15,7 @@ from core.sections import TSection, get_profile
 pytest.importorskip("pyvista")
 pytest.importorskip("pyvistaqt")
 
-from gui.widgets.model_view import ModelView
+from gui.widgets.model_view import ModelView, _SectionLabelDisplay
 
 
 def test_rectangular_section_polygon_uses_real_dimensions() -> None:
@@ -440,7 +440,57 @@ def test_section_labels_follow_bar_vtk_display_angle() -> None:
     labels = view._iter_section_label_display_data()
 
     assert len(labels) == 2
-    assert all(angle == pytest.approx(45.0) for _tag, _text, _x, _y, angle in labels)
+    assert all(label.angle == pytest.approx(45.0) for label in labels)
+
+
+def test_section_label_font_scales_with_projected_member_length() -> None:
+    large = ModelView._section_label_font_size(120.0, "IPE 300")
+    small = ModelView._section_label_font_size(60.0, "IPE 300")
+
+    assert large is not None
+    assert small is not None
+    assert large > small
+    assert ModelView._section_label_font_size(20.0, "IPE 300") is None
+
+
+def test_section_labels_remain_available_with_extruded_sections() -> None:
+    project = _line_project_with_two_sections()
+    view = ModelView.__new__(ModelView)
+    view._project = project
+    view.show_section_names = True
+    view.show_extruded_sections = True
+    view._active_plane = None
+    view._active_plane_value = None
+    view._project_world_to_display = lambda point: (
+        point[0] * 120.0,
+        point[0] * 120.0,
+        0.0,
+    )
+    view._section_label_profile_extent = lambda *_args: 12.0
+
+    labels = view._iter_section_label_display_data()
+
+    assert len(labels) == 2
+
+
+def test_overlapping_section_labels_are_culled() -> None:
+    project = _line_project_with_two_sections()
+    view = ModelView.__new__(ModelView)
+    view._project = project
+    view.show_section_names = True
+    view.show_extruded_sections = False
+    view._active_plane = None
+    view._active_plane_value = None
+    x_positions = {0.0: 0.0, 1.0: 100.0, 2.0: 0.0}
+    view._project_world_to_display = lambda point: (
+        x_positions[point[0]],
+        50.0,
+        0.0,
+    )
+
+    labels = view._iter_section_label_display_data()
+
+    assert [label.tag for label in labels] == [1]
 
 
 def test_section_label_render_updates_native_actor() -> None:
@@ -466,13 +516,19 @@ def test_section_label_render_updates_native_actor() -> None:
         def VisibilityOff(self) -> None:
             self.visible = False
 
+        def GetTextProperty(self):
+            return self
+
+        def SetFontSize(self, value: int) -> None:
+            self.font_size = value
+
     view = ModelView.__new__(ModelView)
     actor = ActorStub()
     hidden_actor = ActorStub()
     hidden_actor.visible = True
     view._section_label_actors = [(1, actor), (2, hidden_actor)]
     view._iter_section_label_display_data = lambda: [
-        (1, "IPE 300", 120.0, 80.0, 30.0),
+        _SectionLabelDisplay(1, "IPE 300", 120.0, 80.0, 30.0, 12),
     ]
 
     view._on_section_label_render(None, None)
@@ -480,5 +536,6 @@ def test_section_label_render_updates_native_actor() -> None:
     assert actor.input == "IPE 300"
     assert actor.position == pytest.approx((120.0, 80.0))
     assert actor.orientation == pytest.approx(30.0)
+    assert actor.font_size == 12
     assert actor.visible is True
     assert hidden_actor.visible is False
