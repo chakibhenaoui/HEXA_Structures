@@ -1,6 +1,6 @@
 # HEXA Structures - Suivi d'avancement
 
-> État vérifié le 19 juillet 2026 sur la branche `codex/section-builder-loading`.
+> État vérifié le 19 juillet 2026 sur la branche `codex/fix-extruded-section-colors`.
 
 ---
 
@@ -10,11 +10,11 @@
 |---|---|
 | Version applicative | 0.1.0 |
 | Dernière mise à jour | 19 juillet 2026 |
-| Dernier développement | Page de chargement au premier lancement du Section Builder |
+| Dernier développement | Rotation 3D stable autour du centre du modele |
 | Moteur principal | PyNite |
 | Moteur avancé optionnel | OpenSeesPy |
 | État global | Application fonctionnelle en consolidation : modélisation GUI, persistance SQLite, calcul multi-solveur, plaques macro, résultats, i18n, plugins et Section Builder avancé. |
-| Validation récente | `python -m pytest -q` : 612 réussis ; lint ciblé vert |
+| Validation récente | `python -m pytest -q` : 614 réussis ; lint ciblé vert |
 
 ---
 

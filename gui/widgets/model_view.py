@@ -96,6 +96,8 @@ class ModelView(QWidget):
     _SECTION_LABEL_FONT_SCALE = 0.12
     _SECTION_LABEL_WIDTH_FACTOR = 0.6
     _SECTION_LABEL_COLLISION_MARGIN = 2.0
+    _ORBIT_DEGREES_PER_PIXEL = 0.3
+    _ORBIT_MAX_ELEVATION_DEGREES = 85.0
 
     node_picked = Signal(int)
     element_picked = Signal(int)
@@ -131,6 +133,8 @@ class ModelView(QWidget):
         self._selected_surfaces: set[int] = set()
         self._drag_origin: QPoint | None = None
         self._camera_drag_mode: str | None = None
+        self._rotation_last_position: QPointF | None = None
+        self._rotation_pivot: np.ndarray | None = None
         self._active_plane: str | None = None
         self._active_plane_value: float | None = None
         self._extruded_mesh_cache: dict[tuple, tuple[pv.PolyData | None, list[int]]] = {}
@@ -447,6 +451,24 @@ class ModelView(QWidget):
         center = (mins + maxs) * 0.5
         radius = max(float(np.linalg.norm(spans) * 0.5), 1.0)
         return center, spans, radius
+
+    def _model_orbit_pivot(self) -> np.ndarray:
+        """Return the structural model center, falling back to the visible scene."""
+        project = getattr(self, "_project", None)
+        if project is not None:
+            model_points = np.array(
+                [
+                    [node.x, node.y, node.z]
+                    for node in project.nodes.values()
+                    if self._node_on_active_plane(node.x, node.y, node.z)
+                ],
+                dtype=float,
+            )
+            if model_points.size:
+                center, _spans, _radius = self._scene_bounds(model_points)
+                return center
+        center, _spans, _radius = self._scene_bounds(self._visible_scene_points())
+        return center
 
     def _isometric_camera_state(self) -> _CameraState:
         """Handle isometric camera state."""
@@ -2537,24 +2559,114 @@ class ModelView(QWidget):
             self.plotter.interactor.MiddleButtonPressEvent()
 
     def _start_rotation_drag(self, event) -> None:
-        """Start left-button camera rotation in the dedicated rotation mode."""
-        self._camera_drag_mode = "rotate"
-        self._set_vtk_mouse_event(event)
-        self.plotter.interactor.LeftButtonPressEvent()
+        """Start a stable orbit around the center of the visible model."""
+        camera = self.plotter.camera
+        pivot = self._model_orbit_pivot()
+        position = np.asarray(camera.position, dtype=float)
+        focal_point = np.asarray(camera.focal_point, dtype=float)
+        offset = position - focal_point
+        if float(np.linalg.norm(offset)) <= 1e-9:
+            offset = np.array([1.0, -1.0, 1.0], dtype=float)
+
+        self._rotation_pivot = pivot
+        self._rotation_last_position = event.position()
+        self._camera_drag_mode = "orbit"
+        camera.position = tuple(float(value) for value in pivot + offset)
+        camera.focal_point = tuple(float(value) for value in pivot)
+        camera.up = (0.0, 0.0, 1.0)
+        self._orthogonalize_camera_up(camera)
+        self._reset_clipping_range()
+        self.plotter.render()
 
     def _forward_camera_drag(self, event) -> None:
         """Handle forward camera drag."""
+        if self._camera_drag_mode == "orbit":
+            self._orbit_camera(event)
+            return
         self._set_vtk_mouse_event(event)
         self.plotter.interactor.MouseMoveEvent()
 
     def _stop_camera_drag(self, event) -> None:
         """Finish middle-button 3D navigation."""
+        if self._camera_drag_mode == "orbit":
+            self._rotation_last_position = None
+            self._rotation_pivot = None
+            self._camera_drag_mode = None
+            return
         self._set_vtk_mouse_event(event)
         if self._camera_drag_mode == "rotate":
             self.plotter.interactor.LeftButtonReleaseEvent()
         else:
             self.plotter.interactor.MiddleButtonReleaseEvent()
         self._camera_drag_mode = None
+
+    def _orbit_camera(self, event) -> None:
+        """Orbit the camera without roll while keeping the model centered."""
+        current_position = event.position()
+        if self._rotation_last_position is None or self._rotation_pivot is None:
+            self._rotation_last_position = current_position
+            return
+
+        delta_x = float(current_position.x() - self._rotation_last_position.x())
+        delta_y = float(current_position.y() - self._rotation_last_position.y())
+        self._rotation_last_position = current_position
+        if abs(delta_x) <= 1e-9 and abs(delta_y) <= 1e-9:
+            return
+
+        camera = self.plotter.camera
+        new_position = self._constrained_orbit_position(
+            np.asarray(camera.position, dtype=float),
+            self._rotation_pivot,
+            delta_x,
+            delta_y,
+        )
+        camera.position = tuple(float(value) for value in new_position)
+        camera.focal_point = tuple(float(value) for value in self._rotation_pivot)
+        camera.up = (0.0, 0.0, 1.0)
+        self._orthogonalize_camera_up(camera)
+        self._reset_clipping_range()
+        self.plotter.render()
+
+    @classmethod
+    def _constrained_orbit_position(
+        cls,
+        position: np.ndarray,
+        pivot: np.ndarray,
+        delta_x: float,
+        delta_y: float,
+    ) -> np.ndarray:
+        """Return a turntable-style camera position around a fixed pivot."""
+        offset = np.asarray(position, dtype=float) - np.asarray(pivot, dtype=float)
+        distance = float(np.linalg.norm(offset))
+        if distance <= 1e-9:
+            return np.asarray(position, dtype=float)
+
+        horizontal_distance = float(np.hypot(offset[0], offset[1]))
+        azimuth = float(np.arctan2(offset[1], offset[0]))
+        elevation = float(np.arctan2(offset[2], horizontal_distance))
+        radians_per_pixel = np.radians(cls._ORBIT_DEGREES_PER_PIXEL)
+        azimuth -= delta_x * radians_per_pixel
+        elevation += delta_y * radians_per_pixel
+        elevation_limit = np.radians(cls._ORBIT_MAX_ELEVATION_DEGREES)
+        elevation = float(np.clip(elevation, -elevation_limit, elevation_limit))
+
+        horizontal_radius = distance * np.cos(elevation)
+        return np.asarray(pivot, dtype=float) + np.array(
+            [
+                horizontal_radius * np.cos(azimuth),
+                horizontal_radius * np.sin(azimuth),
+                distance * np.sin(elevation),
+            ],
+            dtype=float,
+        )
+
+    @staticmethod
+    def _orthogonalize_camera_up(camera) -> None:
+        """Keep the global vertical stable after an orbit update."""
+        try:
+            camera.OrthogonalizeViewUp()
+        except AttributeError:
+            pass
 
     def _handle_selection_release(self, event) -> bool:
         """Handle selection release."""

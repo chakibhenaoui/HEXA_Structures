@@ -8,7 +8,7 @@ os.environ.setdefault("QT_QPA_PLATFORM", "offscreen")
 
 import numpy as np
 import pytest
-from PySide6.QtCore import Qt
+from PySide6.QtCore import QPointF, Qt
 from PySide6.QtWidgets import QApplication
 
 from core.model_data import ProjectModel
@@ -568,24 +568,80 @@ def test_rotation_mode_switches_between_rotation_and_arrow_cursors() -> None:
     assert interactor.cursors[-1].shape() == Qt.ArrowCursor
 
 
-def test_rotation_drag_forwards_left_button_to_vtk() -> None:
-    class InteractorStub:
-        def __init__(self) -> None:
-            self.left_presses = 0
+def test_rotation_drag_orbits_around_visible_model_center() -> None:
+    class CameraStub:
+        position = (12.0, -4.0, 8.0)
+        focal_point = (2.0, 1.0, 3.0)
+        up = (0.0, 0.0, 1.0)
 
-        def LeftButtonPressEvent(self) -> None:
-            self.left_presses += 1
+        def OrthogonalizeViewUp(self) -> None:
+            pass
 
-    event = object()
-    interactor = InteractorStub()
-    forwarded_events = []
+    class EventStub:
+        @staticmethod
+        def position() -> QPointF:
+            return QPointF(120.0, 80.0)
+
+    camera = CameraStub()
+    renders = []
     view = ModelView.__new__(ModelView)
-    view.plotter = SimpleNamespace(interactor=interactor)
+    view.plotter = SimpleNamespace(camera=camera, render=lambda: renders.append(True))
     view._camera_drag_mode = None
-    view._set_vtk_mouse_event = lambda received: forwarded_events.append(received)
+    view._rotation_last_position = None
+    view._rotation_pivot = None
+    view._model_orbit_pivot = lambda: np.array([5.0, 10.0, 3.0], dtype=float)
+    view._reset_clipping_range = lambda: None
 
-    view._start_rotation_drag(event)
+    view._start_rotation_drag(EventStub())
 
-    assert view._camera_drag_mode == "rotate"
-    assert forwarded_events == [event]
-    assert interactor.left_presses == 1
+    assert view._camera_drag_mode == "orbit"
+    assert view._rotation_pivot == pytest.approx((5.0, 10.0, 3.0))
+    assert camera.focal_point == pytest.approx((5.0, 10.0, 3.0))
+    assert camera.position == pytest.approx((15.0, 5.0, 8.0))
+    assert renders == [True]
+
+
+def test_orbit_pivot_uses_model_nodes_instead_of_grid_extents() -> None:
+    project = ProjectModel()
+    project.add_node(0.0, 0.0, 0.0)
+    project.add_node(10.0, 20.0, 6.0)
+    view = ModelView.__new__(ModelView)
+    view._project = project
+    view._active_plane = None
+    view._active_plane_value = None
+    view._grid_points = np.array(
+        [[-100.0, -100.0, 0.0], [100.0, 100.0, 0.0]],
+        dtype=float,
+    )
+
+    assert view._model_orbit_pivot() == pytest.approx((5.0, 10.0, 3.0))
+
+
+def test_constrained_orbit_preserves_distance_and_does_not_cross_poles() -> None:
+    pivot = np.array([5.0, 10.0, 3.0], dtype=float)
+    position = np.array([15.0, 5.0, 8.0], dtype=float)
+    initial_distance = float(np.linalg.norm(position - pivot))
+
+    horizontal_orbit = ModelView._constrained_orbit_position(
+        position,
+        pivot,
+        delta_x=120.0,
+        delta_y=0.0,
+    )
+    high_orbit = ModelView._constrained_orbit_position(
+        horizontal_orbit,
+        pivot,
+        delta_x=0.0,
+        delta_y=10_000.0,
+    )
+
+    assert np.linalg.norm(horizontal_orbit - pivot) == pytest.approx(initial_distance)
+    assert horizontal_orbit[2] == pytest.approx(position[2])
+    assert np.linalg.norm(high_orbit - pivot) == pytest.approx(initial_distance)
+    elevation = np.degrees(
+        np.arctan2(
+            high_orbit[2] - pivot[2],
+            np.hypot(high_orbit[0] - pivot[0], high_orbit[1] - pivot[1]),
+        )
+    )
+    assert elevation == pytest.approx(ModelView._ORBIT_MAX_ELEVATION_DEGREES)
