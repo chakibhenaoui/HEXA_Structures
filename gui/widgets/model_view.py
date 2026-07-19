@@ -7,10 +7,10 @@ from typing import TYPE_CHECKING
 
 import numpy as np
 import pyvista as pv
-from PySide6.QtCore import QEvent, QLineF, QPoint, QPointF, QRect, QRectF, Qt, QTimer, Signal
-from PySide6.QtGui import QColor, QFont, QFontMetricsF, QPainter, QPainterPath, QPen
+from PySide6.QtCore import QEvent, QLineF, QPoint, QPointF, QRect, QRectF, Qt, Signal
 from PySide6.QtWidgets import QRubberBand, QVBoxLayout, QWidget
 from pyvistaqt import QtInteractor
+from vtkmodules.vtkRenderingCore import vtkTextActor
 
 from core.local_axes import local_axes_from_nodes
 from core.sections import TSection, get_profile
@@ -75,25 +75,12 @@ class _NodeScreenHit:
     depth: float
 
 
-class _SectionLabelOverlay(QWidget):
-    """Paint section names in screen space above the VTK interactor."""
-
-    def __init__(self, model_view: ModelView, parent: QWidget) -> None:
-        super().__init__(parent)
-        self._model_view = model_view
-        self.setAttribute(Qt.WA_TransparentForMouseEvents, True)
-        self.setAttribute(Qt.WA_TranslucentBackground, True)
-        self.setAutoFillBackground(False)
-
-    def paintEvent(self, event) -> None:
-        self._model_view._paint_section_label_overlay(event)
-
-
 class ModelView(QWidget):
     """3D structural model view."""
 
     _NODE_GLYPH_LIMIT = 1200
     _CAMERA_PADDING = 1.18
+    _SECTION_LABEL_FONT_SIZE = 14
 
     node_picked = Signal(int)
     element_picked = Signal(int)
@@ -132,6 +119,7 @@ class ModelView(QWidget):
         self._extruded_mesh_cache: dict[tuple, tuple[pv.PolyData | None, list[int]]] = {}
         self._extruded_guides_cache: dict[tuple, pv.PolyData | None] = {}
         self._extruded_cache_max_entries = 8
+        self._section_label_actors: list[tuple[int, vtkTextActor]] = []
         self.show_node_tags: bool = True
         self.show_section_names: bool = False
         self.show_extruded_sections: bool = False
@@ -151,15 +139,13 @@ class ModelView(QWidget):
         self.plotter.interactor.setFocusPolicy(Qt.StrongFocus)
         self.plotter.interactor.installEventFilter(self)
         self._rubber_band = QRubberBand(QRubberBand.Rectangle, self.plotter.interactor)
-        self._section_label_overlay = _SectionLabelOverlay(
-            self,
-            self.plotter.interactor,
-        )
-        self._section_label_overlay.setGeometry(self.plotter.interactor.rect())
-        self._section_label_overlay.hide()
 
         self._apply_background()
         self.plotter.add_axes()
+        self._section_label_render_observer = self.plotter.renderer.AddObserver(
+            "StartEvent",
+            self._on_section_label_render,
+        )
         self.plotter.enable_point_picking(
             callback=self._on_point_picked,
             show_message=False,
@@ -171,6 +157,7 @@ class ModelView(QWidget):
 
     def _clear_scene(self) -> None:
         """Clear scene."""
+        self._section_label_actors.clear()
         try:
             self.plotter.clear(render=False)
         except TypeError:
@@ -306,6 +293,7 @@ class ModelView(QWidget):
                             render=False,
                         )
         self._finalize_scene_view(preserve_camera=preserve_camera, render=False)
+        self._sync_section_label_actors()
         self._update_selection_actors(render=False)
         if self._draw_mode_enabled and self._draw_start_point is not None:
             self.set_preview_start(self._draw_start_point)
@@ -313,7 +301,6 @@ class ModelView(QWidget):
             self._update_hover_preview()
         else:
             self.plotter.render()
-        self._refresh_section_label_overlay()
 
     def _finalize_scene_view(
         self,
@@ -326,7 +313,6 @@ class ModelView(QWidget):
             self._reset_clipping_range()
             if render:
                 self.plotter.render()
-                self._refresh_section_label_overlay()
             return
         self._apply_active_view_camera(render=render)
 
@@ -385,7 +371,6 @@ class ModelView(QWidget):
         self._reset_clipping_range()
         if render:
             self.plotter.render()
-            self._refresh_section_label_overlay()
 
     def _visible_scene_points(self) -> np.ndarray:
         """Handle visible scene points."""
@@ -497,38 +482,15 @@ class ModelView(QWidget):
                 render=False,
             )
 
-    def _refresh_section_label_overlay(self) -> None:
-        """Refresh section label overlay."""
-        overlay = getattr(self, "_section_label_overlay", None)
-        if overlay is None:
-            return
-        overlay.setGeometry(self.plotter.interactor.rect())
-        visible = (
-            self._project is not None
-            and self.show_section_names
-            and not self.show_extruded_sections
-        )
-        overlay.setVisible(visible)
-        if visible:
-            overlay.raise_()
-            overlay.update()
-
-    @staticmethod
-    def _section_label_font() -> QFont:
-        """Handle section label font."""
-        font = QFont()
-        font.setPointSize(8)
-        font.setBold(True)
-        return font
-
-    def _iter_section_label_screen_data(self) -> list[tuple[str, QPointF, float]]:
-        """Handle iter section label screen data."""
+    def _iter_section_label_display_data(
+        self,
+    ) -> list[tuple[int, str, float, float, float]]:
+        """Return section labels positioned in the VTK display coordinate system."""
         if self._project is None or not self.show_section_names or self.show_extruded_sections:
             return []
 
-        metrics = QFontMetricsF(self._section_label_font())
-        labels: list[tuple[str, QPointF, float]] = []
-        for elem in self._project.elements.values():
+        labels: list[tuple[int, str, float, float, float]] = []
+        for elem_tag, elem in self._project.elements.items():
             ni = self._project.nodes.get(elem.node_i)
             nj = self._project.nodes.get(elem.node_j)
             sec = self._project.sections.get(elem.section_tag)
@@ -539,15 +501,15 @@ class ModelView(QWidget):
             if not self._node_on_active_plane(nj.x, nj.y, nj.z):
                 continue
 
-            p1 = self._project_world_to_screen((ni.x, ni.y, ni.z))
-            p2 = self._project_world_to_screen((nj.x, nj.y, nj.z))
+            p1 = self._project_world_to_display((ni.x, ni.y, ni.z))
+            p2 = self._project_world_to_display((nj.x, nj.y, nj.z))
             if p1 is None or p2 is None:
                 continue
 
-            dx = p2.x() - p1.x()
-            dy = p2.y() - p1.y()
+            dx = p2[0] - p1[0]
+            dy = p2[1] - p1[1]
             length = float((dx * dx + dy * dy) ** 0.5)
-            text_width = metrics.horizontalAdvance(sec.name)
+            text_width = len(sec.name) * self._SECTION_LABEL_FONT_SIZE * 0.6
             if length < max(36.0, text_width + 14.0):
                 continue
 
@@ -559,52 +521,74 @@ class ModelView(QWidget):
 
             normal_x = -dy / length
             normal_y = dx / length
-            midpoint = QPointF(
-                (p1.x() + p2.x()) * 0.5 + normal_x * 8.0,
-                (p1.y() + p2.y()) * 0.5 + normal_y * 8.0,
+            labels.append(
+                (
+                    elem_tag,
+                    sec.name,
+                    (p1[0] + p2[0]) * 0.5 + normal_x * 8.0,
+                    (p1[1] + p2[1]) * 0.5 + normal_y * 8.0,
+                    angle,
+                )
             )
-            labels.append((sec.name, midpoint, angle))
 
         return labels
 
-    def _paint_section_label_overlay(self, event) -> None:
-        """Handle paint section label overlay."""
-        _ = event
-        overlay = getattr(self, "_section_label_overlay", None)
-        if overlay is None:
+    def _sync_section_label_actors(self) -> None:
+        """Create native VTK text actors for the currently visible members."""
+        renderer = self.plotter.renderer
+        for _elem_tag, actor in self._section_label_actors:
+            renderer.RemoveActor2D(actor)
+        self._section_label_actors.clear()
+
+        if self._project is None or not self.show_section_names or self.show_extruded_sections:
             return
 
-        labels = self._iter_section_label_screen_data()
-        if not labels:
-            return
+        color = pv.Color(_COLORS["section_label"]).float_rgb
+        for elem_tag, elem in self._project.elements.items():
+            ni = self._project.nodes.get(elem.node_i)
+            nj = self._project.nodes.get(elem.node_j)
+            sec = self._project.sections.get(elem.section_tag)
+            if ni is None or nj is None or sec is None:
+                continue
+            if not self._node_on_active_plane(ni.x, ni.y, ni.z):
+                continue
+            if not self._node_on_active_plane(nj.x, nj.y, nj.z):
+                continue
 
-        painter = QPainter(overlay)
-        painter.setRenderHint(QPainter.Antialiasing, True)
-        painter.setRenderHint(QPainter.TextAntialiasing, True)
+            actor = vtkTextActor()
+            actor.SetInput(sec.name)
+            actor.SetTextScaleModeToNone()
+            actor.PickableOff()
+            actor.GetPositionCoordinate().SetCoordinateSystemToDisplay()
+            text_property = actor.GetTextProperty()
+            text_property.SetFontSize(self._SECTION_LABEL_FONT_SIZE)
+            text_property.SetBold(True)
+            text_property.SetColor(*color)
+            text_property.SetJustificationToCentered()
+            text_property.SetVerticalJustificationToCentered()
+            renderer.AddActor2D(actor)
+            self._section_label_actors.append((elem_tag, actor))
 
-        font = self._section_label_font()
-        metrics = QFontMetricsF(font)
-        outline_pen = QPen(QColor(255, 255, 255, 210), 1.8)
-        outline_pen.setJoinStyle(Qt.RoundJoin)
-        fill_color = QColor(_COLORS["section_label"])
-
-        for text, position, angle in labels:
-            text_rect = metrics.tightBoundingRect(text)
-            baseline = QPointF(
-                -text_rect.width() * 0.5 - text_rect.left(),
-                text_rect.height() * 0.5,
-            )
-            path = QPainterPath()
-            path.addText(baseline, font, text)
-
-            painter.save()
-            painter.translate(position)
-            painter.rotate(angle)
-            painter.strokePath(path, outline_pen)
-            painter.fillPath(path, fill_color)
-            painter.restore()
-
-        painter.end()
+    def _on_section_label_render(self, _renderer, _event) -> None:
+        """Update section labels immediately before VTK renders the scene."""
+        try:
+            labels = {
+                elem_tag: (text, x, y, angle)
+                for elem_tag, text, x, y, angle in self._iter_section_label_display_data()
+            }
+            for elem_tag, actor in self._section_label_actors:
+                data = labels.get(elem_tag)
+                if data is None:
+                    actor.VisibilityOff()
+                    continue
+                text, x, y, angle = data
+                actor.SetInput(text)
+                actor.SetPosition(x, y)
+                actor.SetOrientation(angle)
+                actor.VisibilityOn()
+        except Exception:
+            for _elem_tag, actor in self._section_label_actors:
+                actor.VisibilityOff()
 
     @staticmethod
     def _build_node_spheres(
@@ -2286,7 +2270,6 @@ class ModelView(QWidget):
                     and bool(event.buttons() & Qt.MiddleButton)
                 ):
                     self._forward_camera_drag(event)
-                    self._refresh_section_label_overlay()
                     return True
                 if self._draw_mode_enabled:
                     self._update_hover_preview()
@@ -2364,10 +2347,6 @@ class ModelView(QWidget):
                 return True
             elif event.type() == QEvent.Leave:
                 self._clear_hover_preview()
-            elif event.type() == QEvent.Resize:
-                self._refresh_section_label_overlay()
-            elif event.type() == QEvent.Wheel:
-                QTimer.singleShot(0, self._refresh_section_label_overlay)
         return super().eventFilter(watched, event)
 
     def _vtk_event_modifiers(self, event) -> tuple[int, int]:
@@ -2380,9 +2359,9 @@ class ModelView(QWidget):
     def _set_vtk_mouse_event(self, event) -> None:
         """Set VTK mouse event."""
         pos = event.position()
-        scale_x, scale_y = self._display_scales()
-        x = int(round(pos.x() * scale_x))
-        y = int(round(pos.y() * scale_y))
+        scale = self._display_scale()
+        x = int(round(pos.x() * scale))
+        y = int(round(pos.y() * scale))
         ctrl, shift = self._vtk_event_modifiers(event)
         self.plotter.interactor.SetEventInformationFlipY(
             x,
@@ -2416,7 +2395,6 @@ class ModelView(QWidget):
         else:
             self.plotter.interactor.MiddleButtonReleaseEvent()
         self._camera_drag_mode = None
-        self._refresh_section_label_overlay()
 
     def _handle_selection_release(self, event) -> bool:
         """Handle selection release."""
@@ -2822,7 +2800,6 @@ class ModelView(QWidget):
             if camera.parallel_projection:
                 camera.parallel_scale = float(state.get("parallel_scale", camera.parallel_scale))
             self.plotter.render()
-            self._refresh_section_label_overlay()
         except Exception:
             pass
 
@@ -3686,39 +3663,25 @@ class ModelView(QWidget):
         except Exception:
             return None
 
-    def _display_scales(self) -> tuple[float, float]:
-        """Return the actual VTK framebuffer scale relative to the Qt widget."""
-        try:
-            width = float(self.plotter.interactor.width())
-            height = float(self.plotter.interactor.height())
-            render_width, render_height = self.plotter.render_window.GetSize()
-            scale_x = float(render_width) / width
-            scale_y = float(render_height) / height
-            if scale_x > 0.0 and scale_y > 0.0:
-                return scale_x, scale_y
-        except Exception:
-            pass
+    def _display_scale(self) -> float:
+        """Display scale."""
         try:
             scale = float(self.plotter.interactor.devicePixelRatioF())
         except Exception:
             scale = 1.0
-        scale = scale if scale > 0.0 else 1.0
-        return scale, scale
+        return scale if scale > 0.0 else 1.0
 
     def _qt_to_vtk_display(self, x: float, y: float) -> tuple[float, float]:
         """Handle Qt to VTK display."""
-        scale_x, scale_y = self._display_scales()
+        scale = self._display_scale()
         height = float(self.plotter.interactor.height())
-        return float(x * scale_x), float((height - y - 1.0) * scale_y)
+        return float(x * scale), float((height - y - 1.0) * scale)
 
     def _vtk_to_qt_display(self, x: float, y: float) -> QPointF:
         """Handle VTK to Qt display."""
-        scale_x, scale_y = self._display_scales()
+        scale = self._display_scale()
         height = float(self.plotter.interactor.height())
-        return QPointF(
-            float(x) / scale_x,
-            height - (float(y) / scale_y) - 1.0,
-        )
+        return QPointF(float(x) / scale, height - (float(y) / scale) - 1.0)
 
     @staticmethod
     def _point_to_segment_distance(point: QPointF, start: QPointF, end: QPointF) -> float:

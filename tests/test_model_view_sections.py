@@ -8,8 +8,6 @@ os.environ.setdefault("QT_QPA_PLATFORM", "offscreen")
 
 import numpy as np
 import pytest
-from PySide6.QtCore import QPointF
-from PySide6.QtWidgets import QApplication
 
 from core.model_data import ProjectModel
 from core.sections import TSection, get_profile
@@ -18,13 +16,6 @@ pytest.importorskip("pyvista")
 pytest.importorskip("pyvistaqt")
 
 from gui.widgets.model_view import ModelView
-
-
-def _app() -> QApplication:
-    app = QApplication.instance()
-    if app is None:
-        app = QApplication([])
-    return app
 
 
 def test_rectangular_section_polygon_uses_real_dimensions() -> None:
@@ -432,8 +423,7 @@ def test_extruded_render_mesh_keeps_rgb_colors_with_smooth_shading() -> None:
         plotter.close()
 
 
-def test_section_labels_follow_bar_screen_angle() -> None:
-    _app()
+def test_section_labels_follow_bar_vtk_display_angle() -> None:
     project = _line_project_with_two_sections()
     view = ModelView.__new__(ModelView)
     view._project = project
@@ -441,32 +431,54 @@ def test_section_labels_follow_bar_screen_angle() -> None:
     view.show_extruded_sections = False
     view._active_plane = None
     view._active_plane_value = None
-    view._project_world_to_screen = lambda point: QPointF(
+    view._project_world_to_display = lambda point: (
         point[0] * 120.0,
         point[0] * 120.0,
+        0.0,
     )
 
-    labels = view._iter_section_label_screen_data()
+    labels = view._iter_section_label_display_data()
 
     assert len(labels) == 2
-    assert all(angle == pytest.approx(45.0) for _text, _position, angle in labels)
+    assert all(angle == pytest.approx(45.0) for _tag, _text, _x, _y, angle in labels)
 
 
-def test_vtk_display_coordinates_use_actual_framebuffer_scale() -> None:
+def test_section_label_render_updates_native_actor() -> None:
+    class ActorStub:
+        def __init__(self) -> None:
+            self.input = ""
+            self.position = (0.0, 0.0)
+            self.orientation = 0.0
+            self.visible = False
+
+        def SetInput(self, value: str) -> None:
+            self.input = value
+
+        def SetPosition(self, x: float, y: float) -> None:
+            self.position = (x, y)
+
+        def SetOrientation(self, value: float) -> None:
+            self.orientation = value
+
+        def VisibilityOn(self) -> None:
+            self.visible = True
+
+        def VisibilityOff(self) -> None:
+            self.visible = False
+
     view = ModelView.__new__(ModelView)
-    view.plotter = SimpleNamespace(
-        interactor=SimpleNamespace(
-            width=lambda: 600,
-            height=lambda: 400,
-            devicePixelRatioF=lambda: 1.0,
-        ),
-        render_window=SimpleNamespace(GetSize=lambda: (1200, 800)),
-    )
+    actor = ActorStub()
+    hidden_actor = ActorStub()
+    hidden_actor.visible = True
+    view._section_label_actors = [(1, actor), (2, hidden_actor)]
+    view._iter_section_label_display_data = lambda: [
+        (1, "IPE 300", 120.0, 80.0, 30.0),
+    ]
 
-    assert view._display_scales() == pytest.approx((2.0, 2.0))
-    qt_point = view._vtk_to_qt_display(600.0, 400.0)
-    assert qt_point.x() == pytest.approx(300.0)
-    assert qt_point.y() == pytest.approx(199.0)
-    assert view._qt_to_vtk_display(qt_point.x(), qt_point.y()) == pytest.approx(
-        (600.0, 400.0),
-    )
+    view._on_section_label_render(None, None)
+
+    assert actor.input == "IPE 300"
+    assert actor.position == pytest.approx((120.0, 80.0))
+    assert actor.orientation == pytest.approx(30.0)
+    assert actor.visible is True
+    assert hidden_actor.visible is False
