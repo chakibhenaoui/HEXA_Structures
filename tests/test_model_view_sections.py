@@ -8,6 +8,8 @@ os.environ.setdefault("QT_QPA_PLATFORM", "offscreen")
 
 import numpy as np
 import pytest
+from PySide6.QtCore import QPointF
+from PySide6.QtWidgets import QApplication
 
 from core.model_data import ProjectModel
 from core.sections import TSection, get_profile
@@ -16,6 +18,13 @@ pytest.importorskip("pyvista")
 pytest.importorskip("pyvistaqt")
 
 from gui.widgets.model_view import ModelView
+
+
+def _app() -> QApplication:
+    app = QApplication.instance()
+    if app is None:
+        app = QApplication([])
+    return app
 
 
 def test_rectangular_section_polygon_uses_real_dimensions() -> None:
@@ -421,3 +430,23 @@ def test_extruded_render_mesh_keeps_rgb_colors_with_smooth_shading() -> None:
         assert actor.mapper.scalar_map_mode == "point"
     finally:
         plotter.close()
+
+
+def test_section_labels_follow_bar_screen_angle() -> None:
+    _app()
+    project = _line_project_with_two_sections()
+    view = ModelView.__new__(ModelView)
+    view._project = project
+    view.show_section_names = True
+    view.show_extruded_sections = False
+    view._active_plane = None
+    view._active_plane_value = None
+    view._project_world_to_screen = lambda point: QPointF(
+        point[0] * 120.0,
+        point[0] * 120.0,
+    )
+
+    labels = view._iter_section_label_screen_data()
+
+    assert len(labels) == 2
+    assert all(angle == pytest.approx(45.0) for _text, _position, angle in labels)

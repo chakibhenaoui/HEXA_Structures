@@ -7,7 +7,7 @@ from typing import TYPE_CHECKING
 
 import numpy as np
 import pyvista as pv
-from PySide6.QtCore import QEvent, QLineF, QPoint, QPointF, QRect, QRectF, Qt, Signal
+from PySide6.QtCore import QEvent, QLineF, QPoint, QPointF, QRect, QRectF, Qt, QTimer, Signal
 from PySide6.QtGui import QColor, QFont, QFontMetricsF, QPainter, QPainterPath, QPen
 from PySide6.QtWidgets import QRubberBand, QVBoxLayout, QWidget
 from pyvistaqt import QtInteractor
@@ -75,6 +75,20 @@ class _NodeScreenHit:
     depth: float
 
 
+class _SectionLabelOverlay(QWidget):
+    """Paint section names in screen space above the VTK interactor."""
+
+    def __init__(self, model_view: ModelView, parent: QWidget) -> None:
+        super().__init__(parent)
+        self._model_view = model_view
+        self.setAttribute(Qt.WA_TransparentForMouseEvents, True)
+        self.setAttribute(Qt.WA_TranslucentBackground, True)
+        self.setAutoFillBackground(False)
+
+    def paintEvent(self, event) -> None:
+        self._model_view._paint_section_label_overlay(event)
+
+
 class ModelView(QWidget):
     """3D structural model view."""
 
@@ -137,6 +151,12 @@ class ModelView(QWidget):
         self.plotter.interactor.setFocusPolicy(Qt.StrongFocus)
         self.plotter.interactor.installEventFilter(self)
         self._rubber_band = QRubberBand(QRubberBand.Rectangle, self.plotter.interactor)
+        self._section_label_overlay = _SectionLabelOverlay(
+            self,
+            self.plotter.interactor,
+        )
+        self._section_label_overlay.setGeometry(self.plotter.interactor.rect())
+        self._section_label_overlay.hide()
 
         self._apply_background()
         self.plotter.add_axes()
@@ -285,9 +305,6 @@ class ModelView(QWidget):
                             name="elements",
                             render=False,
                         )
-                    if self.show_section_names:
-                        self._draw_section_labels(project, points)
-
         self._finalize_scene_view(preserve_camera=preserve_camera, render=False)
         self._update_selection_actors(render=False)
         if self._draw_mode_enabled and self._draw_start_point is not None:
@@ -296,6 +313,7 @@ class ModelView(QWidget):
             self._update_hover_preview()
         else:
             self.plotter.render()
+        self._refresh_section_label_overlay()
 
     def _finalize_scene_view(
         self,
@@ -457,38 +475,6 @@ class ModelView(QWidget):
             return 0.3
         bbox = points.max(axis=0) - points.min(axis=0)
         return max(bbox.max() * 0.03, 0.1)
-
-    def _draw_section_labels(self, project: ProjectModel, points: np.ndarray) -> None:
-        """Draw section labels."""
-        sec_midpoints: list[list[float]] = []
-        sec_labels: list[str] = []
-
-        for elem in project.elements.values():
-            sec = project.sections.get(elem.section_tag)
-            if sec is None:
-                continue
-            idx_i = self._tag_to_idx.get(elem.node_i)
-            idx_j = self._tag_to_idx.get(elem.node_j)
-            if idx_i is None or idx_j is None:
-                continue
-
-            mid = (points[idx_i] + points[idx_j]) / 2.0
-            sec_midpoints.append(mid.tolist())
-            sec_labels.append(sec.name)
-
-        if sec_midpoints:
-            self.plotter.add_point_labels(
-                np.array(sec_midpoints),
-                sec_labels,
-                font_size=10,
-                bold=False,
-                italic=True,
-                text_color="#2e8b57",
-                shape=None,
-                always_visible=True,
-                name="section_labels",
-                render=False,
-            )
 
     def _draw_surface_elements(self, project: ProjectModel, points: np.ndarray) -> None:
         """Draw surface elements."""
@@ -2300,6 +2286,7 @@ class ModelView(QWidget):
                     and bool(event.buttons() & Qt.MiddleButton)
                 ):
                     self._forward_camera_drag(event)
+                    self._refresh_section_label_overlay()
                     return True
                 if self._draw_mode_enabled:
                     self._update_hover_preview()
@@ -2377,6 +2364,10 @@ class ModelView(QWidget):
                 return True
             elif event.type() == QEvent.Leave:
                 self._clear_hover_preview()
+            elif event.type() == QEvent.Resize:
+                self._refresh_section_label_overlay()
+            elif event.type() == QEvent.Wheel:
+                QTimer.singleShot(0, self._refresh_section_label_overlay)
         return super().eventFilter(watched, event)
 
     def _vtk_event_modifiers(self, event) -> tuple[int, int]:
@@ -2425,6 +2416,7 @@ class ModelView(QWidget):
         else:
             self.plotter.interactor.MiddleButtonReleaseEvent()
         self._camera_drag_mode = None
+        self._refresh_section_label_overlay()
 
     def _handle_selection_release(self, event) -> bool:
         """Handle selection release."""
