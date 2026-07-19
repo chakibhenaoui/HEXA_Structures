@@ -46,6 +46,7 @@ def test_primary_toolbar_contains_main_actions() -> None:
         "act_copy_selection": "Copier",
         "act_define_grid": "Grille",
         "act_select_tool": "Sélection",
+        "act_rotate_3d": "Rotation 3D",
         "act_draw_node": "Nœud",
         "act_draw_bars": "Barres",
         "act_draw_surface": "Surface",
@@ -68,6 +69,7 @@ def test_primary_toolbar_contains_main_actions() -> None:
     toolbar_texts = [action.text() for action in window.toolbar_primary.actions() if action.text()]
     assert toolbar_texts[:3] == ["Nouveau", "Ouvrir", "Enregistrer"]
     assert "Grille" in toolbar_texts
+    assert "Rotation 3D" in toolbar_texts
     assert "Barres" in toolbar_texts
     assert "Surface" in toolbar_texts
     assert "Analyser" in toolbar_texts
@@ -77,6 +79,7 @@ def test_primary_toolbar_contains_main_actions() -> None:
     assert window.act_new.toolTip() == "Nouveau"
     assert window.act_draw_bars.toolTip() == "Barres"
     assert window.act_draw_surface.toolTip() == "Surface"
+    assert not window.act_rotate_3d.icon().isNull()
     assert not window.act_run.icon().isNull()
 
 
@@ -136,6 +139,56 @@ def test_section_names_and_extruded_sections_can_be_enabled_together() -> None:
     assert window.model_view.show_extruded_sections is True
     assert window.secondary_view.show_section_names is True
     assert window.secondary_view.show_extruded_sections is True
+
+
+def test_rotation_and_selection_tools_are_exclusive() -> None:
+    _app()
+
+    class FakeView:
+        def __init__(self) -> None:
+            self.rotation_states: list[bool] = []
+
+        def set_rotation_mode(self, enabled: bool) -> None:
+            self.rotation_states.append(enabled)
+
+    window = MainWindow.__new__(MainWindow)
+    QMainWindow.__init__(window)
+    window.model_view = FakeView()
+    window.secondary_view = FakeView()
+    window._draw_mode_kind = None
+    window._rotation_mode_active = False
+    window._selection_mode_active = True
+    window._set_interactive_drawing_enabled = lambda _enabled: None
+    selection_states: list[bool] = []
+    window._set_selection_mode_enabled = lambda enabled: selection_states.append(enabled)
+
+    window.act_select_tool = QAction("Sélection", window)
+    window.act_select_tool.setCheckable(True)
+    window.act_select_tool.setChecked(True)
+    window.act_select_tool.toggled.connect(window._toggle_selection_tool)
+    window.act_rotate_3d = QAction("Rotation 3D", window)
+    window.act_rotate_3d.setCheckable(True)
+    window.act_rotate_3d.toggled.connect(window._toggle_rotation_tool)
+    for action_name in ("act_draw_node", "act_draw_bars", "act_draw_surface"):
+        action = QAction(action_name, window)
+        action.setCheckable(True)
+        setattr(window, action_name, action)
+
+    window.act_rotate_3d.setChecked(True)
+
+    assert window.act_select_tool.isChecked() is False
+    assert window._rotation_mode_active is True
+    assert window.model_view.rotation_states[-1] is True
+    assert window.secondary_view.rotation_states[-1] is True
+    assert selection_states[-1] is False
+
+    window.act_select_tool.setChecked(True)
+
+    assert window.act_rotate_3d.isChecked() is False
+    assert window._rotation_mode_active is False
+    assert window.model_view.rotation_states[-1] is False
+    assert window.secondary_view.rotation_states[-1] is False
+    assert selection_states[-1] is True
 
 
 def test_window_title_uses_file_stem_when_project_name_is_default(tmp_path) -> None:

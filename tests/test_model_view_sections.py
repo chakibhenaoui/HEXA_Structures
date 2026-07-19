@@ -8,6 +8,8 @@ os.environ.setdefault("QT_QPA_PLATFORM", "offscreen")
 
 import numpy as np
 import pytest
+from PySide6.QtCore import Qt
+from PySide6.QtWidgets import QApplication
 
 from core.model_data import ProjectModel
 from core.sections import TSection, get_profile
@@ -539,3 +541,51 @@ def test_section_label_render_updates_native_actor() -> None:
     assert actor.font_size == 12
     assert actor.visible is True
     assert hidden_actor.visible is False
+
+
+def test_rotation_mode_switches_between_rotation_and_arrow_cursors() -> None:
+    app = QApplication.instance() or QApplication([])
+    _ = app
+
+    class InteractorStub:
+        def __init__(self) -> None:
+            self.cursors = []
+
+        def setCursor(self, cursor) -> None:
+            self.cursors.append(cursor)
+
+    interactor = InteractorStub()
+    view = ModelView.__new__(ModelView)
+    view.plotter = SimpleNamespace(interactor=interactor)
+    view._rotation_cursor = None
+    view._rotation_mode_enabled = False
+
+    view.set_rotation_mode(True)
+    view.set_rotation_mode(False)
+
+    assert view._rotation_mode_enabled is False
+    assert interactor.cursors[0].pixmap().isNull() is False
+    assert interactor.cursors[-1].shape() == Qt.ArrowCursor
+
+
+def test_rotation_drag_forwards_left_button_to_vtk() -> None:
+    class InteractorStub:
+        def __init__(self) -> None:
+            self.left_presses = 0
+
+        def LeftButtonPressEvent(self) -> None:
+            self.left_presses += 1
+
+    event = object()
+    interactor = InteractorStub()
+    forwarded_events = []
+    view = ModelView.__new__(ModelView)
+    view.plotter = SimpleNamespace(interactor=interactor)
+    view._camera_drag_mode = None
+    view._set_vtk_mouse_event = lambda received: forwarded_events.append(received)
+
+    view._start_rotation_drag(event)
+
+    assert view._camera_drag_mode == "rotate"
+    assert forwarded_events == [event]
+    assert interactor.left_presses == 1

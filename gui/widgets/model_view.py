@@ -8,6 +8,7 @@ from typing import TYPE_CHECKING
 import numpy as np
 import pyvista as pv
 from PySide6.QtCore import QEvent, QLineF, QPoint, QPointF, QRect, QRectF, Qt, Signal
+from PySide6.QtGui import QCursor, QColor, QPainter, QPen, QPixmap, QPolygonF
 from PySide6.QtWidgets import QRubberBand, QVBoxLayout, QWidget
 from pyvistaqt import QtInteractor
 from vtkmodules.vtkRenderingCore import vtkTextActor
@@ -119,6 +120,8 @@ class ModelView(QWidget):
         self._grid_points = np.empty((0, 3))
         self._draw_mode_enabled = False
         self._selection_mode_enabled = True
+        self._rotation_mode_enabled = False
+        self._rotation_cursor: QCursor | None = None
         self._cursor_pick_enabled = False
         self._cursor_pick_snap_to_grid = False
         self._draw_start_point: tuple[float, float, float] | None = None
@@ -2401,7 +2404,13 @@ class ModelView(QWidget):
                     self._update_cursor_pick_preview()
                 if (
                     self._camera_drag_mode is not None
-                    and bool(event.buttons() & Qt.MiddleButton)
+                    and (
+                        bool(event.buttons() & Qt.MiddleButton)
+                        or (
+                            self._rotation_mode_enabled
+                            and bool(event.buttons() & Qt.LeftButton)
+                        )
+                    )
                 ):
                     self._forward_camera_drag(event)
                     return True
@@ -2437,6 +2446,9 @@ class ModelView(QWidget):
                 and event.button() == Qt.LeftButton
             ):
                 self.plotter.interactor.setFocus()
+                if self._rotation_mode_enabled:
+                    self._start_rotation_drag(event)
+                    return True
                 if self._cursor_pick_enabled:
                     return self._handle_cursor_pick_click(event)
                 if self._draw_mode_enabled:
@@ -2464,6 +2476,14 @@ class ModelView(QWidget):
             ):
                 self.plotter.interactor.setFocus()
                 self._start_camera_drag(event)
+                return True
+            elif (
+                event.type() == QEvent.MouseButtonRelease
+                and event.button() == Qt.LeftButton
+                and self._rotation_mode_enabled
+                and self._camera_drag_mode is not None
+            ):
+                self._stop_camera_drag(event)
                 return True
             elif (
                 event.type() == QEvent.MouseButtonRelease
@@ -2515,6 +2535,12 @@ class ModelView(QWidget):
             self.plotter.interactor.LeftButtonPressEvent()
         else:
             self.plotter.interactor.MiddleButtonPressEvent()
+
+    def _start_rotation_drag(self, event) -> None:
+        """Start left-button camera rotation in the dedicated rotation mode."""
+        self._camera_drag_mode = "rotate"
+        self._set_vtk_mouse_event(event)
+        self.plotter.interactor.LeftButtonPressEvent()
 
     def _forward_camera_drag(self, event) -> None:
         """Handle forward camera drag."""
@@ -2726,6 +2752,39 @@ class ModelView(QWidget):
         if not enabled and self._drag_origin is not None:
             self._drag_origin = None
             self._rubber_band.hide()
+
+    def set_rotation_mode(self, enabled: bool) -> None:
+        """Enable left-button 3D rotation and update the interaction cursor."""
+        self._rotation_mode_enabled = enabled
+        if enabled:
+            if self._rotation_cursor is None:
+                self._rotation_cursor = self._build_rotation_cursor()
+            self.plotter.interactor.setCursor(self._rotation_cursor)
+        else:
+            self.plotter.interactor.setCursor(QCursor(Qt.ArrowCursor))
+
+    @staticmethod
+    def _build_rotation_cursor() -> QCursor:
+        """Build a compact circular-arrow cursor for 3D rotation mode."""
+        pixmap = QPixmap(32, 32)
+        pixmap.fill(Qt.transparent)
+        painter = QPainter(pixmap)
+        painter.setRenderHint(QPainter.Antialiasing, True)
+        painter.setPen(QPen(QColor("#173f59"), 2.4, Qt.SolidLine, Qt.RoundCap))
+        painter.drawArc(QRectF(5.0, 5.0, 22.0, 22.0), 35 * 16, 280 * 16)
+        painter.setPen(QPen(QColor("#d97828"), 1.5))
+        painter.setBrush(QColor("#d97828"))
+        painter.drawPolygon(
+            QPolygonF(
+                [
+                    QPointF(25.5, 5.5),
+                    QPointF(25.0, 13.0),
+                    QPointF(19.0, 8.5),
+                ]
+            )
+        )
+        painter.end()
+        return QCursor(pixmap, 16, 16)
 
     def _node_on_active_plane(self, x: float, y: float, z: float, tol: float = 1e-9) -> bool:
         """Handle node on active plane."""

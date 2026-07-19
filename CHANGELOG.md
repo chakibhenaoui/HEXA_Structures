@@ -40,7 +40,7 @@
 
 ### Validation
 
-- `python -m pytest -q` : 609 tests passes le 19 juillet 2026.
+- `python -m pytest -q` : 612 tests passes le 19 juillet 2026.
 - `python -m pytest -q` : 595 tests passes le 11 juillet 2026.
 - `python -m pytest tests/test_section_builder_loading.py tests/test_main_window_toolbar.py -q` : 12 tests passes le 19 juillet 2026.
 - `python -m pytest tests/test_section_builder.py tests/test_surface_sections_ui.py -q` : 50 tests passes le 19 juillet 2026.

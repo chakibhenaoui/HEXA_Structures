@@ -14,7 +14,7 @@
 | Moteur principal | PyNite |
 | Moteur avancé optionnel | OpenSeesPy |
 | État global | Application fonctionnelle en consolidation : modélisation GUI, persistance SQLite, calcul multi-solveur, plaques macro, résultats, i18n, plugins et Section Builder avancé. |
-| Validation récente | `python -m pytest -q` : 609 réussis ; lint ciblé vert |
+| Validation récente | `python -m pytest -q` : 612 réussis ; lint ciblé vert |
 
 ---
 
