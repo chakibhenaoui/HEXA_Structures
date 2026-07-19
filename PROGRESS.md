@@ -1,6 +1,6 @@
 # HEXA Structures - Suivi d'avancement
 
-> État vérifié le 1er juillet 2026 sur la branche `main`.
+> État vérifié le 19 juillet 2026 sur la branche `codex/section-builder-loading`.
 
 ---
 
@@ -9,12 +9,12 @@
 | Info | Valeur |
 |---|---|
 | Version applicative | 0.1.0 |
-| Dernière mise à jour | 1er juillet 2026 |
-| Dernier développement | Priorité Résultats V1 : onglet Synthèse, valeurs critiques multi-cas, enveloppes complètes et export CSV des tableaux |
+| Dernière mise à jour | 19 juillet 2026 |
+| Dernier développement | Page de chargement au premier lancement du Section Builder |
 | Moteur principal | PyNite |
 | Moteur avancé optionnel | OpenSeesPy |
 | État global | Application fonctionnelle en consolidation : modélisation GUI, persistance SQLite, calcul multi-solveur, plaques macro, résultats, i18n, plugins et Section Builder avancé. |
-| Validation récente | `python -m pytest -q` : 594 réussis ; lint ciblé des fichiers modifiés vert |
+| Validation récente | `python -m pytest -q` : 602 réussis ; lint ciblé vert |
 
 ---
 
@@ -50,6 +50,7 @@
 - Affichage des contraintes de section et génération d'une note de calcul.
 - Extrusion 3D des sections paramétriques et personnalisées.
 - Documentation README illustrée avec une capture de l'interface 3D.
+- Page de chargement au premier lancement du Section Builder.
 - Onglet Synthèse des résultats avec maxima/minima critiques et cas/combinaisons associés.
 - Enveloppes de barres affichées pour `N`, `Vy`, `Vz`, `T`, `My` et `Mz`.
 - Export CSV de l'onglet actif des tableaux de résultats.
