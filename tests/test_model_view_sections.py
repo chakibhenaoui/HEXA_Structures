@@ -387,3 +387,37 @@ def test_extruded_elements_are_colored_by_section() -> None:
     assert mesh is not None
     colors = np.unique(mesh.cell_data["section_rgb"], axis=0)
     assert colors.shape == (2, 3)
+
+
+def test_extruded_render_mesh_keeps_rgb_colors_with_smooth_shading() -> None:
+    pv = pytest.importorskip("pyvista")
+    project = _line_project_with_two_sections()
+    view = ModelView.__new__(ModelView)
+    view._active_plane = None
+    view._active_plane_value = None
+    view._extruded_mesh_cache = {}
+    view._extruded_cache_max_entries = 4
+    view._elem_tags = []
+
+    mesh = view._build_extruded_elements_mesh(project)
+
+    assert mesh is not None
+    render_mesh = view._prepare_extruded_render_mesh(mesh)
+    assert "section_rgb" not in render_mesh.cell_data
+    assert render_mesh.point_data["section_rgb"].dtype == np.uint8
+    assert np.unique(render_mesh.point_data["section_rgb"], axis=0).shape == (2, 3)
+
+    plotter = pv.Plotter(off_screen=True)
+    try:
+        actor = plotter.add_mesh(
+            render_mesh,
+            scalars="section_rgb",
+            preference="point",
+            rgb=True,
+            smooth_shading=True,
+            show_scalar_bar=False,
+        )
+        assert actor.mapper.scalar_visibility is True
+        assert actor.mapper.scalar_map_mode == "point"
+    finally:
+        plotter.close()

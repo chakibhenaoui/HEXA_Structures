@@ -762,9 +762,11 @@ class ModelView(QWidget):
             return
 
         try:
+            render_mesh = self._prepare_extruded_render_mesh(mesh)
             self.plotter.add_mesh(
-                mesh,
+                render_mesh,
                 scalars="section_rgb",
+                preference="point",
                 rgb=True,
                 smooth_shading=True,
                 show_scalar_bar=False,
@@ -985,6 +987,16 @@ class ModelView(QWidget):
         if colors.shape != (mesh.n_cells, 3):
             colors = np.resize(colors, (mesh.n_cells, 3)).astype(np.uint8)
         mesh.cell_data["section_rgb"] = colors
+
+    @staticmethod
+    def _prepare_extruded_render_mesh(mesh: pv.PolyData) -> pv.PolyData:
+        """Move section colors to points before PyVista computes smooth normals."""
+        render_mesh = mesh.cell_data_to_point_data(pass_cell_data=False)
+        colors = np.asarray(render_mesh.point_data["section_rgb"])
+        if colors.shape != (render_mesh.n_points, 3):
+            raise ValueError("Invalid extruded section point colors")
+        render_mesh.point_data["section_rgb"] = np.rint(colors).astype(np.uint8)
+        return render_mesh
 
     def _build_line_elements_mesh(
         self,
