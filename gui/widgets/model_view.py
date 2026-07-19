@@ -2380,9 +2380,9 @@ class ModelView(QWidget):
     def _set_vtk_mouse_event(self, event) -> None:
         """Set VTK mouse event."""
         pos = event.position()
-        scale = self._display_scale()
-        x = int(round(pos.x() * scale))
-        y = int(round(pos.y() * scale))
+        scale_x, scale_y = self._display_scales()
+        x = int(round(pos.x() * scale_x))
+        y = int(round(pos.y() * scale_y))
         ctrl, shift = self._vtk_event_modifiers(event)
         self.plotter.interactor.SetEventInformationFlipY(
             x,
@@ -3686,25 +3686,39 @@ class ModelView(QWidget):
         except Exception:
             return None
 
-    def _display_scale(self) -> float:
-        """Display scale."""
+    def _display_scales(self) -> tuple[float, float]:
+        """Return the actual VTK framebuffer scale relative to the Qt widget."""
+        try:
+            width = float(self.plotter.interactor.width())
+            height = float(self.plotter.interactor.height())
+            render_width, render_height = self.plotter.render_window.GetSize()
+            scale_x = float(render_width) / width
+            scale_y = float(render_height) / height
+            if scale_x > 0.0 and scale_y > 0.0:
+                return scale_x, scale_y
+        except Exception:
+            pass
         try:
             scale = float(self.plotter.interactor.devicePixelRatioF())
         except Exception:
             scale = 1.0
-        return scale if scale > 0.0 else 1.0
+        scale = scale if scale > 0.0 else 1.0
+        return scale, scale
 
     def _qt_to_vtk_display(self, x: float, y: float) -> tuple[float, float]:
         """Handle Qt to VTK display."""
-        scale = self._display_scale()
+        scale_x, scale_y = self._display_scales()
         height = float(self.plotter.interactor.height())
-        return float(x * scale), float((height - y - 1.0) * scale)
+        return float(x * scale_x), float((height - y - 1.0) * scale_y)
 
     def _vtk_to_qt_display(self, x: float, y: float) -> QPointF:
         """Handle VTK to Qt display."""
-        scale = self._display_scale()
+        scale_x, scale_y = self._display_scales()
         height = float(self.plotter.interactor.height())
-        return QPointF(float(x) / scale, height - (float(y) / scale) - 1.0)
+        return QPointF(
+            float(x) / scale_x,
+            height - (float(y) / scale_y) - 1.0,
+        )
 
     @staticmethod
     def _point_to_segment_distance(point: QPointF, start: QPointF, end: QPointF) -> float:

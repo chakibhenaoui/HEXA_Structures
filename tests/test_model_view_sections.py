@@ -450,3 +450,23 @@ def test_section_labels_follow_bar_screen_angle() -> None:
 
     assert len(labels) == 2
     assert all(angle == pytest.approx(45.0) for _text, _position, angle in labels)
+
+
+def test_vtk_display_coordinates_use_actual_framebuffer_scale() -> None:
+    view = ModelView.__new__(ModelView)
+    view.plotter = SimpleNamespace(
+        interactor=SimpleNamespace(
+            width=lambda: 600,
+            height=lambda: 400,
+            devicePixelRatioF=lambda: 1.0,
+        ),
+        render_window=SimpleNamespace(GetSize=lambda: (1200, 800)),
+    )
+
+    assert view._display_scales() == pytest.approx((2.0, 2.0))
+    qt_point = view._vtk_to_qt_display(600.0, 400.0)
+    assert qt_point.x() == pytest.approx(300.0)
+    assert qt_point.y() == pytest.approx(199.0)
+    assert view._qt_to_vtk_display(qt_point.x(), qt_point.y()) == pytest.approx(
+        (600.0, 400.0),
+    )
