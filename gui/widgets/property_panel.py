@@ -39,7 +39,10 @@ from core.model_data import (
     surface_expected_node_count,
     surface_type_from_formulation,
 )
-from core.plate_mesh_settings import effective_plate_mesh_divisions
+from core.plate_mesh_settings import (
+    effective_plate_mesh_divisions,
+    supports_structured_quad_mesh,
+)
 from core.loads import ComboType
 from gui.i18n.display_labels import combo_type_label, load_name_label, load_type_label
 
@@ -359,14 +362,8 @@ class PropertyPanel(QScrollArea):
         )
         form.addRow(self.tr("Section :"), QLabel(section_text))
         form.addRow(self.tr("Formulation :"), QLabel(str(plate.formulation)))
-        if not plate.is_structured_quad:
-            polygon_info = QLabel(
-                self.tr(
-                    "Contour polygonal : le maillage d'analyse sera disponible dans une prochaine étape."
-                )
-            )
-            polygon_info.setWordWrap(True)
-            form.addRow(self.tr("Type :"), polygon_info)
+        if not supports_structured_quad_mesh(self._project, plate):
+            form.addRow(self.tr("Type :"), QLabel(self.tr("Surface polygonale")))
         effective_nx, effective_ny = effective_plate_mesh_divisions(self._project, plate)
         self._combo_plate_mesh_mode = QComboBox()
         self._combo_plate_mesh_mode.addItem(self.tr("Automatique"), PLATE_MESH_MODE_AUTO)
@@ -399,7 +396,7 @@ class PropertyPanel(QScrollArea):
             lambda *_args: self._update_plate_mesh_edit_state()
         )
         self._update_plate_mesh_edit_state()
-        if not self._plate_editing_enabled or not plate.is_structured_quad:
+        if not self._plate_editing_enabled:
             self._combo_plate_mesh_mode.setEnabled(False)
             self._spin_plate_mesh_nx.setEnabled(False)
             self._spin_plate_mesh_ny.setEnabled(False)

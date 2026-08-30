@@ -25,7 +25,10 @@ from core.model_data import (
     ProjectModel,
     normalize_plate_mesh_mode,
 )
-from core.plate_mesh_settings import effective_plate_mesh_divisions
+from core.plate_mesh_settings import (
+    effective_plate_mesh_divisions,
+    supports_structured_quad_mesh,
+)
 from core.surface_geometry import surface_polygon_area
 from gui.dialogs.element_properties_dlg import _fmt, _object_items
 from gui.i18n.display_labels import load_name_label
@@ -84,7 +87,7 @@ class PlateRegionPropertiesDialog(QDialog):
         form.addRow(self.tr("Plaque :"), QLabel(f"P{self.plate.tag}", general))
         region_type = (
             self.tr("Plaque macro quadrangulaire")
-            if self.plate.is_structured_quad
+            if supports_structured_quad_mesh(self.project, self.plate)
             else self.tr("Surface polygonale")
         )
         form.addRow(self.tr("Type :"), QLabel(region_type, general))
@@ -149,22 +152,10 @@ class PlateRegionPropertiesDialog(QDialog):
     def _build_mesh_tab(self) -> QWidget:
         tab = QWidget(self)
         layout = QVBoxLayout(tab)
-        if not self.plate.is_structured_quad:
-            info = QLabel(
-                self.tr(
-                    "Le contour polygonal est enregistré dans le projet. "
-                    "Son maillage d'analyse sera disponible dans une prochaine étape."
-                ),
-                tab,
-            )
-            info.setWordWrap(True)
-            layout.addWidget(info)
-            layout.addStretch(1)
-            return tab
         mesh_nx, mesh_ny = effective_plate_mesh_divisions(self.project, self.plate)
         mode = normalize_plate_mesh_mode(getattr(self.plate, "mesh_mode", None))
 
-        group = QGroupBox(self.tr("Maillage structure"), tab)
+        group = QGroupBox(self.tr("Maillage"), tab)
         form = QFormLayout(group)
         form.addRow(
             self.tr("Mode :"),

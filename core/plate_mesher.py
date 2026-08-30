@@ -19,7 +19,10 @@ from core.model_data import (
     normalize_surface_formulation,
     surface_type_from_formulation,
 )
-from core.plate_mesh_settings import effective_plate_mesh_divisions
+from core.plate_mesh_settings import (
+    effective_plate_mesh_divisions,
+    supports_structured_quad_mesh,
+)
 
 
 @dataclass(frozen=True)
@@ -37,6 +40,7 @@ class GeneratedPlateMesh:
     cell_node_tags: tuple[tuple[int, ...], ...] = ()
     boundary_node_tags: dict[str, tuple[int, ...]] = field(default_factory=dict)
     target_size: float = 0.0
+    local_x_axis: tuple[float, float, float] | None = None
 
 
 def generate_plate_region_mesh(
@@ -143,8 +147,8 @@ def _validate_plate(
     target_project: ProjectModel,
     plate: PlateRegionData,
 ) -> None:
-    if len(plate.corner_node_tags) != 4:
-        raise ValueError("A plate region requires exactly 4 corner nodes.")
+    if not supports_structured_quad_mesh(source_project, plate):
+        raise ValueError("A structured plate region requires a convex four-node boundary.")
     if len(set(plate.corner_node_tags)) != 4:
         raise ValueError("Plate region corner nodes must be distinct.")
     for tag in plate.corner_node_tags:

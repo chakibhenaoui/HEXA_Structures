@@ -113,6 +113,24 @@ def surface_polygon_area(points: Sequence[Point3D]) -> float:
         return 0.0
 
 
+def is_convex_surface_polygon(points: Sequence[Point3D]) -> bool:
+    """Return whether a valid planar polygon is strictly convex."""
+    geometry = validate_surface_polygon(points)
+    projected = geometry.projected_points
+    tolerance = max(float(geometry.area), 1.0) * 1e-12
+    orientations = [
+        _orientation_2d(
+            projected[index - 1],
+            projected[index],
+            projected[(index + 1) % len(projected)],
+        )
+        for index in range(len(projected))
+    ]
+    return all(value > tolerance for value in orientations) or all(
+        value < -tolerance for value in orientations
+    )
+
+
 def triangulate_surface_polygon(points: Sequence[Point3D]) -> tuple[tuple[int, int, int], ...]:
     """Triangulate a valid simple polygon while preserving its boundary."""
     geometry = validate_surface_polygon(points)

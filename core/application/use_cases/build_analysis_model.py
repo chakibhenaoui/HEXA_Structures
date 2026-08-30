@@ -9,7 +9,9 @@ from typing import TYPE_CHECKING
 from core.application.ports import GeneratedPlateMeshPort, MeshGeneratorPort
 from core.bar_mesher import generate_coplanar_bar_meshes
 from core.geometry.plate_intersections import detect_plate_intersections
+from core.geometry.plate_intersections import PlateIntersectionReport
 from core.model_data import NodeData, PlateEdgeSupportData, SurfaceLoad
+from core.surface_geometry import is_convex_surface_polygon
 
 if TYPE_CHECKING:
     from core.model_data import ProjectModel
@@ -23,21 +25,9 @@ class BuildAnalysisModel:
 
     def execute(self, project: "ProjectModel") -> "ProjectModel":
         """Return a calculation-ready copy of the user project."""
-        polygonal_plate_tags = [
-            int(plate.tag)
-            for plate in project.plate_regions.values()
-            if not plate.is_structured_quad
-        ]
-        if polygonal_plate_tags:
-            labels = ", ".join(f"P{tag}" for tag in polygonal_plate_tags)
-            raise ValueError(
-                "Polygonal surface analysis mesh is not available for plate "
-                f"region(s): {labels}."
-            )
-
         analysis_project = deepcopy(project)
         plate_intersection_reports = {
-            int(plate.tag): detect_plate_intersections(project, plate)
+            int(plate.tag): _plate_intersection_report(project, plate)
             for plate in project.plate_regions.values()
         }
         setattr(analysis_project, "plate_intersection_reports", plate_intersection_reports)
@@ -62,6 +52,31 @@ class BuildAnalysisModel:
         )
         setattr(analysis_project, "generated_bar_meshes", generated_bar_meshes)
         return analysis_project
+
+
+def _plate_intersection_report(
+    project: "ProjectModel",
+    plate,
+) -> PlateIntersectionReport:
+    points = [
+        (
+            float(project.nodes[tag].x),
+            float(project.nodes[tag].y),
+            float(project.nodes[tag].z),
+        )
+        for tag in plate.boundary_node_tags
+    ]
+    if len(points) == 4 and is_convex_surface_polygon(points):
+        return detect_plate_intersections(project, plate)
+    return PlateIntersectionReport(
+        plate_tag=int(plate.tag),
+        node_hits=[],
+        bar_hits=[],
+        warnings=[
+            f"Le couplage automatique barre/surface polygonale P{plate.tag} "
+            "n'est pas encore disponible."
+        ],
+    )
 
 
 def _propagate_plate_surface_loads(

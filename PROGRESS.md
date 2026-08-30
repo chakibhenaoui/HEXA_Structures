@@ -1,6 +1,6 @@
 # HEXA Structures - Suivi d'avancement
 
-> État vérifié le 30 août 2026 sur la branche `codex/polygonal-triangular-mesher`.
+> État vérifié le 30 août 2026 sur la branche `codex/polygonal-opensees-integration`.
 
 ---
 
@@ -10,11 +10,11 @@
 |---|---|
 | Version applicative | 0.1.0 |
 | Dernière mise à jour | 30 août 2026 |
-| Dernier développement | PR1 du maillage triangulaire contraint des surfaces polygonales |
+| Dernier développement | PR2 d'intégration OpenSeesPy des surfaces polygonales |
 | Moteur principal | PyNite |
 | Moteur avancé optionnel | OpenSeesPy |
 | État global | Application fonctionnelle en consolidation : modélisation GUI, persistance SQLite, calcul multi-solveur, plaques macro, résultats, i18n, plugins et Section Builder avancé. |
-| Validation récente | `python -m pytest -q` : 625 réussis ; lint ciblé vert |
+| Validation récente | `python -m pytest -q` : 632 réussis ; lint ciblé vert |
 
 ---
 
@@ -57,6 +57,13 @@
 - Contours surfaciques plans convexes ou concaves, sauvegardés et affichés en 3D.
 - Contrat de maillage générique commun aux cellules quadrangulaires et triangulaires.
 - Mailleur triangulaire contraint des contours polygonaux, indépendant du solveur.
+- Routage automatique entre maillage quadrangulaire structure et triangulation
+  contrainte, y compris pour les quadrilateres concaves.
+- Calcul OpenSeesPy des surfaces polygonales avec `ASDShellT3`, integration
+  complete, cinematique lineaire et axe local commun a la macro-surface.
+- Propagation des charges surfaciques et appuis de bord vers les triangles.
+- Validation OpenSeesPy par equilibre des reactions et fleche analytique d'une
+  plaque carree simplement appuyee.
 
 ---
 
@@ -65,8 +72,8 @@
 Décision technique : utiliser une triangulation de Delaunay contrainte par le
 contour, fournie par `cytriangle`. Le maillage reste un adaptateur indépendant du
 solveur et conserve explicitement la topologie des cellules et des bords. Les
-surfaces polygonales restent bloquées pour l'analyse tant que l'intégration
-OpenSeesPy et le mapping des résultats ne sont pas validés de bout en bout.
+surfaces polygonales sont reservees a OpenSeesPy. Les resultantes et les cartes
+restent bloquees tant que leur extraction n'est pas validee de bout en bout.
 
 1. **PR1 - Socle de maillage** : généraliser le contrat de maillage, produire des
    triangles contraints déterministes, préserver les bords partagés, les plans
@@ -78,8 +85,10 @@ OpenSeesPy et le mapping des résultats ne sont pas validés de bout en bout.
    stabiliser les conventions de signes et de cisaillement, puis ajouter les
    cartes, le lissage contrôlé et les études de convergence.
 
-État actuel : PR1 en cours. Le choix `ASDShellT3` est enregistré comme formulation
-interne d'analyse, mais aucune surface polygonale n'est encore envoyée au solveur.
+État actuel : PR1 fusionne dans `main` par la PR #7. PR2 implemente et valide
+localement : le calcul, les deplacements et les reactions sont disponibles. Les
+moments, efforts membranaires, cisaillements et cartes restent marques
+indisponibles jusqu'au PR3.
 
 ---
 
@@ -87,12 +96,11 @@ interne d'analyse, mais aucune surface polygonale n'est encore envoyée au solve
 
 1. Finaliser l'export PDF général des résultats et notes de calcul.
 2. Poursuivre la validation ergonomique des tableaux, synthèses et enveloppes.
-3. Finaliser le PR1 du mailleur triangulaire contraint polygonal.
-4. Réaliser le PR2 d'intégration OpenSeesPy des triangles `ASDShellT3`.
-5. Réaliser le PR3 de mapping des résultats et de convergence polygonale.
-6. Stabiliser les résultats de cisaillement des plaques selon la formulation.
-7. Ajouter une convergence adaptative optionnelle pour le maillage des plaques.
-8. Étendre le Section Builder : import DXF, sections composées et matériaux multiples.
-9. Ajouter progressivement les vérifications EC2/EC3.
-10. Fournir un exemple de plugin externe `connections.ec3` et un diagnostic des plugins.
-11. Poursuivre les validations analytiques et comparatives des deux solveurs.
+3. Finaliser et publier le PR2 d'intégration OpenSeesPy des triangles `ASDShellT3`.
+4. Réaliser le PR3 de mapping des résultats et de convergence polygonale.
+5. Stabiliser les résultats de cisaillement des plaques selon la formulation.
+6. Ajouter une convergence adaptative optionnelle pour le maillage des plaques.
+7. Étendre le Section Builder : import DXF, sections composées et matériaux multiples.
+8. Ajouter progressivement les vérifications EC2/EC3.
+9. Fournir un exemple de plugin externe `connections.ec3` et un diagnostic des plugins.
+10. Poursuivre les validations analytiques et comparatives des deux solveurs.

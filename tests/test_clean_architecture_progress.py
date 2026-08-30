@@ -319,17 +319,34 @@ def test_build_analysis_model_uses_injected_mesh_generator() -> None:
     assert analysis_model.nodes[2].fixities == (1, 1, 1, 0, 0, 0)
 
 
-def test_build_analysis_model_rejects_polygon_before_calling_quad_mesher() -> None:
+def test_build_analysis_model_delegates_polygon_to_injected_mesher() -> None:
     project = _plate_project_for_architecture_tests()
     project.add_node(0.5, 0.5, 0.0)
     project.plate_regions.clear()
     project.add_plate_region((1, 2, 3, 5, 4), section_tag=1)
-    mesher = FakePlateMesher()
 
-    with pytest.raises(ValueError, match=r"P1"):
-        BuildAnalysisModel(mesher).execute(project)
+    class PolygonMesher:
+        def __init__(self) -> None:
+            self.calls = []
 
-    assert mesher.calls == []
+        def generate_plate_region_mesh(self, source_project, target_project, plate):
+            self.calls.append((source_project, target_project, plate))
+            return GeneratedPlateMesh(
+                plate_tag=plate.tag,
+                node_tags={},
+                surface_tags=[],
+                mesh_nx=0,
+                mesh_ny=0,
+                mesh_kind="constrained_triangular",
+            )
+
+    mesher = PolygonMesher()
+    analysis_model = BuildAnalysisModel(mesher).execute(project)
+
+    assert len(mesher.calls) == 1
+    assert analysis_model.generated_plate_meshes[1].mesh_kind == "constrained_triangular"
+    assert analysis_model.plate_intersection_reports[1].bar_hits == []
+    assert analysis_model.plate_intersection_reports[1].warnings
 
 
 def test_application_services_wraps_solver_use_cases() -> None:

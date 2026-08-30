@@ -23,6 +23,7 @@ class GeneratedPlateMeshPort(Protocol):
     cell_node_tags: tuple[tuple[int, ...], ...]
     boundary_node_tags: Mapping[str, tuple[int, ...]]
     target_size: float
+    local_x_axis: tuple[float, float, float] | None
 
 
 class MeshGeneratorPort(Protocol):

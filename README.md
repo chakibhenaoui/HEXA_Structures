@@ -90,18 +90,20 @@ Les surfaces planes peuvent etre modelisees avec un contour simple convexe ou
 concave, sans ouverture, puis sauvegardees, chargees et affichees dans la vue 3D.
 Le contour est ferme par un nouveau clic sur son premier sommet ou par clic droit.
 
-Le calcul reste experimental et limite aux plaques macro quadrangulaires : avant
-calcul OpenSeesPy, HEXA genere un maillage regulier interne invisible dans l'arbre
-principal du modele. Le mode de maillage par
-defaut est automatique : HEXA calcule une taille d'element cible selon les
-dimensions de la plaque, son epaisseur et la formulation choisie. Un mode
-utilisateur permet de figer explicitement `mesh_nx` et `mesh_ny`. Les ouvertures,
-tremies et le calcul des contours polygonaux ne sont pas pris en charge a ce
-stade. Un mailleur triangulaire contraint experimental existe dans le noyau, mais
-il n'est pas encore branche au solveur : une surface polygonale bloque donc
-explicitement le lancement du calcul au lieu d'etre approximee. Les cartes de
-contours plaque s'appuient sur le maillage quadrangulaire interne, regroupe par
-plaque macro pour le post-traitement.
+Le calcul reste experimental et reserve a OpenSeesPy. HEXA choisit un maillage
+regulier `ShellMITC4` pour les quadrilateres convexes et une triangulation
+contrainte `ASDShellT3` pour les contours polygonaux ou concaves. Ces maillages
+internes restent invisibles dans l'arbre principal. Le mode automatique calcule
+une taille d'element cible selon la geometrie, l'epaisseur et la formulation ; le
+mode utilisateur fixe explicitement la densite demandee.
+
+Les triangles utilisent une cinematique lineaire, l'integration complete a trois
+points et un axe local commun a la macro-surface. Les charges surfaciques et les
+appuis de bord sont propages au maillage. Les deplacements et reactions sont
+disponibles, mais les resultantes `N`, `M`, `Q` et leurs cartes restent masquees
+jusqu'a leur extraction et validation au PR3. Les ouvertures, tremies, le couplage
+automatique avec les barres coplanaires et la convergence adaptative ne sont pas
+encore pris en charge.
 
 ## Architecture
 

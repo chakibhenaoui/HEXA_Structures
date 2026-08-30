@@ -12,7 +12,7 @@ from core.model_data import (
     normalize_plate_mesh_mode,
     normalize_surface_formulation,
 )
-from core.surface_geometry import validate_surface_polygon
+from core.surface_geometry import is_convex_surface_polygon, validate_surface_polygon
 
 if TYPE_CHECKING:
     from core.model_data import PlateRegionData, ProjectModel
@@ -54,13 +54,25 @@ def effective_plate_mesh_divisions(
     plate: "PlateRegionData",
 ) -> tuple[int, int]:
     """Handle effective plate mesh divisions."""
-    if not getattr(plate, "is_structured_quad", len(plate.corner_node_tags) == 4):
-        return max(1, int(plate.mesh_nx)), max(1, int(plate.mesh_ny))
+    if not supports_structured_quad_mesh(project, plate):
+        recommendation = polygonal_plate_mesh_recommendation(project, plate)
+        return recommendation.divisions, recommendation.divisions
     mode = normalize_plate_mesh_mode(getattr(plate, "mesh_mode", None))
     if mode == PLATE_MESH_MODE_USER:
         return max(1, int(plate.mesh_nx)), max(1, int(plate.mesh_ny))
     recommendation = automatic_plate_mesh_recommendation(project, plate)
     return recommendation.mesh_nx, recommendation.mesh_ny
+
+
+def supports_structured_quad_mesh(
+    project: "ProjectModel",
+    plate: "PlateRegionData",
+) -> bool:
+    """Return whether a plate boundary is a convex four-node polygon."""
+    if len(plate.corner_node_tags) != 4:
+        return False
+    points = [_node_xyz(project, tag) for tag in plate.corner_node_tags]
+    return is_convex_surface_polygon(points)
 
 
 def automatic_plate_mesh_recommendation(

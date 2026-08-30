@@ -14,6 +14,7 @@ from core.results import (
     NodalResult,
     SurfaceResult,
     compute_envelopes,
+    compute_result_summary,
 )
 from core.result_mapping import PlateRegionResult
 from gui.widgets.results_panel import ResultsPanel
@@ -142,6 +143,7 @@ def test_results_panel_populates_plate_region_results_table() -> None:
                         mxx_min=-3.0,
                         mxx_max=4.0,
                         fz_reaction_total=12.5,
+                        resultants_available=True,
                     )
                 },
                 "result_context": {"plate_region_count": 1},
@@ -159,6 +161,37 @@ def test_results_panel_populates_plate_region_results_table() -> None:
         for index in range(table.columnCount())
     ]
     assert float(table.item(0, 8).data(Qt.UserRole)) == 12.5
+
+
+def test_unavailable_plate_resultants_are_not_displayed_or_summarized() -> None:
+    _app()
+    result = PlateRegionResult(
+        tag=1,
+        uz_min=-0.01,
+        uz_max=0.0,
+        fz_reaction_total=4.0,
+        resultants_available=False,
+    )
+    panel = ResultsPanel()
+    panel.set_all_results(
+        {
+            "Plaque": {
+                "displacements": {},
+                "reactions": {},
+                "element_forces": {},
+                "surface_results": {},
+                "plate_results": {1: result},
+                "result_context": {"plate_region_count": 1},
+            }
+        }
+    )
+    panel.show_result_type("surface_results")
+
+    table = panel.ui.tbl_surface_results
+    assert [table.item(0, column).text() for column in range(3, 8)] == ["-"] * 5
+    summary = compute_result_summary({"Plaque": {"plate_results": {1: result}}})
+    assert any(row.component == "Uz" for row in summary)
+    assert not any(row.component in {"Mxx", "Myy", "Mxy", "Qx", "Qy"} for row in summary)
 
 
 def test_results_panel_populates_complete_envelope_columns() -> None:
