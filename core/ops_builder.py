@@ -58,6 +58,7 @@ class OpsBuilder:
         self._transf_cache: dict[tuple[float, float, float], int] = {}
         self._element_transf_tags: dict[int, int] = {}
         self._surface_ops_tag_offset = max(self.project.elements.keys(), default=0)
+        self._surface_local_x_axes = self._build_surface_local_x_axes()
 
     def build(self, ndm: int = 3, ndf: int = 6) -> None:
         """Handle build."""
@@ -157,6 +158,39 @@ class OpsBuilder:
     def _ops_surface_tag(self, surface_tag: int) -> int:
         """Handle OpenSees surface tag."""
         return self._surface_ops_tag_offset + int(surface_tag)
+
+    def _build_surface_local_x_axes(
+        self,
+    ) -> dict[int, tuple[float, float, float]]:
+        axes: dict[int, tuple[float, float, float]] = {}
+        for mesh in getattr(self.project, "generated_plate_meshes", {}).values():
+            local_x = getattr(mesh, "local_x_axis", None)
+            if local_x is None:
+                continue
+            values = tuple(float(value) for value in local_x)
+            if len(values) != 3:
+                continue
+            for surface_tag in mesh.surface_tags:
+                axes[int(surface_tag)] = values
+        return axes
+
+    def _surface_local_x_axis(self, surface) -> tuple[float, float, float]:
+        configured = self._surface_local_x_axes.get(int(surface.tag))
+        if configured is not None:
+            return configured
+        first = self.project.nodes[int(surface.node_tags[0])]
+        second = self.project.nodes[int(surface.node_tags[1])]
+        direction = (
+            float(second.x) - float(first.x),
+            float(second.y) - float(first.y),
+            float(second.z) - float(first.z),
+        )
+        norm = sum(value * value for value in direction) ** 0.5
+        if norm <= 1e-12:
+            raise ValueError(
+                f"La surface S{surface.tag} ne permet pas de definir un axe local."
+            )
+        return tuple(value / norm for value in direction)
 
     @staticmethod
     def _torsion_constant(sec, iz: float) -> float:
@@ -285,21 +319,30 @@ class OpsBuilder:
                     f"La surface S{surface.tag} référence T{surface.section_tag}, qui n'est pas une section plaque."
                 )
             formulation = getattr(surface, "formulation", None) or sec.surface_formulation
-            if formulation not in {"ShellMITC4", "ShellDKGQ", "ShellNLDKGQ"}:
+            if formulation not in {
+                "ShellMITC4",
+                "ShellDKGQ",
+                "ShellNLDKGQ",
+                "ASDShellT3",
+            }:
                 raise NotImplementedError(
                     f"La formulation plaque {formulation} n'est pas encore prise en charge par le solveur OpenSees."
                 )
-            if len(surface.node_tags) != 4:
+            expected_node_count = 3 if formulation == "ASDShellT3" else 4
+            if len(surface.node_tags) != expected_node_count:
                 raise NotImplementedError(
-                    "Cette version du solveur plaque OpenSees est limitée aux surfaces quadrangulaires."
+                    f"La formulation {formulation} attend {expected_node_count} noeuds."
                 )
 
-            ops.element(
+            element_args = [
                 formulation,
                 self._ops_surface_tag(surface.tag),
                 *surface.node_tags,
                 sec.tag,
-            )
+            ]
+            if formulation == "ASDShellT3":
+                element_args.extend(("-local", *self._surface_local_x_axis(surface)))
+            ops.element(*element_args)
 
     @staticmethod
     def _accumulate_nodal_load(

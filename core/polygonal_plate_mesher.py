@@ -148,6 +148,7 @@ def generate_polygonal_plate_mesh(
         cell_node_tags=tuple(cell_node_tags),
         boundary_node_tags=boundary_node_tags,
         target_size=float(recommendation.target_size),
+        local_x_axis=tuple(float(value) for value in geometry.u_axis),
     )
 
 

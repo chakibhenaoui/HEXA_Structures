@@ -38,6 +38,11 @@ except Exception:
     sectionproperties_datas = []
     sectionproperties_hiddenimports = []
 
+try:
+    cytriangle_hiddenimports = collect_submodules("cytriangle")
+except Exception:
+    cytriangle_hiddenimports = []
+
 
 def _qtpy_filter(name):
     return name in {
@@ -97,6 +102,7 @@ a = Analysis(
         *qtpy_hiddenimports,
         *pyvistaqt_hiddenimports,
         *sectionproperties_hiddenimports,
+        *cytriangle_hiddenimports,
     ],
     hookspath=[],
     hooksconfig={},

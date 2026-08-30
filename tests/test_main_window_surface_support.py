@@ -575,6 +575,72 @@ def test_run_analysis_blocks_invalid_macro_plate_before_backend(monkeypatch) -> 
     assert selections == [plate.tag]
 
 
+def test_run_analysis_allows_polygonal_plate_to_reach_opensees(monkeypatch) -> None:
+    _app()
+    window = MainWindow.__new__(MainWindow)
+    project = ProjectModel()
+    for point in (
+        (0.0, 0.0, 0.0),
+        (4.0, 0.0, 0.0),
+        (4.0, 3.0, 0.0),
+        (2.0, 1.5, 0.0),
+        (0.0, 3.0, 0.0),
+    ):
+        project.add_node(*point)
+    project.nodes[1].fixities = (1, 1, 1, 1, 1, 1)
+    project.add_material("Beton C30", "concrete", "C30/37")
+    section = project.add_section(
+        "Dalle 20 cm",
+        "surface",
+        1,
+        properties={"thickness": 0.20, "element_formulation": "ShellMITC4"},
+    )
+    project.add_plate_region((1, 2, 3, 4, 5), section_tag=section.tag)
+    project.loads[1] = LoadData(tag=1, name="Surface", load_type="live")
+    project.plate_surface_loads.append(
+        PlateSurfaceLoadData(load_tag=1, plate_tag=1, qz=-1.0)
+    )
+    window.project = project
+    window.act_run = QAction("Analyser", None)
+    window.settings = type(
+        "Settings",
+        (),
+        {"analysis": type("AnalysisSettings", (), {"solver_engine": "opensees"})()},
+    )()
+    window._surface_features_enabled = lambda: True
+    window._surface_features_disabled_reason = lambda: ""
+    window._case_tags = {}
+    window._all_results = {}
+    window._refresh_diagram_actions = lambda: None
+    window._refresh_result_actions = lambda: None
+    window._log_analysis_mesh_diagnostic = lambda: None
+    logs: list[str] = []
+    window._log = lambda message: logs.append(message)
+
+    calls: list[str] = []
+
+    class FakeAnalysisRunner:
+        engine = SolverEngine.OPENSEES
+
+        def __init__(self, _project, engine=None) -> None:
+            calls.append(str(engine))
+
+        def run_all(self, callback=None):
+            if callback is not None:
+                callback("Surface (cas 1)", 0, 1)
+            return {"Surface (cas 1)": (False, {"error": "arrêt test"})}
+
+    import core.analysis as analysis_module
+
+    monkeypatch.setattr(analysis_module, "AnalysisRunner", FakeAnalysisRunner)
+
+    window._run_analysis()
+
+    assert calls == ["opensees"]
+    assert not any("maillage polygonal requis" in message.lower() for message in logs)
+    assert window.act_run.isEnabled() is True
+
+
 def test_run_analysis_blocks_bar_using_surface_section_before_backend(monkeypatch) -> None:
     window = MainWindow.__new__(MainWindow)
     project = ProjectModel()

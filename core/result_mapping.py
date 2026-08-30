@@ -40,6 +40,7 @@ class PlateRegionResult:
 
     node_tags: tuple[int, ...] = ()
     surface_tags: tuple[int, ...] = ()
+    resultants_available: bool = False
 
 
 @dataclass
@@ -137,6 +138,9 @@ def map_analysis_results_to_user_results(
         raw_results,
         generated_plate_meshes,
     )
+    plate_resultants_available = any(
+        result.resultants_available for result in plate_results.values()
+    )
 
     context = dict(raw_results.get("result_context", {}) or {})
     context.update(
@@ -169,7 +173,10 @@ def map_analysis_results_to_user_results(
             },
             "generated_bar_count": len(generated_bar_meshes),
             "generated_bar_segment_count": len(generated_bar_segment_tags),
-            "surface_results_available": bool(user_surface_results or plate_results),
+            "surface_results_available": bool(
+                user_surface_results or plate_resultants_available
+            ),
+            "plate_resultants_available": plate_resultants_available,
         }
     )
 
@@ -294,6 +301,7 @@ def _aggregate_plate_result(
         ),
         node_tags=unique_node_tags,
         surface_tags=surface_tags,
+        resultants_available=any(tag in surface_results for tag in surface_tags),
     )
 
 

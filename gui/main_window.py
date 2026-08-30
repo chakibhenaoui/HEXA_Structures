@@ -49,7 +49,10 @@ from core.model_data import (
     load_project,
     save_project,
 )
-from core.plate_mesh_settings import effective_plate_mesh_divisions
+from core.plate_mesh_settings import (
+    effective_plate_mesh_divisions,
+    supports_structured_quad_mesh,
+)
 from core.selection_copy import build_copy_instance_points, selection_anchor_point
 from core.solvers import AnalysisFeature, SolverEngine, SolverManager
 from core.surface_geometry import SurfacePolygonGeometryError, validate_surface_polygon
@@ -1111,8 +1114,11 @@ class MainWindow(QMainWindow):
         return any(
             bool(
                 case_results.get("surface_results")
-                or case_results.get("plate_results")
                 or (case_results.get("internal_results", {}) or {}).get("surface_results")
+                or any(
+                    bool(getattr(result, "resultants_available", True))
+                    for result in case_results.get("plate_results", {}).values()
+                )
             )
             for case_results in self._all_results.values()
         )
@@ -3202,7 +3208,7 @@ class MainWindow(QMainWindow):
 
     def _log_plate_intersection_diagnostic(self, plate) -> None:
         """Log non-blocking plate intersection diagnostics."""
-        if not plate.is_structured_quad:
+        if not supports_structured_quad_mesh(self.project, plate):
             self._log(
                 f"Surface polygonale P{plate.tag} : diagnostic d'intersections reporté "
                 "au maillage polygonal."
@@ -3814,7 +3820,10 @@ class MainWindow(QMainWindow):
             plate = self.project.plate_regions[int(tag)]
             mesh_nx, mesh_ny = effective_plate_mesh_divisions(self.project, plate)
             mesh_mode = normalize_plate_mesh_mode(getattr(plate, "mesh_mode", None))
-            structured_mesh_available = plate.is_structured_quad
+            structured_mesh_available = supports_structured_quad_mesh(
+                self.project,
+                plate,
+            )
             menu_plate = menu.addMenu(
                 self.tr("Plaque macro")
                 if structured_mesh_available
@@ -3832,14 +3841,10 @@ class MainWindow(QMainWindow):
         act_mesh_user = menu_plate.addAction(self.tr("Nombre de mailles..."))
         act_mesh_user.setCheckable(True)
         act_mesh_user.setChecked(mesh_mode == PLATE_MESH_MODE_USER)
-        if not structured_mesh_available:
+        if not is_macro_plate:
             for action in (act_mesh_auto, act_mesh_user):
                 action.setEnabled(False)
-                action.setToolTip(
-                    self.tr("Le maillage polygonal sera disponible dans une prochaine étape.")
-                    if is_macro_plate
-                    else self.tr("Disponible uniquement pour une plaque macro.")
-                )
+                action.setToolTip(self.tr("Disponible uniquement pour une plaque macro."))
         menu_plate.addSeparator()
         act_mesh_info = menu_plate.addAction(
             self.tr("Maillage retenu : {nx} x {ny}").format(nx=mesh_nx, ny=mesh_ny)
@@ -6353,29 +6358,6 @@ class MainWindow(QMainWindow):
             )
             return
 
-        polygonal_plates = [
-            plate
-            for plate in self.project.plate_regions.values()
-            if not plate.is_structured_quad
-        ]
-        if polygonal_plates:
-            labels = ", ".join(f"P{plate.tag}" for plate in polygonal_plates[:6])
-            if len(polygonal_plates) > 6:
-                labels += f", ... (+{len(polygonal_plates) - 6})"
-            QMessageBox.warning(
-                self,
-                self.tr("Maillage polygonal requis"),
-                self.tr(
-                    "Les surfaces polygonales suivantes sont modélisées mais leur maillage "
-                    "d'analyse n'est pas encore disponible : {labels}."
-                ).format(labels=labels),
-            )
-            self._log(
-                "Analyse annulée : maillage polygonal requis pour " + labels + "."
-            )
-            self._select_surface_after_change(polygonal_plates[0].tag)
-            return
-
         element_issues = self._element_section_compatibility_issues()
         if element_issues:
             details = "\n".join(
@@ -6814,7 +6796,13 @@ class MainWindow(QMainWindow):
         """Handle surface diagram available."""
         if tag in self.project.plate_regions:
             return any(
-                int(tag) in case_results.get("plate_results", {})
+                bool(
+                    getattr(
+                        case_results.get("plate_results", {}).get(int(tag)),
+                        "resultants_available",
+                        False,
+                    )
+                )
                 for case_results in self._all_results.values()
             )
         return tag in self.project.surface_elements and any(

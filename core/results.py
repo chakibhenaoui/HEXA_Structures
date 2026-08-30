@@ -320,6 +320,10 @@ def compute_result_summary(all_results: dict[str, dict]) -> list[ResultSummaryRo
 
         for tag, plate in results.get("plate_results", {}).items():
             for component, attr_min, attr_max, unit in plate_components:
+                if component != "Uz" and not bool(
+                    getattr(plate, "resultants_available", True)
+                ):
+                    continue
                 _record_minmax(
                     "Plaque",
                     f"P{tag}",

@@ -13,6 +13,12 @@
   et des bords, compatible avec les maillages quadrangulaires et triangulaires.
 - Mailleur triangulaire contraint des surfaces polygonales base sur `cytriangle`,
   avec preservation des plans inclines, de l'orientation et des bords partages.
+- Routage automatique des plaques vers le mailleur quadrangulaire structure ou
+  triangulaire contraint selon la geometrie du contour.
+- Calcul OpenSeesPy des surfaces polygonales avec des elements `ASDShellT3`, un
+  axe local commun, une cinematique lineaire et l'integration complete.
+- Cas de reference OpenSeesPy pour l'equilibre global et la fleche d'une plaque
+  carree simplement appuyee.
 - Catalogue acier enrichi avec plus de 200 profiles europeens courants : IPE, HEA, HEB, HEM, UPN, UPE, CHS, SHS, RHS et cornieres.
 - Sections parametriques filaires dans la GUI : I/H, U, L, tube circulaire et tube rectangulaire.
 - Section Builder HEXA : dessin 2D point par point sur grille, accrochage, fermeture de contour, analyse polygonale simple et insertion dans les sections du projet.
@@ -39,8 +45,12 @@
 
 - Le maillage structure quadrangulaire expose desormais la meme topologie de
   cellules et de bords que le futur pipeline polygonal.
-- La formulation triangulaire `ASDShellT3` est reservee aux elements internes du
-  modele d'analyse ; le calcul des macro-surfaces polygonales reste desactive au PR1.
+- Les charges surfaciques et appuis de bord des macro-surfaces polygonales sont
+  propages vers les noeuds et triangles du modele d'analyse.
+- Les tableaux conservent les deplacements et reactions polygonaux, mais marquent
+  les resultantes indisponibles jusqu'a leur extraction et validation au PR3.
+- Le packaging PyInstaller collecte `cytriangle` lorsqu'il est installe dans
+  l'environnement de build.
 - Rotation 3D rendue plus stable autour du centre du modele, avec verticale
   globale verrouillee et elevation bornee pour eviter le retournement de la vue.
 - Table des enveloppes etendue a toutes les composantes principales `N`, `Vy`,
@@ -55,6 +65,8 @@
 
 ### Validation
 
+- `python -m pytest -q` : 632 tests passes le 30 aout 2026.
+- Cas OpenSeesPy polygonaux : equilibre des reactions et fleche analytique valides.
 - `python -m pytest -q` : 625 tests passes le 30 aout 2026.
 - `python -m ruff check` cible sur le maillage polygonal et ses contrats : OK.
 - `python -m pytest -q` : 620 tests passes le 25 aout 2026.

@@ -466,19 +466,42 @@ class ResultsPanel(QWidget):
         ]
         self._prepare_table(table, headers, len(plate_results))
         for row, (tag, result) in enumerate(sorted(plate_results.items())):
+            resultants_available = bool(
+                getattr(result, "resultants_available", True)
+            )
             values = [
                 (f"{result.uz_min:.6f}", result.uz_min),
                 (f"{result.uz_max:.6f}", result.uz_max),
-                (f"{result.mxx_min:.3f} / {result.mxx_max:.3f}", result.mxx_min),
-                (f"{result.myy_min:.3f} / {result.myy_max:.3f}", result.myy_min),
-                (f"{result.mxy_min:.3f} / {result.mxy_max:.3f}", result.mxy_min),
-                (f"{result.qx_min:.3f} / {result.qx_max:.3f}", result.qx_min),
-                (f"{result.qy_min:.3f} / {result.qy_max:.3f}", result.qy_min),
+                (
+                    f"{result.mxx_min:.3f} / {result.mxx_max:.3f}",
+                    result.mxx_min,
+                ) if resultants_available else ("-", None),
+                (
+                    f"{result.myy_min:.3f} / {result.myy_max:.3f}",
+                    result.myy_min,
+                ) if resultants_available else ("-", None),
+                (
+                    f"{result.mxy_min:.3f} / {result.mxy_max:.3f}",
+                    result.mxy_min,
+                ) if resultants_available else ("-", None),
+                (
+                    f"{result.qx_min:.3f} / {result.qx_max:.3f}",
+                    result.qx_min,
+                ) if resultants_available else ("-", None),
+                (
+                    f"{result.qy_min:.3f} / {result.qy_max:.3f}",
+                    result.qy_min,
+                ) if resultants_available else ("-", None),
                 (f"{result.fz_reaction_total:.3f}", result.fz_reaction_total),
             ]
             table.setItem(row, 0, QTableWidgetItem(f"P{tag}"))
             for col, (text, numeric) in enumerate(values, 1):
-                table.setItem(row, col, NumericTableWidgetItem(text, numeric))
+                item = (
+                    NumericTableWidgetItem(text, numeric)
+                    if numeric is not None
+                    else QTableWidgetItem(text)
+                )
+                table.setItem(row, col, item)
         self._finish_table(table)
 
     def _fill_envelopes(self, envelopes: dict[int, ElementEnvelope]) -> None:
