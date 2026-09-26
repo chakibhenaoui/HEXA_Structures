@@ -160,7 +160,7 @@ def test_results_panel_populates_plate_region_results_table() -> None:
         table.horizontalHeaderItem(index).text()
         for index in range(table.columnCount())
     ]
-    assert float(table.item(0, 8).data(Qt.UserRole)) == 12.5
+    assert float(table.item(0, 11).data(Qt.UserRole)) == 12.5
 
 
 def test_unavailable_plate_resultants_are_not_displayed_or_summarized() -> None:
@@ -188,10 +188,10 @@ def test_unavailable_plate_resultants_are_not_displayed_or_summarized() -> None:
     panel.show_result_type("surface_results")
 
     table = panel.ui.tbl_surface_results
-    assert [table.item(0, column).text() for column in range(3, 8)] == ["-"] * 5
+    assert [table.item(0, column).text() for column in range(3, 11)] == ["-"] * 8
     summary = compute_result_summary({"Plaque": {"plate_results": {1: result}}})
     assert any(row.component == "Uz" for row in summary)
-    assert not any(row.component in {"Mxx", "Myy", "Mxy", "Qx", "Qy"} for row in summary)
+    assert not any(row.component in {"Nxx", "Nyy", "Nxy", "Mxx", "Myy", "Mxy", "Qx", "Qy"} for row in summary)
 
 
 def test_results_panel_populates_complete_envelope_columns() -> None:

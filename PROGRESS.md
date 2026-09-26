@@ -1,6 +1,6 @@
 # HEXA Structures - Suivi d'avancement
 
-> État vérifié le 30 août 2026 sur la branche `codex/polygonal-opensees-integration`.
+> État vérifié le 26 septembre 2026 sur la branche `codex/polygonal-results-convergence`.
 
 ---
 
@@ -9,12 +9,12 @@
 | Info | Valeur |
 |---|---|
 | Version applicative | 0.1.0 |
-| Dernière mise à jour | 30 août 2026 |
-| Dernier développement | PR2 d'intégration OpenSeesPy des surfaces polygonales |
+| Dernière mise à jour | 26 septembre 2026 |
+| Dernier développement | PR3 de résultats et convergence des surfaces polygonales en cours |
 | Moteur principal | PyNite |
 | Moteur avancé optionnel | OpenSeesPy |
 | État global | Application fonctionnelle en consolidation : modélisation GUI, persistance SQLite, calcul multi-solveur, plaques macro, résultats, i18n, plugins et Section Builder avancé. |
-| Validation récente | `python -m pytest -q` : 632 réussis ; lint ciblé vert |
+| Validation récente | `python -m pytest -q` : 635 réussis ; lint ciblé vert |
 
 ---
 
@@ -64,6 +64,12 @@
 - Propagation des charges surfaciques et appuis de bord vers les triangles.
 - Validation OpenSeesPy par equilibre des reactions et fleche analytique d'une
   plaque carree simplement appuyee.
+- Extraction des efforts membranaires, moments et cisaillements des triangles
+  `ASDShellT3`, avec extrapolation des points d'integration aux noeuds.
+- Resultats polygonaux agreges dans les tableaux et syntheses, et cartes
+  triangulaires avec lissage nodal pondere par aire.
+- Etude de raffinement des fleches et moments sur une plaque carree simplement
+  appuyee ; les pics de cisaillement aux coins restent sensibles au maillage.
 
 ---
 
@@ -82,13 +88,14 @@ restent bloquees tant que leur extraction n'est pas validee de bout en bout.
    intégration complète et comportement linéaire, propager charges et appuis,
    imposer un repère local cohérent et ajouter des cas analytiques de référence.
 3. **PR3 - Résultats et convergence** : mapper les résultats vers la macro-surface,
-   stabiliser les conventions de signes et de cisaillement, puis ajouter les
-   cartes, le lissage contrôlé et les études de convergence.
+   expliciter les conventions de signes, puis ajouter les cartes, le lissage
+   contrôlé et les études de convergence.
 
 État actuel : PR1 fusionne dans `main` par la PR #7. PR2 implemente et valide
-localement : le calcul, les deplacements et les reactions sont disponibles. Les
-moments, efforts membranaires, cisaillements et cartes restent marques
-indisponibles jusqu'au PR3.
+localement. PR3 demarree sur une branche issue de PR2 : extraction des
+resultantes, cartes triangulaires et validation de raffinement implementees.
+La convergence adaptative et la stabilisation des pics de cisaillement pres des
+appuis restent a faire.
 
 ---
 
@@ -97,7 +104,7 @@ indisponibles jusqu'au PR3.
 1. Finaliser l'export PDF général des résultats et notes de calcul.
 2. Poursuivre la validation ergonomique des tableaux, synthèses et enveloppes.
 3. Finaliser et publier le PR2 d'intégration OpenSeesPy des triangles `ASDShellT3`.
-4. Réaliser le PR3 de mapping des résultats et de convergence polygonale.
+4. Finaliser la revue et la publication du PR3 de résultats polygonaux.
 5. Stabiliser les résultats de cisaillement des plaques selon la formulation.
 6. Ajouter une convergence adaptative optionnelle pour le maillage des plaques.
 7. Étendre le Section Builder : import DXF, sections composées et matériaux multiples.

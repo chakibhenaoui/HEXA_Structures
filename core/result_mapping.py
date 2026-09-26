@@ -6,6 +6,7 @@ from dataclasses import dataclass
 from typing import TYPE_CHECKING
 
 from core.results import ElementResult
+from core.surface_result_sampling import extrapolate_t3_mid_edge_to_nodes
 
 if TYPE_CHECKING:
     from core.bar_mesher import GeneratedBarMesh
@@ -23,6 +24,13 @@ class PlateRegionResult:
     uz_max: float = 0.0
     uz_min_node: int | None = None
     uz_max_node: int | None = None
+
+    nxx_min: float = 0.0
+    nxx_max: float = 0.0
+    nyy_min: float = 0.0
+    nyy_max: float = 0.0
+    nxy_min: float = 0.0
+    nxy_max: float = 0.0
 
     mxx_min: float = 0.0
     mxx_max: float = 0.0
@@ -158,7 +166,11 @@ def map_analysis_results_to_user_results(
             "analysis_surface_count": len(analysis_project.surface_elements),
             "plate_region_count": len(user_project.plate_regions),
             "plate_result_count": len(plate_results),
-            "plate_result_value_location": "nodal_extrapolated",
+            "plate_result_value_location": (
+                "nodal_extrapolated_area_weighted"
+                if any(mesh.mesh_kind == "constrained_triangular" for mesh in generated_plate_meshes.values())
+                else "nodal_extrapolated"
+            ),
             "generated_plate_count": len(generated_plate_meshes),
             "generated_plate_surface_count": sum(
                 len(mesh.surface_tags) for mesh in generated_plate_meshes.values()
@@ -262,6 +274,15 @@ def _aggregate_plate_result(
     uz_min_node = min(uz_values, key=lambda item: item[1])[0] if uz_values else None
     uz_max_node = max(uz_values, key=lambda item: item[1])[0] if uz_values else None
 
+    nxx_values = _plate_nodal_component_values(
+        analysis_project, surface_tags, surface_results, "nxx", 0
+    )
+    nyy_values = _plate_nodal_component_values(
+        analysis_project, surface_tags, surface_results, "nyy", 1
+    )
+    nxy_values = _plate_nodal_component_values(
+        analysis_project, surface_tags, surface_results, "nxy", 2
+    )
     mxx_values = _plate_nodal_component_values(
         analysis_project, surface_tags, surface_results, "mxx", 3
     )
@@ -284,6 +305,12 @@ def _aggregate_plate_result(
         uz_max=uz_max,
         uz_min_node=uz_min_node,
         uz_max_node=uz_max_node,
+        nxx_min=_min_value(nxx_values),
+        nxx_max=_max_value(nxx_values),
+        nyy_min=_min_value(nyy_values),
+        nyy_max=_max_value(nyy_values),
+        nxy_min=_min_value(nxy_values),
+        nxy_max=_max_value(nxy_values),
         mxx_min=_min_value(mxx_values),
         mxx_max=_max_value(mxx_values),
         myy_min=_min_value(myy_values),
@@ -301,7 +328,9 @@ def _aggregate_plate_result(
         ),
         node_tags=unique_node_tags,
         surface_tags=surface_tags,
-        resultants_available=any(tag in surface_results for tag in surface_tags),
+        resultants_available=bool(surface_tags) and all(
+            tag in surface_results for tag in surface_tags
+        ),
     )
 
 
@@ -331,7 +360,7 @@ def _plate_nodal_component_values(
 ) -> list[float]:
     """Handle plate nodal component values."""
     sums: dict[int, float] = {}
-    counts: dict[int, int] = {}
+    weights: dict[int, float] = {}
     fallback_values: list[float] = []
 
     for surface_tag in surface_tags:
@@ -354,15 +383,46 @@ def _plate_nodal_component_values(
                 ):
                     node_tag = int(node_tag)
                     sums[node_tag] = sums.get(node_tag, 0.0) + float(value)
-                    counts[node_tag] = counts.get(node_tag, 0) + 1
+                    weights[node_tag] = weights.get(node_tag, 0.0) + 1.0
+                continue
+
+        if len(surface.node_tags) == 3 and len(gauss_resultants) == 3:
+            gauss_values = [
+                float(values[gauss_index])
+                for values in gauss_resultants
+                if len(values) > gauss_index
+            ]
+            if len(gauss_values) == 3:
+                points = [analysis_project.nodes.get(int(tag)) for tag in surface.node_tags]
+                if all(point is not None for point in points):
+                    p0, p1, p2 = (
+                        (float(point.x), float(point.y), float(point.z))
+                        for point in points
+                    )
+                    ab = tuple(p1[i] - p0[i] for i in range(3))
+                    ac = tuple(p2[i] - p0[i] for i in range(3))
+                    cross = (
+                        ab[1] * ac[2] - ab[2] * ac[1],
+                        ab[2] * ac[0] - ab[0] * ac[2],
+                        ab[0] * ac[1] - ab[1] * ac[0],
+                    )
+                    area = 0.5 * sum(value * value for value in cross) ** 0.5
+                    if area > 0.0:
+                        for node_tag, value in zip(
+                            surface.node_tags,
+                            extrapolate_t3_mid_edge_to_nodes(gauss_values),
+                        ):
+                            node_tag = int(node_tag)
+                            sums[node_tag] = sums.get(node_tag, 0.0) + area * value
+                            weights[node_tag] = weights.get(node_tag, 0.0) + area
                 continue
 
         fallback_values.append(float(getattr(result, field_name, 0.0)))
 
     nodal_values = [
-        sums[node_tag] / float(counts[node_tag])
+        sums[node_tag] / weights[node_tag]
         for node_tag in sorted(sums)
-        if counts[node_tag] > 0
+        if weights[node_tag] > 0
     ]
     return nodal_values if nodal_values else fallback_values
 

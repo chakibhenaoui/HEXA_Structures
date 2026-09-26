@@ -7,8 +7,12 @@ from core.model_data import (
     PlateEdgeSupportData,
     ProjectModel,
 )
-from core.result_mapping import map_analysis_results_to_user_results
+from core.result_mapping import (
+    _plate_nodal_component_values,
+    map_analysis_results_to_user_results,
+)
 from core.results import ElementResult, NodalResult, SurfaceResult
+from core.surface_result_sampling import extrapolate_t3_mid_edge_to_nodes
 
 
 def _plate_project(mesh_nx: int = 2, mesh_ny: int = 2) -> ProjectModel:
@@ -43,6 +47,44 @@ def _surface_result(tag: int, base: float) -> SurfaceResult:
         qx=base * 2.0,
         qy=-base * 2.0,
     )
+
+
+def test_t3_mid_edge_extrapolation_preserves_linear_nodal_values() -> None:
+    # Mid-edge points are ordered 2-3, 3-1, 1-2 by ASDShellT3.
+    assert extrapolate_t3_mid_edge_to_nodes((5.0, 4.0, 3.0)) == pytest.approx(
+        (2.0, 4.0, 6.0)
+    )
+
+
+def test_t3_shared_node_smoothing_uses_triangle_area() -> None:
+    project = ProjectModel(name="Unequal triangles")
+    project.add_material("Beton", "concrete", "C30/37")
+    section = project.add_section(
+        "Dalle", "surface", material_tag=1,
+        properties={"thickness": 0.2, "element_formulation": "ShellMITC4"},
+    )
+    for xyz in ((0, 0, 0), (2, 0, 0), (0, 1, 0), (0, -2, 0)):
+        project.add_node(*xyz)
+    first = project.add_surface_element(
+        (1, 2, 3), section_tag=section.tag,
+        surface_type="shell", formulation="ASDShellT3",
+    )
+    second = project.add_surface_element(
+        (1, 4, 2), section_tag=section.tag,
+        surface_type="shell", formulation="ASDShellT3",
+    )
+
+    def constant_result(tag: int, moment: float) -> SurfaceResult:
+        row = (0.0, 0.0, 0.0, moment, 0.0, 0.0, 0.0, 0.0)
+        return SurfaceResult(tag=tag, mxx=moment, gauss_resultants=(row, row, row))
+
+    values = _plate_nodal_component_values(
+        project, (first.tag, second.tag),
+        {first.tag: constant_result(first.tag, 3.0),
+         second.tag: constant_result(second.tag, 9.0)},
+        "mxx", 3,
+    )
+    assert values == pytest.approx([7.0, 7.0, 3.0, 9.0])
 
 
 def _raw_results_for_plate(analysis_model: ProjectModel) -> dict:

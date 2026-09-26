@@ -99,11 +99,15 @@ mode utilisateur fixe explicitement la densite demandee.
 
 Les triangles utilisent une cinematique lineaire, l'integration complete a trois
 points et un axe local commun a la macro-surface. Les charges surfaciques et les
-appuis de bord sont propages au maillage. Les deplacements et reactions sont
-disponibles, mais les resultantes `N`, `M`, `Q` et leurs cartes restent masquees
-jusqu'a leur extraction et validation au PR3. Les ouvertures, tremies, le couplage
-automatique avec les barres coplanaires et la convergence adaptative ne sont pas
-encore pris en charge.
+appuis de bord sont propages au maillage. Les deplacements, reactions et
+resultantes `N`, `M`, `Q` sont disponibles dans les tableaux, syntheses et cartes.
+Les valeurs aux noeuds sont extrapolees depuis les trois points au milieu des
+aretes, puis lissees entre triangles voisins avec une ponderation par aire. Les
+moments negatifs correspondent a la flexion sous charge descendante dans le
+repere local OpenSeesPy. Les pics de cisaillement pres des appuis et coins
+restent sensibles a la densite du maillage ; ils exigent une etude de convergence
+avant interpretation. Les ouvertures, tremies, le couplage automatique avec les
+barres coplanaires et la convergence adaptative ne sont pas encore pris en charge.
 
 ## Architecture
 

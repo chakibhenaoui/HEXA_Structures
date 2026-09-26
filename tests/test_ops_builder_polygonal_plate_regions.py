@@ -153,15 +153,21 @@ def test_opensees_polygonal_plate_reaction_balance_if_available() -> None:
     assert success is True, results
     plate_result = results["plate_results"][1]
     assert math.isclose(plate_result.fz_reaction_total, 18.0, rel_tol=1e-6, abs_tol=1e-6)
-    assert plate_result.resultants_available is False
-    assert results["result_context"]["surface_results_available"] is False
-    assert results["result_context"]["plate_resultants_available"] is False
+    assert plate_result.resultants_available is True
+    assert results["result_context"]["surface_results_available"] is True
+    assert results["result_context"]["plate_resultants_available"] is True
     assert results["result_context"]["generated_plate_count"] == 1
     assert results["result_context"]["generated_plate_mesh_sizes"] == {1: (0, 0)}
+    raw_surfaces = results["internal_results"]["surface_results"]
+    assert len(raw_surfaces) == len(plate_result.surface_tags)
+    assert all(len(result.gauss_resultants) == 3 for result in raw_surfaces.values())
+    assert plate_result.mxx_min < plate_result.mxx_max
+    assert plate_result.qx_min < plate_result.qx_max
+    assert abs(plate_result.nxx_min) < 1e-6
+    assert abs(plate_result.nxx_max) < 1e-6
 
 
-def test_opensees_polygonal_simply_supported_square_matches_reference() -> None:
-    pytest.importorskip("openseespy.opensees")
+def _simply_supported_square(divisions: int) -> tuple[ProjectModel, object, float, float, float]:
     project = ProjectModel(name="Polygonal simply supported square")
     material = project.add_material("Beton C30", "concrete", "C30/37")
     thickness = 0.10
@@ -185,8 +191,8 @@ def test_opensees_polygonal_simply_supported_square_matches_reference() -> None:
     project.add_plate_region(
         (1, 2, 3, 4, 5),
         section_tag=section.tag,
-        mesh_nx=12,
-        mesh_ny=12,
+        mesh_nx=divisions,
+        mesh_ny=divisions,
     )
     project.loads[1] = LoadData(tag=1, name="Surface", load_type="live")
     pressure = 1.0
@@ -203,6 +209,13 @@ def test_opensees_polygonal_simply_supported_square_matches_reference() -> None:
             )
         )
 
+    return project, material, thickness, side, pressure
+
+
+def test_opensees_polygonal_simply_supported_square_matches_reference() -> None:
+    pytest.importorskip("openseespy.opensees")
+    project, material, thickness, side, pressure = _simply_supported_square(12)
+
     success, results = AnalysisRunner(project, engine="opensees").run_static(load_tag=1)
 
     assert success is True, results
@@ -212,3 +225,60 @@ def test_opensees_polygonal_simply_supported_square_matches_reference() -> None:
     reference_deflection = 0.00406235 * pressure * side**4 / rigidity
     computed_deflection = abs(results["plate_results"][1].uz_min)
     assert computed_deflection == pytest.approx(reference_deflection, rel=0.15)
+    plate_result = results["plate_results"][1]
+    # Downward loading produces negative sagging Mxx/Myy in the OpenSees
+    # local shell convention. For a simply supported square, |Mcenter| is
+    # approximately 0.0479 q L².
+    reference_moment = 0.0479 * pressure * side**2
+    assert plate_result.mxx_min < 0.0
+    assert plate_result.myy_min < 0.0
+    assert abs(plate_result.mxx_min) == pytest.approx(reference_moment, rel=0.15)
+    assert abs(plate_result.myy_min) == pytest.approx(reference_moment, rel=0.15)
+
+    from gui.widgets.surface_result_renderer import (
+        build_surface_component_field,
+        build_surface_result_figure,
+        detect_plate_result_files,
+    )
+
+    analysis_project = results["analysis_project"]
+    files = detect_plate_result_files(analysis_project)
+    assert len(files) == 1
+    assert "triangles" in files[0]["label"]
+    field = build_surface_component_field(analysis_project, results, files[0], "Mxx")
+    assert field is not None
+    assert field["triangles"].shape[0] == len(plate_result.surface_tags)
+    assert field["quads"].shape == (0, 4)
+    assert all(math.isfinite(value) for value in field["values"])
+    shear_field = build_surface_component_field(analysis_project, results, files[0], "Qx")
+    assert shear_field is not None
+    coordinates = shear_field["coords_2d"]
+    shear = shear_field["values"]
+    left = min(range(len(shear)), key=lambda idx: math.dist(coordinates[idx], (0.0, 1.0)))
+    right = min(range(len(shear)), key=lambda idx: math.dist(coordinates[idx], (2.0, 1.0)))
+    assert shear[left] < 0.0 < shear[right]
+    pytest.importorskip("matplotlib")
+    figure = build_surface_result_figure("Mxx", files[0], analysis_project, results)
+    assert len(figure.axes[0].collections) >= 1
+
+
+def test_polygonal_square_deflection_and_moment_converge_with_mesh_refinement() -> None:
+    pytest.importorskip("openseespy.opensees")
+    computed: list[tuple[float, float]] = []
+    for divisions in (4, 8, 12):
+        project, material, thickness, side, pressure = _simply_supported_square(divisions)
+        success, results = AnalysisRunner(project, engine="opensees").run_static(load_tag=1)
+        assert success is True, results
+        plate = results["plate_results"][1]
+        computed.append((abs(plate.uz_min), abs(plate.mxx_min)))
+
+    rigidity = (
+        material_elastic_modulus(material) * thickness**3
+        / (12.0 * (1.0 - material_poisson_ratio(material)**2))
+    )
+    reference_deflection = 0.00406235 * pressure * side**4 / rigidity
+    reference_moment = 0.0479 * pressure * side**2
+    moment_errors = [abs(value[1] - reference_moment) for value in computed]
+    assert abs(computed[2][0] - computed[1][0]) < abs(computed[1][0] - computed[0][0])
+    assert computed[2][0] == pytest.approx(reference_deflection, rel=0.15)
+    assert moment_errors[2] < moment_errors[1] < moment_errors[0]

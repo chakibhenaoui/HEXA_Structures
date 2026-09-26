@@ -457,6 +457,9 @@ class ResultsPanel(QWidget):
             self.tr("Plaque"),
             "Uz min (m)",
             "Uz max (m)",
+            "Nxx min/max extrap. (kN/m)",
+            "Nyy min/max extrap. (kN/m)",
+            "Nxy min/max extrap. (kN/m)",
             "Mxx min/max extrap. (kN.m/m)",
             "Myy min/max extrap. (kN.m/m)",
             "Mxy min/max extrap. (kN.m/m)",
@@ -472,6 +475,18 @@ class ResultsPanel(QWidget):
             values = [
                 (f"{result.uz_min:.6f}", result.uz_min),
                 (f"{result.uz_max:.6f}", result.uz_max),
+                (
+                    f"{result.nxx_min:.3f} / {result.nxx_max:.3f}",
+                    result.nxx_min,
+                ) if resultants_available else ("-", None),
+                (
+                    f"{result.nyy_min:.3f} / {result.nyy_max:.3f}",
+                    result.nyy_min,
+                ) if resultants_available else ("-", None),
+                (
+                    f"{result.nxy_min:.3f} / {result.nxy_max:.3f}",
+                    result.nxy_min,
+                ) if resultants_available else ("-", None),
                 (
                     f"{result.mxx_min:.3f} / {result.mxx_max:.3f}",
                     result.mxx_min,
