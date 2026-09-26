@@ -7,6 +7,9 @@ from typing import TYPE_CHECKING
 import numpy as np
 from PySide6.QtCore import QCoreApplication
 
+from core.surface_geometry import validate_surface_polygon
+from core.surface_result_sampling import extrapolate_t3_mid_edge_to_nodes
+
 if TYPE_CHECKING:
     from core.model_data import ProjectModel
 
@@ -145,7 +148,12 @@ def _generated_plate_surface_tags(project: ProjectModel) -> set[int]:
     return tags
 
 
-def _plate_region_local_basis(project: ProjectModel, plate) -> tuple[np.ndarray, np.ndarray, np.ndarray] | None:
+def _plate_region_local_basis(
+    project: ProjectModel,
+    plate,
+    *,
+    polygonal: bool = False,
+) -> tuple[np.ndarray, np.ndarray, np.ndarray] | None:
     coords = np.array(
         [
             [project.nodes[tag].x, project.nodes[tag].y, project.nodes[tag].z]
@@ -154,8 +162,19 @@ def _plate_region_local_basis(project: ProjectModel, plate) -> tuple[np.ndarray,
         ],
         dtype=float,
     )
-    if coords.shape[0] != 4:
+    if coords.shape[0] < 3 or coords.shape[0] != len(plate.corner_node_tags):
         return None
+
+    if polygonal or coords.shape[0] != 4:
+        try:
+            geometry = validate_surface_polygon(tuple(tuple(row) for row in coords))
+        except ValueError:
+            return None
+        return (
+            np.asarray(geometry.origin, dtype=float),
+            np.asarray(geometry.u_axis, dtype=float),
+            np.asarray(geometry.v_axis, dtype=float),
+        )
 
     origin = coords[0]
     u_axis = _normalize(coords[1] - origin)
@@ -187,7 +206,11 @@ def detect_plate_result_files(project: ProjectModel) -> list[dict]:
         ]
         if not surface_tags:
             continue
-        basis = _plate_region_local_basis(project, plate)
+        basis = _plate_region_local_basis(
+            project,
+            plate,
+            polygonal=getattr(mesh, "mesh_kind", "") == "constrained_triangular",
+        )
         if basis is None:
             continue
         origin, u_axis, v_axis = basis
@@ -197,11 +220,13 @@ def detect_plate_result_files(project: ProjectModel) -> list[dict]:
             {
                 "label": (
                     QCoreApplication.translate(
-                        "SurfaceResultRenderer",
-                        "Plaque P{tag}{name} ({nx}x{ny}, {count} surf.)",
+                        "SurfaceResultRenderer", "Plaque P{tag}{name} ({count} triangles)",
+                    ).format(tag=int(plate_tag), name=label_name, count=len(surface_tags))
+                    if getattr(mesh, "mesh_kind", "") == "constrained_triangular"
+                    else QCoreApplication.translate(
+                        "SurfaceResultRenderer", "Plaque P{tag}{name} ({nx}x{ny}, {count} surf.)",
                     ).format(
-                        tag=int(plate_tag),
-                        name=label_name,
+                        tag=int(plate_tag), name=label_name,
                         nx=int(getattr(mesh, "mesh_nx", plate.mesh_nx)),
                         ny=int(getattr(mesh, "mesh_ny", plate.mesh_ny)),
                         count=len(surface_tags),
@@ -372,7 +397,7 @@ def build_surface_component_field(
         for tag in surface_tags
         if tag in project.surface_elements
         and tag in surface_results
-        and len(project.surface_elements[tag].node_tags) == 4
+        and len(project.surface_elements[tag].node_tags) in (3, 4)
     ]
     if not effective_surfaces:
         return None
@@ -390,37 +415,56 @@ def build_surface_component_field(
         dtype=float,
     )
     values = np.zeros(len(node_tags), dtype=float)
-    counts = np.zeros(len(node_tags), dtype=int)
-    quads = np.zeros((len(effective_surfaces), 4), dtype=int)
+    weights = np.zeros(len(node_tags), dtype=float)
+    quads: list[list[int]] = []
+    triangles: list[list[int]] = []
 
     component_idx = int(spec["index"])
-    for row, surface in enumerate(effective_surfaces):
-        quads[row] = [node_index[tag] for tag in surface.node_tags]
+    for surface in effective_surfaces:
+        connectivity = [node_index[tag] for tag in surface.node_tags]
+        expected_points = len(connectivity)
         gauss = np.asarray(
             [
                 point[component_idx]
-                for point in surface_results[surface.tag].gauss_resultants[:4]
+                for point in surface_results[surface.tag].gauss_resultants[:expected_points]
+                if len(point) > component_idx
             ],
             dtype=float,
         )
-        if gauss.size != 4:
+        if gauss.size != expected_points or not np.all(np.isfinite(gauss)):
             continue
-        nodal_values = _extrapolate_ip_to_node_quad(gauss)
+        if expected_points == 4:
+            quads.append(connectivity)
+            nodal_values = _extrapolate_ip_to_node_quad(gauss)
+            weight = 1.0
+        else:
+            local_coords = coords_2d[connectivity]
+            first_edge = local_coords[1] - local_coords[0]
+            second_edge = local_coords[2] - local_coords[0]
+            area = 0.5 * abs(float(
+                first_edge[0] * second_edge[1] - first_edge[1] * second_edge[0]
+            ))
+            if area <= 0.0:
+                continue
+            triangles.append(connectivity)
+            nodal_values = extrapolate_t3_mid_edge_to_nodes(gauss)
+            weight = area
         for local_idx, node_tag in enumerate(surface.node_tags):
             global_idx = node_index[node_tag]
-            values[global_idx] += float(nodal_values[local_idx])
-            counts[global_idx] += 1
+            values[global_idx] += weight * float(nodal_values[local_idx])
+            weights[global_idx] += weight
 
-    valid = counts > 0
+    valid = weights > 0
     if not np.any(valid):
         return None
-    values[valid] = values[valid] / counts[valid]
+    values[valid] = values[valid] / weights[valid]
 
     return {
         "plane": plane,
         "coords_2d": coords_2d,
         "values": values,
-        "quads": quads,
+        "quads": np.asarray(quads, dtype=int).reshape((-1, 4)),
+        "triangles": np.asarray(triangles, dtype=int).reshape((-1, 3)),
         "node_tags": node_tags,
     }
 
@@ -614,16 +658,26 @@ def build_surface_result_figure(
     coords_2d = np.asarray(field["coords_2d"], dtype=float)
     values = np.asarray(field["values"], dtype=float)
     quads = np.asarray(field["quads"], dtype=int)
-    tris_conn, nds_crd_all, nds_val_all = _refined_quads_to_tris(
-        quads,
-        coords_2d,
-        values,
-        subdivisions=10,
-    )
-    if tris_conn.size == 0 or nds_crd_all.size == 0:
-        tris_conn, nds_c_crd, nds_c_val = _quads_to_4tris(quads, coords_2d, values)
-        nds_crd_all = np.vstack((coords_2d, nds_c_crd))
-        nds_val_all = np.hstack((values, nds_c_val))
+    triangles = np.asarray(field["triangles"], dtype=int)
+    if quads.size:
+        quad_tris, nds_crd_all, nds_val_all = _refined_quads_to_tris(
+            quads, coords_2d, values, subdivisions=10,
+        )
+        if quad_tris.size == 0 or nds_crd_all.size == 0:
+            quad_tris, nds_c_crd, nds_c_val = _quads_to_4tris(quads, coords_2d, values)
+            nds_crd_all = np.vstack((coords_2d, nds_c_crd))
+            nds_val_all = np.hstack((values, nds_c_val))
+        if triangles.size:
+            triangle_offset = len(nds_crd_all)
+            tris_conn = np.vstack((quad_tris, triangles + triangle_offset))
+            nds_crd_all = np.vstack((nds_crd_all, coords_2d))
+            nds_val_all = np.hstack((nds_val_all, values))
+        else:
+            tris_conn = quad_tris
+    else:
+        tris_conn = triangles
+        nds_crd_all = coords_2d
+        nds_val_all = values
 
     triangulation = mtri.Triangulation(
         nds_crd_all[:, 0],
@@ -657,6 +711,8 @@ def build_surface_result_figure(
             colors="#1f2933",
         )
     _plot_mesh_outline(ax, coords_2d, quads)
+    if triangles.size:
+        _plot_mesh_outline(ax, coords_2d, triangles)
     fig.colorbar(contour, ax=ax, shrink=0.92)
 
     plane = str(field["plane"])

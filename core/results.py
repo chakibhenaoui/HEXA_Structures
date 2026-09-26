@@ -258,6 +258,9 @@ def compute_result_summary(all_results: dict[str, dict]) -> list[ResultSummaryRo
     )
     plate_components = (
         ("Uz", "uz_min", "uz_max", "m"),
+        ("Nxx", "nxx_min", "nxx_max", "kN/m"),
+        ("Nyy", "nyy_min", "nyy_max", "kN/m"),
+        ("Nxy", "nxy_min", "nxy_max", "kN/m"),
         ("Mxx", "mxx_min", "mxx_max", "kN.m/m"),
         ("Myy", "myy_min", "myy_max", "kN.m/m"),
         ("Mxy", "mxy_min", "mxy_max", "kN.m/m"),
@@ -457,7 +460,7 @@ class ResultsExtractor:
         """Return surface results."""
         results: dict[int, SurfaceResult] = {}
         for tag, surface in self.project.surface_elements.items():
-            if len(surface.node_tags) != 4:
+            if len(surface.node_tags) not in (3, 4):
                 continue
 
             try:
@@ -479,6 +482,10 @@ class ResultsExtractor:
                 continue
 
             gauss_values = values.reshape((-1, len(SURFACE_RESULTANT_COMPONENTS)))
+            if (
+                len(surface.node_tags) == 3 and gauss_values.shape[0] != 3
+            ) or not np.all(np.isfinite(gauss_values)):
+                continue
             average = gauss_values.mean(axis=0)
             results[tag] = SurfaceResult(
                 tag=tag,

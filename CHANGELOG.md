@@ -19,6 +19,11 @@
   axe local commun, une cinematique lineaire et l'integration complete.
 - Cas de reference OpenSeesPy pour l'equilibre global et la fleche d'une plaque
   carree simplement appuyee.
+- Extraction des resultantes `N`, `M` et `Q` aux trois points d'integration des
+  triangles `ASDShellT3`, avec extrapolation nodale et lissage pondere par aire.
+- Tableaux, syntheses et cartes de resultats polygonaux avec maillage triangulaire.
+- Etude de raffinement sur une plaque carree simplement appuyee pour les fleches
+  et moments, en plus de la verification d'equilibre des reactions.
 - Catalogue acier enrichi avec plus de 200 profiles europeens courants : IPE, HEA, HEB, HEM, UPN, UPE, CHS, SHS, RHS et cornieres.
 - Sections parametriques filaires dans la GUI : I/H, U, L, tube circulaire et tube rectangulaire.
 - Section Builder HEXA : dessin 2D point par point sur grille, accrochage, fermeture de contour, analyse polygonale simple et insertion dans les sections du projet.
@@ -47,8 +52,8 @@
   cellules et de bords que le futur pipeline polygonal.
 - Les charges surfaciques et appuis de bord des macro-surfaces polygonales sont
   propages vers les noeuds et triangles du modele d'analyse.
-- Les tableaux conservent les deplacements et reactions polygonaux, mais marquent
-  les resultantes indisponibles jusqu'a leur extraction et validation au PR3.
+- Les resultantes polygonales ne sont affichees que si chaque triangle du
+  maillage dispose de ses trois points d'integration valides.
 - Le packaging PyInstaller collecte `cytriangle` lorsqu'il est installe dans
   l'environnement de build.
 - Rotation 3D rendue plus stable autour du centre du modele, avec verticale
@@ -65,6 +70,10 @@
 
 ### Validation
 
+- `python -m pytest -q` : 635 tests passes le 26 septembre 2026.
+- Cas OpenSeesPy polygonaux : equilibre, signes des moments et cisaillements,
+  fleche et raffinement du maillage valides.
+- `python -m ruff check` cible sur les fichiers PR3 : OK.
 - `python -m pytest -q` : 632 tests passes le 30 aout 2026.
 - Cas OpenSeesPy polygonaux : equilibre des reactions et fleche analytique valides.
 - `python -m pytest -q` : 625 tests passes le 30 aout 2026.
